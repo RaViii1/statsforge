@@ -33,7 +33,7 @@ const SERVERS = [
 export default function Home() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedServer, setSelectedServer] = useState("na1");
+  const [selectedServer, setSelectedServer] = useState("eun1");
   const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
@@ -63,11 +63,19 @@ export default function Home() {
         // If no tagLine provided, use default based on server region
         gameName = input;
         const serverDefaults: Record<string, string> = {
-          'na1': 'NA1', 'euw1': 'EUW', 'eun1': 'EUNE', 'kr': 'KR',
-          'br1': 'BR1', 'la1': 'LAN', 'la2': 'LAS', 'oc1': 'OCE',
-          'ru': 'RU', 'tr1': 'TR1', 'jp1': 'JP1'
+          'na1': 'NA1',
+          'euw1': 'EUW',
+          'eun1': 'EUNE',
+          'kr': 'KR',
+          'br1': 'BR1',
+          'la1': 'LAN',
+          'la2': 'LAS',
+          'oc1': 'OCE',
+          'ru': 'RU',
+          'tr1': 'TR1',
+          'jp1': 'JP1'
         };
-        tagLine = serverDefaults[selectedServer] || 'NA1';
+        tagLine = serverDefaults[selectedServer] || 'EUNE';
       }
 
       if (!gameName || !tagLine) {
@@ -112,10 +120,10 @@ export default function Home() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative border-b border-zinc-800/50 backdrop-blur-sm sticky top-0 z-50 bg-zinc-950/80">
+      <nav className="border-b border-zinc-800/50 backdrop-blur-sm sticky top-0 z-50 bg-zinc-950/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
+            <div className="w-10 h-10 bg-linear-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
               <Anvil className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold text-white">
@@ -126,10 +134,6 @@ export default function Home() {
             <a href="#features" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Features</a>
             <a href="#games" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Games</a>
           
-              <div className="px-6 py-2.5 bg-zinc-800 rounded-lg animate-pulse">
-                <div className="w-20 h-5 bg-zinc-700 rounded"></div>
-              </div>
-
               <div className="flex items-center gap-3">
                 <Link
                   href="/login"
@@ -300,7 +304,7 @@ export default function Home() {
                   className="absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-20 transition-opacity"
                   style={{ backgroundImage: `url(${splashUrl})` }}
                 ></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/90 to-transparent"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/90 to-transparent"></div>
 
                 {/* Content */}
                 <div className="relative z-10 flex flex-col items-center gap-3 min-h-[120px] justify-center">

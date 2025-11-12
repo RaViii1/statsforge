@@ -35,7 +35,7 @@ export async function GET(
     const decodedTagLine = decodeURIComponent(tagline);
     
     // Get regional routing for this server
-    const region = PLATFORM_TO_REGION[server.toLowerCase()] || 'americas';
+    const region = PLATFORM_TO_REGION[server.toLowerCase()] || 'europe';
     const regionalHost = `${region}.api.riotgames.com`;
 
     // Step 1: Get account info (PUUID) using Riot ID
@@ -59,6 +59,9 @@ export async function GET(
         },
       }
     );
+
+
+
 
     // Combine both data sources
     return NextResponse.json({
