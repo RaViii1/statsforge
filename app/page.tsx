@@ -1,10 +1,9 @@
 "use client";
-import { Search, TrendingUp, Bell, Gamepad2, Calendar, Anvil, Shield, Zap } from "lucide-react";
+import { Search, TrendingUp, Bell, Gamepad2, Calendar, Anvil, Shield, Zap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Footer from "@/Components/footer";
-import Navbar from "@/Components/navbar";
+import { toast } from "sonner";
 
 const gameSplashArtUrls = {
   "League of Legends": "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg",
@@ -18,9 +17,9 @@ const gameSplashArtUrls = {
 };
 
 const SERVERS = [
-  { value: "europe", label: "EUNE" },
-  { value: "euw1", label: "EUW" },
   { value: "na1", label: "NA" },
+  { value: "euw1", label: "EUW" },
+  { value: "eun1", label: "EUNE" },
   { value: "kr", label: "KR" },
   { value: "br1", label: "BR" },
   { value: "la1", label: "LAN" },
@@ -34,51 +33,149 @@ const SERVERS = [
 export default function Home() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedServer, setSelectedServer] = useState("europe");
-  const [tagLine, setTagLine] = useState("");
+  const [selectedServer, setSelectedServer] = useState("na1");
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
-function sanitizeTagLine(tagLine: string) {
-  return tagLine.replace(/[^a-zA-Z0-9]/g, '');
-}
 
-  const handleSearch = (e: React.FormEvent) => {
+
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
+    
+    if (!searchQuery.trim()) {
+      toast.error("Please enter a summoner name");
+      return;
+    }
 
-    const encodedUsername = encodeURIComponent(searchQuery.trim());
-    const sanitizedTagLine = sanitizeTagLine(tagLine.trim());
-    const encodedTagLine = encodeURIComponent(sanitizedTagLine);
-    router.push(`/lol/profile/${selectedServer}/${encodedUsername}/${encodedTagLine}/`);
+    setIsSearching(true);
+
+    try {
+      // Parse gameName#tagLine format
+      const input = searchQuery.trim();
+      let gameName: string;
+      let tagLine: string;
+
+      if (input.includes('#')) {
+        const parts = input.split('#');
+        gameName = parts[0];
+        tagLine = parts[1];
+      } else {
+        // If no tagLine provided, use default based on server region
+        gameName = input;
+        const serverDefaults: Record<string, string> = {
+          'na1': 'NA1', 'euw1': 'EUW', 'eun1': 'EUNE', 'kr': 'KR',
+          'br1': 'BR1', 'la1': 'LAN', 'la2': 'LAS', 'oc1': 'OCE',
+          'ru': 'RU', 'tr1': 'TR1', 'jp1': 'JP1'
+        };
+        tagLine = serverDefaults[selectedServer] || 'NA1';
+      }
+
+      if (!gameName || !tagLine) {
+        toast.error("Invalid Riot ID format. Use: GameName#TAG");
+        setIsSearching(false);
+        return;
+      }
+
+      // Validate player exists via API
+      const response = await fetch(
+        `/api/lol/profile/${selectedServer}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
+      );
+
+      if (response.status === 404) {
+        // Player not found - redirect to not found page
+        router.push(`/lol/profile/player-not-found?name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}&server=${selectedServer}`);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Failed to fetch player data");
+        setIsSearching(false);
+        return;
+      }
+
+      // Player found - redirect to profile
+      router.push(`/lol/profile/${selectedServer}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+    } catch (error) {
+      console.error("Search error:", error);
+      toast.error("An error occurred while searching");
+      setIsSearching(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Background glows */}
+      {/* Subtle background glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
       {/* Navigation */}
-      <Navbar/>
+      <nav className="relative border-b border-zinc-800/50 backdrop-blur-sm sticky top-0 z-50 bg-zinc-950/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
+              <Anvil className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold text-white">
+              StatsForge
+            </span>
+          </Link>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Features</a>
+            <a href="#games" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Games</a>
+          
+              <div className="px-6 py-2.5 bg-zinc-800 rounded-lg animate-pulse">
+                <div className="w-20 h-5 bg-zinc-700 rounded"></div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/login"
+                  className="px-6 py-2.5 text-zinc-300 hover:text-white font-semibold transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-orange-900/30"
+                >
+                  Get Started
+                </Link>
+              </div>
+            
+          </div>
+          {/* Mobile menu button */}
+          <button className="md:hidden p-2 text-zinc-400 hover:text-white">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      </nav>
 
       {/* Hero Section */}
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-16 sm:mb-24">
+          {/* Badge */}
           <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-orange-950/30 border border-orange-900/30 rounded-full">
             <span className="text-orange-500 text-sm font-medium">Track Every Victory</span>
           </div>
-
+          
+          {/* Headline */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight px-4">
             Your Ultimate
-            <span className="block mt-2 text-orange-500">Gaming Stats Hub</span>
+            <span className="block mt-2 text-orange-500">
+              Gaming Stats Hub
+            </span>
           </h1>
-
+          
           <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto mb-10 px-4">
             Track your performance, discover game updates, and never miss a release across all your favorite games. One platform, unlimited possibilities.
           </p>
 
+          {/* Search Bar */}
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8 px-4">
             <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
               <div className="flex gap-2">
@@ -86,7 +183,8 @@ function sanitizeTagLine(tagLine: string) {
                 <select
                   value={selectedServer}
                   onChange={(e) => setSelectedServer(e.target.value)}
-                  className="px-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all font-medium"
+                  disabled={isSearching}
+                  className="px-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {SERVERS.map((server) => (
                     <option key={server.value} value={server.value}>
@@ -98,35 +196,32 @@ function sanitizeTagLine(tagLine: string) {
                 {/* Search Input */}
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                  <div className="flex flex-row gap-2 ">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter summoner name (e.g., Player)"
+                    placeholder="Enter summoner name (e.g., Player#NA1)"
                     onFocus={() => setSearchFocused(true)}
                     onBlur={() => setSearchFocused(false)}
-                    className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all"
+                    disabled={isSearching}
+                    className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  <input
-                    type="text"
-                    value={tagLine}
-                    onChange={(e) => setTagLine(e.target.value)}
-                    placeholder="Enter summoner tag (e.g., #0000)"
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                    className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all"
-                  />
-                  </div>
-
                 </div>
 
                 {/* Search Button */}
                 <button
                   type="submit"
-                  className="px-6 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-900/40"
+                  disabled={isSearching}
+                  className="px-6 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Search
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Searching...</span>
+                    </>
+                  ) : (
+                    "Search"
+                  )}
                 </button>
               </div>
               <p className="text-xs text-zinc-500 mt-2 text-left">
@@ -143,14 +238,9 @@ function sanitizeTagLine(tagLine: string) {
             >
               Start Tracking
             </Link>
-          </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
-            <Link
-              href="api/lol/profile/eun1/Plovear/420"
-              className="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-900/40"
-            >
-              profile
-            </Link>
+            <button className="w-full sm:w-auto px-8 py-4 bg-zinc-900 border border-zinc-800 text-white rounded-xl font-semibold hover:bg-zinc-800 transition-all">
+              Watch Demo
+            </button>
           </div>
         </div>
 
@@ -226,7 +316,11 @@ function sanitizeTagLine(tagLine: string) {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <footer className="relative border-t border-zinc-800/50 mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-center text-zinc-500">
+          <p>© 2024 StatsForge. Built with Next.js & TypeScript</p>
+        </div>
+      </footer>
     </div>
   );
 }

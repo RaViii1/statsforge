@@ -1,73 +1,93 @@
-"use server";
+import { NextResponse } from 'next/server';
+import axios from 'axios';
 
-import { NextResponse } from "next/server";
-import axios from "axios";
-
-const REGION_MAP: Record<string, string> = {
-  na1: "americas",
-  br1: "americas",
-  la1: "americas",
-  la2: "americas",
-  oc1: "americas",
-  kr: "asia",
-  jp1: "asia",
-  eun1: "europe",
-  euw1: "europe",
-  tr1: "europe",
-  ru: "europe",
-  ph2: "asia",
-  sg2: "asia",
-  th2: "asia",
-  tw2: "asia",
-  vn2: "asia",
+// Map platform servers to regional routing
+const PLATFORM_TO_REGION: Record<string, string> = {
+  'na1': 'americas',
+  'br1': 'americas',
+  'la1': 'americas',
+  'la2': 'americas',
+  'euw1': 'europe',
+  'eun1': 'europe',
+  'tr1': 'europe',
+  'ru': 'europe',
+  'kr': 'asia',
+  'jp1': 'asia',
+  'oc1': 'sea',
 };
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ server: string; username: string; tagLine: string }> }
+  context: { params: Promise<{ server: string; username: string; tagline: string }> }
 ) {
-  const { server, username, tagLine } = await context.params;
+  const { server, username, tagline } = await context.params;
 
   const API_KEY = process.env.RIOT_API_KEY as string;
   if (!API_KEY) {
-    return NextResponse.json({ error: "RIOT_API_KEY is missing or empty" }, { status: 500 });
-  }
-
-  const region = REGION_MAP[server.toLowerCase()];
-  if (!region) {
-    return NextResponse.json({ error: "Invalid server region" }, { status: 400 });
+    return NextResponse.json(
+      { error: 'RIOT_API_KEY is missing. Get one from https://developer.riotgames.com' },
+      { status: 500 }
+    );
   }
 
   try {
-    const encodedGameName = encodeURIComponent(username);
-    const encodedTagLine = encodeURIComponent(tagLine);
-
-    const riotUrl = `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodedGameName}/${encodedTagLine}`;
-
-    const riotRes = await axios.get(riotUrl, {
-      headers: { "X-Riot-Token": API_KEY },
-    });
-    console.log(riotRes.data);
-    return NextResponse.json(riotRes.data);
+    const decodedGameName = decodeURIComponent(username);
+    const decodedTagLine = decodeURIComponent(tagline);
     
-  } catch (err: any) {
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status || 500;
-      const message = err.response?.data?.status?.message || err.message;
+    // Get regional routing for this server
+    const region = PLATFORM_TO_REGION[server.toLowerCase()] || 'americas';
+    const regionalHost = `${region}.api.riotgames.com`;
 
-      if (status === 401) {
-        return NextResponse.json({ error: "Invalid API key" }, { status });
+    // Step 1: Get account info (PUUID) using Riot ID
+    const accountResponse = await axios.get(
+      `https://${regionalHost}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(decodedGameName)}/${encodeURIComponent(decodedTagLine)}`,
+      {
+        headers: {
+          'X-Riot-Token': API_KEY,
+        },
       }
+    );
+
+    const accountData = accountResponse.data;
+
+    // Step 2: Get summoner info using PUUID
+    const summonerResponse = await axios.get(
+      `https://${server}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`,
+      {
+        headers: {
+          'X-Riot-Token': API_KEY,
+        },
+      }
+    );
+
+    // Combine both data sources
+    return NextResponse.json({
+      ...summonerResponse.data,
+      gameName: accountData.gameName,
+      tagLine: accountData.tagLine,
+      puuid: accountData.puuid,
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      
       if (status === 404) {
-        return NextResponse.json({ error: "Summoner not found" }, { status });
+        return NextResponse.json({ error: 'Summoner not found' }, { status: 404 });
+      }
+      if (status === 401) {
+        return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
       }
       if (status === 429) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status });
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
       }
-      return NextResponse.json({ error: `Riot API error: ${message}` }, { status });
+      
+      return NextResponse.json(
+        { error: 'Failed to fetch from Riot API' }, 
+        { status: status || 500 }
+      );
     }
-
-    console.error("Internal server error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    
+    console.error('Server error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

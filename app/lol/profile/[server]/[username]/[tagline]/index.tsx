@@ -1,22 +1,16 @@
 "use client";
-import axios from "axios";
-import { Search, TrendingUp, Trophy, Target, Swords, Shield, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, TrendingUp, Trophy, Target, Swords, Shield, Clock, ArrowLeft, Loader2, Anvil } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-
-// Valid League of Legends servers
-const VALID_SERVERS = [
-  "na1", "euw1", "eun1", "kr", "br1", "la1", "la2", 
-  "oc1", "ru", "tr1", "jp1", "ph2", "sg2", "th2", "tw2", "vn2"
-];
 
 interface SummonerData {
   id: string;
   accountId: string;
   puuid: string;
   name: string;
+  gameName: string;
+  tagLine: string;
   profileIconId: number;
   revisionDate: number;
   summonerLevel: number;
@@ -24,24 +18,16 @@ interface SummonerData {
 
 export default function ProfilePage() {
   const params = useParams();
-  const router = useRouter();
-  
-  if (!params) {
-    return null;
-  }
-  
-  const server = params.server as string;
-  const username = params.username as string;
+  const server = params?.server as string;
+  const username = params?.username as string;
+  const tagline = params?.tagline as string;
 
   const [summonerData, setSummonerData] = useState<SummonerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Decode username (handle URL encoding and # tags)
-  const decodedUsername = decodeURIComponent(username);
-  const [gameName, tagLine] = decodedUsername.includes('#') 
-    ? decodedUsername.split('#') 
-    : [decodedUsername, ''];
+  const decodedGameName = decodeURIComponent(username);
+  const decodedTagLine = decodeURIComponent(tagline);
 
   useEffect(() => {
     const fetchSummonerData = async () => {
@@ -49,14 +35,7 @@ export default function ProfilePage() {
         setLoading(true);
         setError(null);
 
-        // Validate server
-        if (!VALID_SERVERS.includes(server.toLowerCase())) {
-          setError("Invalid server region");
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`/api/lol/profile/${server}/${username}`);
+        const response = await fetch(`/api/lol/profile/${server}/${username}/${tagline}`);
         
         if (!response.ok) {
           const errorData = await response.json();
@@ -73,7 +52,7 @@ export default function ProfilePage() {
     };
 
     fetchSummonerData();
-  }, [server, username]);
+  }, [server, username, tagline]);
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -88,9 +67,7 @@ export default function ProfilePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+              <Anvil className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold text-white">StatsForge</span>
           </Link>
@@ -120,7 +97,7 @@ export default function ProfilePage() {
               <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-red-500" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Player Not Found</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">Error Loading Profile</h2>
               <p className="text-zinc-400 mb-6">{error}</p>
               <Link
                 href="/"
@@ -151,7 +128,8 @@ export default function ProfilePage() {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-4xl font-bold text-white">
-                        {summonerData.name}
+                        {summonerData.gameName}
+                        <span className="text-zinc-500">#{summonerData.tagLine}</span>
                       </h1>
                       <span className="px-3 py-1 bg-orange-950/50 border border-orange-900/30 rounded-lg text-orange-500 text-sm font-medium uppercase">
                         {server}
@@ -168,9 +146,9 @@ export default function ProfilePage() {
               {[
                 { icon: Trophy, label: "Summoner Level", value: summonerData.summonerLevel.toString(), color: "orange" },
                 { icon: Target, label: "Profile Icon", value: `#${summonerData.profileIconId}`, color: "orange" },
-                { icon: Shield, label: "Account ID", value: summonerData.accountId.substring(0, 8) + "...", color: "orange" },
+                { icon: Shield, label: "PUUID", value: summonerData.puuid.substring(0, 8) + "...", color: "orange" },
                 { icon: Swords, label: "Region", value: server.toUpperCase(), color: "orange" },
-              ].map(({ icon: Icon, label, value, color }) => (
+              ].map(({ icon: Icon, label, value }) => (
                 <div
                   key={label}
                   className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all"
