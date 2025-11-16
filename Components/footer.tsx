@@ -41,7 +41,11 @@ export default function Footer() {
         </div>
         <div className="border-t border-slate-800/50 dark:border-orange-700/40 pt-8 text-center text-slate-400 dark:text-gray-400 text-sm">
           <p>© 2025 StatsForge. All rights reserved.</p>
+                    <span className="text-center text-zinc-400 text-sm">
+            StatsForge isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+          </span>
         </div>
+
       </div>
     </footer>
   );

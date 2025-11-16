@@ -1,32 +1,103 @@
-import Link from 'next/link';
-import { Anvil } from 'lucide-react';
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { X, Menu } from "lucide-react";
+import { Anvil } from "lucide-react";
 
-    export default function Navbar() {
-        return (
-            <nav className="sticky border-b border-zinc-800/50 backdrop-blur-sm top-0 z-50 bg-zinc-950/80">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-                        <div className="w-10 h-10 bg-linear-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
-                            <Anvil className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-2xl font-bold text-white">StatsForge</span>
-                    </Link>
+export default function NavbarLoL() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
-                    <div className="hidden md:flex items-center gap-8 text-white ">
-                        <a href="#features" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Features</a>
-                        <a href="#games" className="text-zinc-400 hover:text-orange-500 transition-colors font-medium">Games</a>
-                        <Link href="/login" className="px-6 py-2.5 text-zinc-300 hover:text-white font-semibold transition-colors">
-                            Sign In
-                        </Link>
-                        <Link href="/register" className="px-6 py-2.5 text-white bg-orange-600 hover:bg-orange-700  rounded-lg font-semibold transition-all shadow-lg shadow-orange-900/30">
-                            Get Started
-                        </Link>
-                    </div>      {/* Mobile menu button */}
-          <button className="md:hidden p-2 text-zinc-400 hover:text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+  return (
+    <>
+      <nav className="sticky top-0 z-50 border-b border-zinc-800/50 backdrop-blur-sm bg-zinc-950/90">
+        <div className="max-w-7xl mx-auto pl-2 pr-2 sm:pl-3 sm:pr-3">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo - Left */}
+            <Link href="/" className="flex items-center gap-2 shrink-0 mr-8">
+              <div className="w-9 h-9 bg-linear-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
+                <Anvil className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-white text-xl">StatsForge</span>
+            </Link>
+
+            {/* Links - Right (Desktop) */}
+            <div className="hidden md:flex items-end gap-1 shrink-0">
+              <a
+                href="#features"
+                className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
+              >
+                Features
+              </a>
+              <a
+                href="#games"
+                className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
+              >
+                Games
+              </a>
+              <Link
+                href="/login"
+                className="px-4 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-orange-900/30"
+              >
+                Get Started
+              </Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-zinc-400 hover:text-white transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
-      </nav>)
-      }
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-zinc-800/50 bg-zinc-950">
+            <div className="px-4 py-4 space-y-4">
+              {/* Mobile Links */}
+              <a
+                href="#features"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
+              >
+                Features
+              </a>
+              <a
+                href="#games"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
+              >
+                Games
+              </a>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold text-center transition-all shadow-lg shadow-orange-900/30"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
+        )}
+      </nav>
+    </>
+  );
+}

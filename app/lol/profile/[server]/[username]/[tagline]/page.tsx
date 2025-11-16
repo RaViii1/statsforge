@@ -1,117 +1,24 @@
 "use client";
 import { Search, TrendingUp, Trophy, Target, Swords, Shield, Clock, ArrowLeft, Loader2, Anvil, CheckCircle, XCircle, ChevronDown, ChevronUp, Star, Book, FlameIcon, Crown } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { getChampionNameById } from "@/lib/champion-data";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
 import { getArenaAugmentName, getArenaAugmentIcon } from "@/lib/arena-augments";
+import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon, getRunesForTree, STAT_SHARDS_GRID } from "@/lib/runes";
 import LolBanner from "@/Components/lolbaner";
+import NavbarLol from "@/Components/navbarlol";
+import { isRemake, isArena, formatGameDuration, formatTimestamp, getQueueName, getQueueTypeName, getRankIcon, formatCSDisplay } from "@/lib/lol/lolfunctions";
 
-interface SummonerData {
-  id: string;
-  accountId: string;
-  puuid: string;
-  name: string;
-  gameName: string;
-  tagLine: string;
-  profileIconId: number;
-  revisionDate: number;
-  summonerLevel: number;
-}
+import { SummonerData, MatchHistory, ChampionMastery, RankedEntry, Match, MatchParticipant  } from "@/types/lolInterfaces";
+import Footer from "@/Components/footer";
+import ChampionStatsCard from "@/Components/ChampionStatsCard";
 
-interface MatchParticipant {
-  puuid: string;
-  summonerName: string;
-  riotIdGameName: string;
-  riotIdTagline: string;
-  championName: string;
-  championId: number;
-  kills: number;
-  deaths: number;
-  assists: number;
-  win: boolean;
-  teamId: number;
-  totalMinionsKilled: number;
-  goldEarned: number;
-  champLevel: number;
-  summoner1Id: number;
-  summoner2Id: number;
-  item0: number;
-  item1: number;
-  item2: number;
-  item3: number;
-  item4: number;
-  item5: number;
-  item6: number;
-  totalDamageDealtToChampions: number;
-  totalDamageTaken: number;
-  visionScore: number;
-  perks?: {
-    styles: Array<{
-      selections: Array<{
-        perk: number;
-      }>;
-    }>;
-  };
-  playerAugment1?: number;
-  playerAugment2?: number;
-  playerAugment3?: number;
-  playerAugment4?: number;
-}
-
-interface MatchInfo {
-  gameCreation: number;
-  gameDuration: number;
-  gameMode: string;
-  gameType: string;
-  queueId: number;
-  participants: MatchParticipant[];
-  gameEndedInEarlySurrender?: boolean;
-  gameEndedInSurrender?: boolean;
-}
-
-interface Match {
-  metadata: {
-    matchId: string;
-    participants: string[];
-  };
-  info: MatchInfo;
-}
-
-interface MatchHistory {
-  matches: Match[];
-  totalMatches: number;
-}
-
-interface ChampionMastery {
-  championId: number;
-  championLevel: number;
-  championPoints: number;
-  lastPlayTime: number;
-  championPointsSinceLastLevel: number;
-  championPointsUntilNextLevel: number;
-  tokensEarned: number;
-}
-
-interface RankedEntry {
-  queueType: string;
-  tier: string;
-  rank: string;
-  leaguePoints: number;
-  wins: number;
-  losses: number;
-  hotStreak: boolean;
-}
-
-const CHAMPION_ID_TO_NAME: Record<number, string> = {
-  1: "Annie", 2: "Olaf", 3: "Galio", 4: "TwistedFate", 5: "XinZhao",
-  6: "Urgot", 7: "LeBlanc", 8: "Vladimir", 9: "Fiddlesticks", 10: "Kayle",
-  // Add more as needed - this is just a sample
-};
 
 export default function ProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const server = params?.server as string;
   const username = params?.username as string;
   const tagline = params?.tagline as string;
@@ -127,12 +34,10 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"matches" | "mastery">("matches");
+  const [expandedMatchTab, setExpandedMatchTab] = useState<"teams" | "runes">("teams");
   
   // Use ref to track offset to avoid stale closure issues
   const offsetRef = useRef(0);
-
-  const decodedGameName = decodeURIComponent(username);
-  const decodedTagLine = decodeURIComponent(tagline);
 
   // Get highest mastery champion for background
   const highestMasteryChampion = championMastery.length > 0 
@@ -148,8 +53,6 @@ export default function ProfilePage() {
   const highestMasterySplashArt = highestMasteryChampion && highestMasteryChampionName
     ? `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/${highestMasteryChampionName.toLowerCase()}/skins/base/images/${highestMasteryChampionName.toLowerCase()}_splash_centered_0.jpg`
     : null;
-      console.log("Highest Mastery Champion Splash Art URL:", highestMasterySplashArt);
-      console.log("Highest :", highestMasteryChampionName);
 
   // Single fetchMatchHistory function
   const fetchMatchHistory = async (puuid: string, start: number, count: number, isLoadMore: boolean = false) => {
@@ -166,7 +69,7 @@ export default function ProfilePage() {
         const matchData = await matchResponse.json();
         if (isLoadMore) {
           // Append new matches
-          setMatchHistory(prev => prev ? {
+          setMatchHistory((prev: MatchHistory | null) => prev ? {
             ...prev,
             matches: [...prev.matches, ...matchData.matches]
           } : matchData);
@@ -238,7 +141,6 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setChampionMastery(data.masteries);
-        console.log("Champion Mastery Data:", data.masteries.slice(0, 3)); // Log first 3
       }
     } catch (err) {
       console.error("Failed to fetch champion mastery:", err);
@@ -246,11 +148,6 @@ export default function ProfilePage() {
       setMasteryLoading(false);
     }
   };
-
-  useEffect(() => {
-    // No longer needed - mastery is fetched on initial load
-    // This useEffect can be removed
-  }, [activeTab]);
 
   const loadMoreMatches = () => {
     if (summonerData && !loadingMore) {
@@ -262,86 +159,65 @@ export default function ProfilePage() {
     }
   };
 
-  const formatGameDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
 
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getQueueName = (queueId: number) => {
-    const queues: Record<number, string> = {
-      420: "Ranked Solo/Duo",
-      440: "Ranked Flex",
-      450: "ARAM",
-      400: "Normal Draft",
-      430: "Normal Blind",
-      490: "Normal Quickplay",
-      1700: "Arena",
-      1710: "Arena",
-    };
-    return queues[queueId] || "Custom Game";
-  };
-
-  const isRemake = (match: Match) => {
-    return match.info.gameDuration < 300 && (
-      match.info.gameEndedInEarlySurrender || 
-      match.info.gameEndedInSurrender
-    );
-  };
-
-  const isArena = (queueId: number) => {
-    return queueId === 1700 || queueId === 1710;
-  };
 
   const getLPChange = (match: Match, playerData: MatchParticipant) => {
-    // This is an approximation - exact LP changes require timeline data
-    // For ranked games, estimate based on win/loss
-    if (match.info.queueId === 420 || match.info.queueId === 440) {
-      const soloQRanked = rankedData.find(r => r.queueType === "RANKED_SOLO_5x5");
-      if (soloQRanked) {
-        // Rough estimate: +15-25 for win, -15-20 for loss
-        return playerData.win ? "+18 LP" : "-17 LP";
-      }
+    // Only calculate for ranked games
+    if (match.info.queueId !== 420 && match.info.queueId !== 440) {
+      return null;
     }
-    return null;
+
+    // Don't show LP for remakes
+    if (isRemake(match)) {
+      return null;
+    }
+
+    const queueType = match.info.queueId === 420 ? "RANKED_SOLO_5x5" : "RANKED_FLEX_SR";
+    const rankedInfo = rankedData.find(r => r.queueType === queueType);
+    
+    if (!rankedInfo) return null;
+
+    // Calculate performance score
+    const kda = playerData.deaths === 0 ? 10 : (playerData.kills + playerData.assists) / playerData.deaths;
+    const gameDurationMin = match.info.gameDuration / 60;
+    const csPerMin = gameDurationMin > 0 ? (playerData.totalMinionsKilled + playerData.neutralMinionsKilled) / gameDurationMin : 0;
+    
+    // Performance multiplier (0.8 to 1.2)
+    let performanceMultiplier = 1.0;
+    if (playerData.win) {
+      // Good performance increases LP gain
+      if (kda > 5) performanceMultiplier += 0.1;
+      if (csPerMin > 7) performanceMultiplier += 0.05;
+      if (playerData.visionScore > 30) performanceMultiplier += 0.05;
+    } else {
+      // Good performance reduces LP loss
+      if (kda > 3) performanceMultiplier -= 0.1;
+      if (csPerMin > 7) performanceMultiplier -= 0.05;
+    }
+
+    const hotStreakMultiplier = rankedInfo.hotStreak ? 1.1 : 1.0;
+    let baseLPChange = playerData.win ? 18 : -17;
+    let lpChange = Math.round(baseLPChange * performanceMultiplier * hotStreakMultiplier);
+    
+    // Format output
+    return playerData.win ? `+${lpChange} LP` : `${lpChange} LP`;
   };
 
   const toggleMatchExpansion = (matchId: string) => {
     setExpandedMatch(expandedMatch === matchId ? null : matchId);
-  };
-
-  const getRankIcon = (tier: string | undefined) => {
-    if (tier === null || !tier) {
-      return 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png';
+    // Reset to teams tab when expanding a new match
+    if (expandedMatch !== matchId) {
+      setExpandedMatchTab("teams");
     }
-    const tierLower = tier.toLowerCase();
-    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${tierLower}.png`;
   };
 
-  const getQueueTypeName = (queueType: string) => {
-    const names: Record<string, string> = {
-      'RANKED_SOLO_5x5': 'Ranked Solo/Duo',
-      'RANKED_FLEX_SR': 'Ranked Flex',
-      'RANKED_TFT': 'Ranked TFT',
-    };
-    return names[queueType] || queueType;
+  const handlePlayerClick = (gameName: string, tagLine: string) => {
+    router.push(`/lol/profile/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
   };
 
   const renderMatchCard = (match: Match) => {
     const playerData = match.info.participants.find(
-      (p) => p.puuid === summonerData?.puuid
+      (p : MatchParticipant) => p.puuid === summonerData?.puuid
     );
 
     if (!playerData) return null;
@@ -350,19 +226,41 @@ export default function ProfilePage() {
     const arena = isArena(match.info.queueId);
     const isExpanded = expandedMatch === match.metadata.matchId;
     const lpChange = getLPChange(match, playerData);
-
+    const csDisplay = formatCSDisplay(match, playerData);
+    
+    // Extract rune data
+    const primaryStyle = playerData.perks?.styles?.[0];
+    const secondaryStyle = playerData.perks?.styles?.[1];
+    const primaryKeystone = primaryStyle?.selections?.[0]?.perk;
+    const secondaryTree = secondaryStyle?.style;
+    const statPerks = playerData.perks?.statPerks;
+    
+    // Get all selected runes for the player
+    const selectedPrimaryRunes = primaryStyle?.selections?.map((s: { perk: number }) => s.perk) || [];
+    const selectedSecondaryRunes = secondaryStyle?.selections?.map((s: { perk: number }) => s.perk) || [];
+    const allSelectedRunes = [...selectedPrimaryRunes, ...selectedSecondaryRunes];
+    const selectedStatPerksByRow = [
+      statPerks?.offense ?? 0,  // Row 0
+      statPerks?.flex ?? 0,     // Row 1
+      statPerks?.defense ?? 0,  // Row 2
+    ];
+    
+    // Calculate highest damage dealt and taken in the match
+    const highestDamageDealt = Math.max(...match.info.participants.map((p: MatchParticipant) => p.totalDamageDealtToChampions));
+    const highestDamageTaken = Math.max(...match.info.participants.map((p: MatchParticipant) => p.totalDamageTaken));
+    
     const kda = playerData.deaths === 0 
       ? "Perfect" 
       : ((playerData.kills + playerData.assists) / playerData.deaths).toFixed(2);
 
     // Split teams
-    const team1 = match.info.participants.filter(p => p.teamId === 100);
-    const team2 = match.info.participants.filter(p => p.teamId === 200);
+    const team1 = match.info.participants.filter((p: MatchParticipant) => p.teamId === 100);
+    const team2 = match.info.participants.filter((p: MatchParticipant) => p.teamId === 200);
 
     return (
       <div
         key={match.metadata.matchId}
-        className={`rounded-xl border transition-all cursor-pointer ${
+        className={`rounded-xl border transition-all ${
           remake 
             ? "bg-zinc-800/30 border-zinc-700/50 hover:border-zinc-600 hover:bg-zinc-800/50"
             : playerData.win
@@ -371,7 +269,7 @@ export default function ProfilePage() {
         }`}
       >
         {/* Main Match Card */}
-        <div className="p-4">
+        <div className="p-4 cursor-pointer" onClick={() => toggleMatchExpansion(match.metadata.matchId)}>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* Game Result */}
             <div className="flex items-center gap-4">
@@ -398,18 +296,18 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Champion Icon with Summoner Spells */}
+              {/* Champion Icon with Summoner Spells and Runes */}
               <div className="flex items-center gap-2">
-                <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-zinc-700 hover:border-orange-500 hover:scale-110 transition-all">
+                <div className="w-16 h-16 rounded-lg overflow-hidden border border-zinc-700 hover:border-orange-500 transition-all">
                   <img
                     src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${playerData.championName}.png`}
                     alt={playerData.championName}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
+
                 {/* Summoner Spells */}
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 mx-1">
                   <div 
                     className="w-7 h-7 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all"
                     title={getSummonerSpellName(playerData.summoner1Id)}
@@ -431,6 +329,44 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
+
+                {/* Runes Display */}
+                {!arena && primaryKeystone && secondaryTree && (
+                  <div className="flex flex-col gap-1">
+                    <div 
+                      className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
+                      title={`${getRuneName(primaryKeystone)}: ${getRuneDescription(primaryKeystone)}`}
+                    >
+                      <img
+                        src={getRuneIcon(primaryKeystone)}
+                        onError={(e) => {
+                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                        }}
+                        alt={getRuneName(primaryKeystone)}
+                        className="w-5 h-5 object-contain"
+                      />
+                      {/* Tooltip */}
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-99 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-xl pointer-events-none">
+                        <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(primaryKeystone)}</p>
+                        <p className="text-xs text-zinc-300">{getRuneDescription(primaryKeystone)}</p>
+                      </div>
+                    </div>
+                    <div 
+                      className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
+                      title={getRuneTreeName(secondaryTree)}
+                    >
+                      <img
+                        src={getRuneTreeIcon(secondaryTree)}
+                        alt={getRuneTreeName(secondaryTree)}
+                        className="w-4 h-4 object-contain"
+                      />
+                      {/* Tooltip */}
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 hidden group-hover:block z-99999 p-2 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-xl pointer-events-none">
+                        <p className="text-sm font-bold text-orange-400">{getRuneTreeName(secondaryTree)}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Stats */}
@@ -526,12 +462,13 @@ export default function ProfilePage() {
             {arena && (
               <div className="hidden xl:flex flex-col gap-1">
                 <span className="text-xs text-zinc-400 mb-1">Augments</span>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-3 gap-1">
                   {[
                     playerData.playerAugment1,
                     playerData.playerAugment2,
                     playerData.playerAugment3,
                     playerData.playerAugment4,
+                    playerData.playerAugment5,
                   ].filter(Boolean).map((augmentId, idx) => {
                     const augmentIcon = getArenaAugmentIcon(augmentId);
                     const augmentName = getArenaAugmentName(augmentId);
@@ -547,7 +484,6 @@ export default function ProfilePage() {
                             alt={augmentName}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              // Fallback to star icon if image fails
                               e.currentTarget.style.display = 'none';
                               e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
                             }}
@@ -567,16 +503,29 @@ export default function ProfilePage() {
             {/* CS & Gold */}
             <div className="hidden xl:flex flex-col gap-1 text-right min-w-20">
               <span className="text-sm text-zinc-400">
-                {playerData.totalMinionsKilled} CS
+                {csDisplay.totalCS} CS 
               </span>
-              <span className="text-sm text-zinc-400">
-                {(playerData.goldEarned / 1000).toFixed(1)}k Gold
-              </span>
+    
+              {csDisplay.csPerMin ? (
+                csDisplay.showFlame ? (
+                  <span className="flex items-center gap-1 justify-end">
+                    <FlameIcon className="text-orange-400 w-4 h-4" />
+                    <span className="text-sm text-zinc-400">{csDisplay.csPerMin} CS/min</span>
+                  </span>
+                ) : (
+                  <span className="text-sm text-zinc-400">{csDisplay.csPerMin} CS/min</span>
+                )
+              ) : (
+                <span className="text-sm text-zinc-500">-</span>
+              )}
             </div>
 
             {/* Expand Button */}
             <button
-              onClick={() => toggleMatchExpansion(match.metadata.matchId)}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMatchExpansion(match.metadata.matchId);
+              }}
               className="p-2 hover:bg-zinc-700/50 rounded-lg transition-colors"
             >
               {isExpanded ? (
@@ -590,195 +539,545 @@ export default function ProfilePage() {
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div className="border-t border-zinc-700/50 p-4 bg-zinc-900/30">
-            {/* Arena Augments - Full Details */}
-            {arena && (
-              <div className="mb-6 p-4 bg-purple-950/20 border border-purple-900/30 rounded-lg">
-                <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
-                  <Star className="w-4 h-4" />
-                  Arena Augments
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    playerData.playerAugment1,
-                    playerData.playerAugment2,
-                    playerData.playerAugment3,
-                    playerData.playerAugment4,
-                  ].filter(Boolean).map((augmentId, idx) => {
-                    const augmentIcon = getArenaAugmentIcon(augmentId);
-                    const augmentName = getArenaAugmentName(augmentId);
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 p-2 bg-purple-900/20 border border-purple-800/50 rounded-lg hover:bg-purple-900/30 transition-all"
-                      >
-                        <div className="w-10 h-10 rounded bg-purple-900/30 border border-purple-700 overflow-hidden shrink-0">
-                          {augmentIcon ? (
-                            <img
-                              src={augmentIcon}
-                              alt={augmentName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Star className="w-5 h-5 text-purple-400" />
+          <div className="border-t border-zinc-700/50 bg-zinc-900/30 overflow-visible">
+            {/* Tab Navigation */}
+            <div className="flex gap-2 px-4 pt-4 border-b border-zinc-700/50">
+              <button
+                onClick={() => setExpandedMatchTab("teams")}
+                className={`px-4 py-2 font-semibold transition-all relative rounded-t-lg ${
+                  expandedMatchTab === "teams"
+                    ? "text-orange-500 bg-zinc-800/50"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/30"
+                }`}
+              >
+                Match Details
+              </button>
+              {!arena && (
+              <button
+                onClick={() => setExpandedMatchTab("runes")}
+                className={`px-4 py-2 font-semibold transition-all relative rounded-t-lg ${
+                  expandedMatchTab === "runes"
+                    ? "text-orange-500 bg-zinc-800/50"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/30"
+                }`}
+              >
+                Runes
+              </button>
+              )}
+            </div>
+
+            <div className="p-4 overflow-visible">
+              {/* Teams Tab */}
+              {expandedMatchTab === "teams" && (
+                <>
+                  {/* Arena Augments - Full Details */}
+                  {arena && (
+                    <div className="mb-6 p-4 bg-purple-950/20 border border-purple-900/30 rounded-lg">
+                      <h4 className="text-sm font-bold text-purple-400 mb-3 flex items-center gap-2">
+                        <Star className="w-4 h-4" />
+                        Arena Augments
+                      </h4>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        {[
+                          playerData.playerAugment1,
+                          playerData.playerAugment2,
+                          playerData.playerAugment3,
+                          playerData.playerAugment4,
+                          playerData.playerAugment5,
+                        ].filter(Boolean).map((augmentId, idx) => {
+                          const augmentIcon = getArenaAugmentIcon(augmentId);
+                          const augmentName = getArenaAugmentName(augmentId);
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 p-2 bg-purple-900/20 border border-purple-800/50 rounded-lg hover:bg-purple-900/30 transition-all"
+                            >
+                              <div className="w-10 h-10 rounded bg-purple-900/30 border border-purple-700 overflow-hidden shrink-0">
+                                {augmentIcon ? (
+                                  <img
+                                    src={augmentIcon}
+                                    alt={augmentName}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Star className="w-5 h-5 text-purple-400" />
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs text-purple-200 font-medium">{augmentName}</span>
                             </div>
-                          )}
-                        </div>
-                        <span className="text-xs text-purple-200 font-medium">{augmentName}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Team 1 */}
-              <div>
-                <h3 className={`text-sm font-bold mb-3 ${team1[0]?.win ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {team1[0]?.win ? 'Victory' : 'Defeat'} - Team 1
-                </h3>
-                <div className="space-y-2">
-                  {team1.map((participant) => (
-                    <div 
-                      key={participant.puuid}
-                      className={`flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer ${
-                        participant.puuid === summonerData?.puuid 
-                          ? 'bg-orange-950/30 border border-orange-900/30 hover:bg-orange-950/40 hover:border-orange-800' 
-                          : 'bg-zinc-800/30 hover:bg-zinc-800/50 hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1">
-                        <img
-                          src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${participant.championName}.png`}
-                          alt={participant.championName}
-                          className="w-10 h-10 rounded hover:scale-110 transition-transform"
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <div 
-                            className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
-                            title={getSummonerSpellName(participant.summoner1Id)}
-                          >
-                            <img
-                              src={getSummonerSpellIcon(participant.summoner1Id)}
-                              alt={getSummonerSpellName(participant.summoner1Id)}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div 
-                            className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
-                            title={getSummonerSpellName(participant.summoner2Id)}
-                          >
-                            <img
-                              src={getSummonerSpellIcon(participant.summoner2Id)}
-                              alt={getSummonerSpellName(participant.summoner2Id)}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {participant.riotIdGameName}#{participant.riotIdTagline}
-                        </p>
-                        <p className="text-xs text-zinc-400">{participant.championName}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-white">
-                          {participant.kills}/{participant.deaths}/{participant.assists}
-                        </p>
-                        <p className="text-xs text-zinc-400">
-                          {participant.totalMinionsKilled} CS
-                        </p>
-                      </div>
-                      <div className="text-right min-w-[60px]">
-                        <p className="text-xs text-zinc-400">
-                          {(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k DMG
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          vision: {participant.visionScore}
-                        </p>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
 
-              {/* Team 2 */}
-              <div>
-                <h3 className={`text-sm font-bold mb-3 ${team2[0]?.win ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {team2[0]?.win ? 'Victory' : 'Defeat'} - Team 2
-                </h3>
-                <div className="space-y-2">
-                  {team2.map((participant) => (
-                    <div 
-                      key={participant.puuid}
-                      className={`flex items-center gap-3 p-2 rounded-lg transition-all cursor-pointer ${
-                        participant.puuid === summonerData?.puuid 
-                          ? 'bg-orange-950/30 border border-orange-900/30 hover:bg-orange-950/40 hover:border-orange-800' 
-                          : 'bg-zinc-800/30 hover:bg-zinc-800/50 hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1">
-                        <img
-                          src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${participant.championName}.png`}
-                          alt={participant.championName}
-                          className="w-10 h-10 rounded hover:scale-110 transition-transform"
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <div 
-                            className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
-                            title={getSummonerSpellName(participant.summoner1Id)}
-                          >
-                            <img
-                              src={getSummonerSpellIcon(participant.summoner1Id)}
-                              alt={getSummonerSpellName(participant.summoner1Id)}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div 
-                            className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
-                            title={getSummonerSpellName(participant.summoner2Id)}
-                          >
-                            <img
-                              src={getSummonerSpellIcon(participant.summoner2Id)}
-                              alt={getSummonerSpellName(participant.summoner2Id)}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {participant.riotIdGameName}#{participant.riotIdTagline}
-                        </p>
-                        <p className="text-xs text-zinc-400">{participant.championName}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-white">
-                          {participant.kills}/{participant.deaths}/{participant.assists}
-                        </p>
-                        <p className="text-xs text-zinc-400">
-                          {participant.totalMinionsKilled} CS
-                        </p>
-                      </div>
-                      <div className="text-right min-w-[60px]">
-                        <p className="text-xs text-zinc-400">
-                          {(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k DMG
-                        </p>
-                        <p className="text-xs text-zinc-500">
-                          vision: {participant.visionScore}
-                        </p>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {/* Team 1 */}
+                    <div className="overflow-visible">
+                      <h3 className={`text-sm font-bold mb-3 ${team1[0]?.win ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {team1[0]?.win ? 'Victory' : 'Defeat'} - Team 1
+                      </h3>
+                      <div className="space-y-2 overflow-visible">
+                        {team1.map((participant : any) => {
+                          const participantCSDisplay = formatCSDisplay(match, participant);
+                          const participantPrimaryKeystone = participant.perks?.styles?.[0]?.selections?.[0]?.perk;
+                          const participantSecondaryTree = participant.perks?.styles?.[1]?.style;
+                          const damageDealtPercent = (participant.totalDamageDealtToChampions / highestDamageDealt) * 100;
+                          const damageTakenPercent = (participant.totalDamageTaken / highestDamageTaken) * 100;
+                          
+                          return (
+                            <div 
+                              key={participant.puuid}
+                              className={`flex items-center gap-3 p-2 rounded-lg transition-all overflow-visible ${
+                                participant.puuid === summonerData?.puuid 
+                                  ? 'bg-orange-950/30 border border-orange-900/30 hover:bg-orange-950/40 hover:border-orange-800' 
+                                  : 'bg-zinc-800/30 hover:bg-zinc-800/50 hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 overflow-visible">
+                                <img
+                                  src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${participant.championName}.png`}
+                                  alt={participant.championName}
+                                  className="w-10 h-10 rounded hover:scale-110 transition-transform"
+                                />
+                                <div className="flex flex-col gap-0.5">
+                                  <div 
+                                    className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
+                                    title={getSummonerSpellName(participant.summoner1Id)}
+                                  >
+                                    <img
+                                      src={getSummonerSpellIcon(participant.summoner1Id)}
+                                      alt={getSummonerSpellName(participant.summoner1Id)}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div 
+                                    className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
+                                    title={getSummonerSpellName(participant.summoner2Id)}
+                                  >
+                                    <img
+                                      src={getSummonerSpellIcon(participant.summoner2Id)}
+                                      alt={getSummonerSpellName(participant.summoner2Id)}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </div>
+                                { !arena && participantPrimaryKeystone && (
+                                  <div className="flex flex-col gap-0.5 overflow-visible">
+                                    <div 
+                                      className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 overflow-visible flex items-center justify-center group relative"
+                                      title={getRuneName(participantPrimaryKeystone)}
+                                    >
+                                      <img
+                                        src={getRuneIcon(participantPrimaryKeystone)}
+                                        onError={(e) => {
+                                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                                        }}
+                                        alt={getRuneName(participantPrimaryKeystone)}
+                                        className="w-4 h-4 object-contain"
+                                      />
+                                      
+                                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
+                                        <p className="text-xs font-bold text-orange-400 mb-1">{getRuneName(participantPrimaryKeystone)}</p>
+                                        <p className="text-xs text-zinc-300">{getRuneDescription(participantPrimaryKeystone)}</p>
+                                      </div>
+                                    </div>
+                                    {participantSecondaryTree && (
+                                      <div 
+                                        className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center"
+                                        title={getRuneTreeName(participantSecondaryTree)}
+                                      >
+                                        <img
+                                          src={getRuneTreeIcon(participantSecondaryTree)}
+                                          alt={getRuneTreeName(participantSecondaryTree)}
+                                          className="w-3 h-3 object-contain"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <button
+                                  onClick={() => handlePlayerClick(participant.riotIdGameName, participant.riotIdTagline)}
+                                  className="text-sm font-medium text-white truncate hover:text-orange-500 transition-colors cursor-pointer text-left w-full"
+                                >
+                                  {participant.riotIdGameName}#{participant.riotIdTagline}
+                                </button>
+                                <p className="text-xs text-zinc-400">{participant.championName}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-bold text-white">
+                                  {participant.kills}/{participant.deaths}/{participant.assists}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                  {participantCSDisplay.totalCS} CS
+                                </p>
+                                {participantCSDisplay.csPerMin ? (
+                                  participantCSDisplay.showFlame ? (
+                                    <span className="flex items-center justify-end gap-1">
+                                      <FlameIcon size={14} className="text-orange-400" />
+                                      <span className="text-xs text-zinc-400">{participantCSDisplay.csPerMin} CS/min</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-zinc-400">{participantCSDisplay.csPerMin} CS/min</span>
+                                  )
+                                ) : (
+                                  <span className="text-xs text-zinc-500">-</span>
+                                )}
+                              </div>
+                              <div className="text-right min-w-20">
+                                {/* Damage Dealt Visualization */}
+                                <div className="mb-2">
+                                  <div className="flex items-center justify-end gap-1 mb-0.5">
+                                    <Swords className="w-3 h-3 text-red-400" />
+                                    <p className="text-xs text-zinc-400">
+                                      {(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k
+                                    </p>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-zinc-700/50 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-linear-to-r from-red-500 to-red-800 rounded-full transition-all"
+                                      style={{ width: `${damageDealtPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Damage Taken Visualization */}
+                                <div>
+                                  <div className="flex items-center justify-end gap-1 mb-0.5">
+                                    <Shield className="w-3 h-3 text-orange-400" />
+                                    <p className="text-xs text-zinc-400">
+                                      {(participant.totalDamageTaken / 1000).toFixed(1)}k
+                                    </p>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-zinc-700/50 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-linear-to-r from-orange-600 to-orange-500 rounded-full transition-all"
+                                      style={{ width: `${damageTakenPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <p className="text-xs text-zinc-500 mt-1">
+                                  vision: {participant.visionScore}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
+
+                    {/* Team 2 */}
+                    <div className="overflow-visible">
+                      <h3 className={`text-sm font-bold mb-3 ${team2[0]?.win ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {team2[0]?.win ? 'Victory' : 'Defeat'} - Team 2
+                      </h3>
+                      <div className="space-y-2 overflow-visible">
+                        {team2.map((participant : any) => {
+                          const participantCSDisplay = formatCSDisplay(match, participant);
+                          const participantPrimaryKeystone = participant.perks?.styles?.[0]?.selections?.[0]?.perk;
+                          const participantSecondaryTree = participant.perks?.styles?.[1]?.style;
+                          const damageDealtPercent = (participant.totalDamageDealtToChampions / highestDamageDealt) * 100;
+                          const damageTakenPercent = (participant.totalDamageTaken / highestDamageTaken) * 100;
+                          
+
+                          return (
+                            <div 
+                              key={participant.puuid}
+                              className={`flex items-center gap-3 p-2 rounded-lg transition-all overflow-visible ${
+                                participant.puuid === summonerData?.puuid 
+                                  ? 'bg-orange-950/30 border border-orange-900/30 hover:bg-orange-950/40 hover:border-orange-800' 
+                                  : 'bg-zinc-800/30 hover:bg-zinc-800/50 hover:shadow-md'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 overflow-visible">
+                                <img
+                                  src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${participant.championName}.png`}
+                                  alt={participant.championName}
+                                  className="w-10 h-10 rounded hover:scale-110 transition-transform"
+                                />
+                                <div className="flex flex-col gap-0.5">
+                                  <div 
+                                    className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
+                                    title={getSummonerSpellName(participant.summoner1Id)}
+                                  >
+                                    <img
+                                      src={getSummonerSpellIcon(participant.summoner1Id)}
+                                      alt={getSummonerSpellName(participant.summoner1Id)}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div 
+                                    className="w-5 h-5 rounded border border-zinc-700 overflow-hidden"
+                                    title={getSummonerSpellName(participant.summoner2Id)}
+                                  >
+                                    <img
+                                      src={getSummonerSpellIcon(participant.summoner2Id)}
+                                      alt={getSummonerSpellName(participant.summoner2Id)}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </div>
+                                { !arena && participantPrimaryKeystone && (
+                                  <div className="flex flex-col gap-0.5 overflow-visible">
+                                    <div 
+                                      className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 overflow-visible flex items-center justify-center group relative"
+                                      title={getRuneName(participantPrimaryKeystone)}
+                                    >
+                                      <img
+                                        src={getRuneIcon(participantPrimaryKeystone)}
+                                        onError={(e) => {
+                                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                                        }}
+                                        alt={getRuneName(participantPrimaryKeystone)}
+                                        className="w-4 h-4 object-contain"
+                                      />
+                                      {/* Tooltip */}
+                                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
+                                        <p className="text-xs font-bold text-orange-400 mb-1">{getRuneName(participantPrimaryKeystone)}</p>
+                                        <p className="text-xs text-zinc-300">{getRuneDescription(participantPrimaryKeystone)}</p>
+                                      </div>
+                                    </div>
+                                    {participantSecondaryTree && (
+                                      <div 
+                                        className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center"
+                                        title={getRuneTreeName(participantSecondaryTree)}
+                                      >
+                                        <img
+                                          src={getRuneTreeIcon(participantSecondaryTree)}
+                                          alt={getRuneTreeName(participantSecondaryTree)}
+                                          className="w-3 h-3 object-contain"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <button
+                                  onClick={() => handlePlayerClick(participant.riotIdGameName, participant.riotIdTagline)}
+                                  className="text-sm font-medium text-white truncate hover:text-orange-500 transition-colors cursor-pointer text-left w-full"
+                                >
+                                  {participant.riotIdGameName}#{participant.riotIdTagline}
+                                </button>
+                                <p className="text-xs text-zinc-400">{participant.championName}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-bold text-white">
+                                  {participant.kills}/{participant.deaths}/{participant.assists}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                  {participantCSDisplay.totalCS} CS
+                                </p>
+                                {participantCSDisplay.csPerMin ? (
+                                  participantCSDisplay.showFlame ? (
+                                    <span className="flex items-center justify-end gap-1">
+                                      <FlameIcon size={14} className="text-orange-400" />
+                                      <span className="text-xs text-zinc-400">{participantCSDisplay.csPerMin} CS/min</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-zinc-400">{participantCSDisplay.csPerMin} CS/min</span>
+                                  )
+                                ) : (
+                                  <span className="text-xs text-zinc-500">-</span>
+                                )}
+                              </div>
+                              <div className="text-right min-w-20">
+                                {/* Damage Dealt Visualization */}
+                                <div className="mb-2">
+                                  <div className="flex items-center justify-end gap-1 mb-0.5">
+                                    <Swords className="w-3 h-3 text-red-400" />
+                                    <p className="text-xs text-zinc-400">
+                                      {(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k
+                                    </p>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-zinc-700/50 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-linear-to-r from-red-500 to-red-800 rounded-full transition-all"
+                                      style={{ width: `${damageDealtPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                {/* Damage Taken Visualization */}
+                                <div>
+                                  <div className="flex items-center justify-end gap-1 mb-0.5">
+                                    <Shield className="w-3 h-3 text-orange-400" />
+                                    <p className="text-xs text-zinc-400">
+                                      {(participant.totalDamageTaken / 1000).toFixed(1)}k
+                                    </p>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-zinc-700/50 rounded-full overflow-hidden">
+                                    <div 
+                                      className="h-full bg-linear-to-r from-orange-600 to-orange-500 rounded-full transition-all"
+                                      style={{ width: `${damageTakenPercent}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <p className="text-xs text-zinc-500 mt-1">
+                                  vision: {participant.visionScore}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Runes Tab */}
+              { !arena && expandedMatchTab === "runes" && primaryStyle && secondaryStyle && (
+                <div className="overflow-visible flex md:flex-row flex-col items-center md:items-stretch md:justify-evenly gap-6">
+
+                  {/* Primary Rune Tree */}
+                  <div className="p-4 bg-zinc-800/30 border border-zinc-700 rounded-lg overflow-visible min-w-1/3 max-w-1/2 h-max">
+                    <div className="flex items-center gap-3 mb-4">
+                      <img
+                        src={getRuneTreeIcon(primaryStyle.style)}
+                        alt={getRuneTreeName(primaryStyle.style)}
+                        className="w-8 h-8 object-contain"
+                      />
+                      <h4 className="text-lg font-bold text-orange-400">
+                        {getRuneTreeName(primaryStyle.style)} (Primary)
+                      </h4>
+                    </div>
+                    <div className="grid gap-6 overflow-visible">
+                      {getRunesForTree(primaryStyle.style).map((row, rowIdx) => (
+                        <div key={rowIdx} className="flex items-center justify-center gap-4 overflow-visible">
+                          {row.map((runeId) => {
+                            const isSelected = allSelectedRunes.includes(runeId);
+                            return (
+                              <div
+                                key={runeId}
+                                className={`group relative flex items-center justify-center w-10 h-10 rounded-full bg-zinc-900 transition-all overflow-visible hover:z-100000 ${
+                                  isSelected
+                                    ? 'border-2 border-orange-500 shadow-lg shadow-orange-500/50 scale-110'
+                                    : 'border-2 border-zinc-700 opacity-40 hover:opacity-100'
+                                }`}
+                              >
+                                <img
+                                  src={getRuneIcon(runeId)}
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                                  }}
+                                  alt={getRuneName(runeId)}
+                                  className={rowIdx === 0 ? "w-10 h-10 object-contain" : "w-8 h-8 object-contain"}
+                                />
+                                {/* Tooltip - Fixed positioning */}
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
+                                  <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(runeId)}</p>
+                                  <p className="text-xs text-zinc-300">{getRuneDescription(runeId)}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Secondary Rune Tree */}
+                  <div className="p-4 bg-zinc-800/30 border border-zinc-700 rounded-lg overflow-visible  min-w-1/3 max-w-1/2">
+                    <div className="flex items-center gap-3 mb-4">
+                      <img
+                        src={getRuneTreeIcon(secondaryStyle.style)}
+                        alt={getRuneTreeName(secondaryStyle.style)}
+                        className="w-8 h-8 object-contain"
+                      />
+                      <h4 className="text-lg font-bold text-orange-400">
+                        {getRuneTreeName(secondaryStyle.style)} (Secondary)
+                      </h4>
+                    </div>
+                    <div className="grid gap-6 overflow-visible">
+                      {getRunesForTree(secondaryStyle.style).slice(1).map((row, rowIdx) => (
+                        <div key={rowIdx} className="flex items-center justify-center gap-4 overflow-visible">
+                          {row.map((runeId) => {
+                            const isSelected = allSelectedRunes.includes(runeId);
+                            return (
+                              <div
+                                key={runeId}
+                                className={`group relative flex items-center justify-center w-10 h-10 rounded-full bg-zinc-900 transition-all overflow-visible hover:z-99 ${
+                                  isSelected
+                                    ? 'border-2 border-orange-500 shadow-lg shadow-orange-500/50 scale-110'
+                                    : 'border-2 border-zinc-700 opacity-40 hover:opacity-100'
+                                }`}
+                              >
+                                <img
+                                  src={getRuneIcon(runeId)}
+                                    onError={(e) => {
+                                      e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                                    }}
+                                  
+                                  alt={getRuneName(runeId)}
+                                  className="w-8 h-8 object-contain"
+                                />
+                                
+
+                                {/* Tooltip - Fixed positioning */}
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
+                                  <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(runeId)}</p>
+                                  <p className="text-xs text-zinc-300">{getRuneDescription(runeId)}</p>
+                                </div>
+                              </div>
+                            );
+
+                          })}
+                        </div>
+                        
+                      ))}
+                    </div>
+                    {/* Bonus runes - FIXED: Check by row position */}
+                    <div className="mt-6 pt-6 border-t border-zinc-700 z-10">
+                      <div className="space-y-2">
+                        {STAT_SHARDS_GRID.map((row, rowIdx) => (
+                          <div key={rowIdx} className="flex justify-center gap-6">
+                            {row.map((shardId) => {
+                              // FIXED: Check if this shard matches the selected shard for this row
+                              const isSelected = selectedStatPerksByRow[rowIdx] === shardId;
+                              return (
+                                <div
+                                  key={shardId}
+                                  className={`group relative w-8 h-8 rounded flex items-center justify-center transition-all ${
+                                    isSelected
+                                      ? 'border-2 border-orange-500 bg-orange-950/30 scale-105 z-10'
+                                      : 'border border-zinc-700 bg-zinc-900 opacity-40 hover:opacity-100 z-10'
+                                  }`}
+                                >
+                                  <img
+                                    src={getRuneIcon(shardId)}
+                                    onError={(e) => {
+                                      e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                                    }}
+                                    alt={getRuneName(shardId)}
+                                    className="w-5 h-5 object-contain"
+                                  />
+                                  {/* Tooltip */}
+                                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
+                                    <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(shardId)}</p>
+                                    <p className="text-xs text-zinc-300">{getRuneDescription(shardId)}</p>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -795,23 +1094,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Navigation */}
-      <nav className="border-b border-zinc-800/50 backdrop-blur-sm sticky top-0 z-50 bg-zinc-950/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-linear-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20 group-hover:scale-110 transition-transform">
-              <Anvil className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white group-hover:text-orange-500 transition-colors">StatsForge</span>
-          </Link>
-          <Link
-            href="/"
-            className="flex items-center gap-2 px-4 py-2 text-zinc-400 hover:text-orange-500 hover:bg-zinc-900/50 rounded-lg transition-all"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </Link>
-        </div>
-      </nav>
+        <NavbarLol />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Loading State */}
@@ -844,6 +1127,7 @@ export default function ProfilePage() {
         {/* Success State - Show Profile */}
         {!loading && !error && summonerData && (
           <>
+            
             {/* Summoner Profile Section with Champion Splash Art Background */}
             <div className="mb-8 rounded-2xl overflow-hidden border border-zinc-800 relative">
               {/* Champion Splash Art Background */}
@@ -855,7 +1139,7 @@ export default function ProfilePage() {
                     backgroundPosition: 'right 0% top 20%'
                   }}
                 >
-                  <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/95 to-zinc-950/60"></div>
+                  <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/95 to-zinc-950/40"></div>
                   <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-zinc-750"></div>
                 </div>
               )}
@@ -966,9 +1250,11 @@ export default function ProfilePage() {
                           </div>
                         </div>
                       </div>
+                      
                     );
                   })}
                 </div>
+                {<ChampionStatsCard server={server} puuid={summonerData.puuid}></ChampionStatsCard>}
               </div>
             )}
 
@@ -1018,7 +1304,7 @@ export default function ProfilePage() {
                 ) : matchHistory && matchHistory.matches.length > 0 ? (
                   <>
                     <div className="space-y-3 mb-6">
-                      {matchHistory.matches.map((match) => renderMatchCard(match))}
+                      {matchHistory.matches.map((match: Match) => renderMatchCard(match))}
                     </div>
                     <div className="text-center">
                       <button
@@ -1116,9 +1402,11 @@ export default function ProfilePage() {
             )}
 
           <LolBanner />
+          
           </>
         )}
       </main>
-    </div>
+      <Footer />
+      </div>
   );
 }
