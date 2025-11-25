@@ -110,6 +110,7 @@ export async function GET(request: Request) {
     // Get all champions data
     const championsResponse = await axios.get(
       `https://ddragon.leagueoflegends.com/cdn/${currentPatch}/data/en_US/champion.json`
+      // https://ddragon.leagueoflegends.com/cdn/15.22.1/data/en_US/champion.json
     );
     
     const championsData = championsResponse.data.data;

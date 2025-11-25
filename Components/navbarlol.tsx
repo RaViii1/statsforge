@@ -1,9 +1,9 @@
 "use client";
 import Link from 'next/link';
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Anvil, Search, Loader2, X, Menu } from 'lucide-react';
+import { Anvil, Search, Loader2, X, Menu, Clock } from 'lucide-react';
 
 const SERVERS = [
   { value: "na1", label: "NA" },
@@ -19,62 +19,108 @@ const SERVERS = [
   { value: "jp1", label: "JP" },
 ];
 
+interface RecentSearch {
+  gameName: string;
+  tagLine: string;
+  server: string;
+  timestamp: number;
+}
+
 export default function NavbarLoL() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServer, setSelectedServer] = useState("eun1");
   const [isSearching, setIsSearching] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) { 
-      toast.error("Please enter a summoner name"); 
-      return; 
+  // Load recent searches from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("lol_recent_searches");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setRecentSearches(parsed);
+      } catch (e) {
+        console.error("Failed to parse recent searches:", e);
+      }
     }
-    
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const saveRecentSearch = (gameName: string, tagLine: string, server: string) => {
+    const newSearch: RecentSearch = {
+      gameName,
+      tagLine,
+      server,
+      timestamp: Date.now(),
+    };
+
+    // Remove duplicate if exists
+    const filtered = recentSearches.filter(
+      (s) => !(s.gameName === gameName && s.tagLine === tagLine && s.server === server)
+    );
+
+    // Add to beginning, keep only last 10
+    const updated = [newSearch, ...filtered].slice(0, 10);
+    setRecentSearches(updated);
+    localStorage.setItem("lol_recent_searches", JSON.stringify(updated));
+  };
+
+  const removeRecentSearch = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = recentSearches.filter((_, i) => i !== index);
+    setRecentSearches(updated);
+    localStorage.setItem("lol_recent_searches", JSON.stringify(updated));
+  };
+
+  const handleRecentSearchClick = (search: RecentSearch) => {
+    setSearchQuery(`${search.gameName}#${search.tagLine}`);
+    setSelectedServer(search.server);
+    setShowDropdown(false);
+    setMobileMenuOpen(false);
+    // Automatically search
+    performSearch(search.gameName, search.tagLine, search.server);
+  };
+
+  const performSearch = async (gameName: string, tagLine: string, server: string) => {
     setIsSearching(true);
-    
+
     try {
-      const input = searchQuery.trim();
-      let gameName: string, tagLine: string;
-      
-      if (input.includes('#')) {
-        const parts = input.split('#');
-        gameName = parts[0];
-        tagLine = parts[1];
-      } else {
-        gameName = input;
-        const serverDefaults: Record<string, string> = {
-          'na1': 'NA1', 'euw1': 'EUW', 'eun1': 'EUNE', 'kr': 'KR', 
-          'br1': 'BR', 'la1': 'LAN', 'la2': 'LAS', 'oc1': 'OCE', 
-          'ru': 'RU', 'tr1': 'TR', 'jp1': 'JP'
-        };
-        tagLine = serverDefaults[selectedServer] || 'EUNE';
-      }
-      
-      if (!gameName || !tagLine) {
-        toast.error("Invalid Riot ID format. Use: GameName#TAG");
-        setIsSearching(false);
-        return;
-      }
-      
-      const response = await fetch(`/api/lol/profile/${selectedServer}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
-      
+      const response = await fetch(
+        `/api/lol/profile/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
+      );
+
       if (response.status === 404) {
-        router.push(`/lol/profile/player-not-found?name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}&server=${selectedServer}`);
+        router.push(`/lol/profile/player-not-found?name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}&server=${server}`);
         setMobileMenuOpen(false);
         return;
       }
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         toast.error(errorData.error || "Failed to fetch player data");
         setIsSearching(false);
         return;
       }
-      
-      router.push(`/lol/profile/${selectedServer}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+
+      // Save to recent searches
+      saveRecentSearch(gameName, tagLine, server);
+
+      router.push(`/lol/profile/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
       setMobileMenuOpen(false);
     } catch (error) {
       console.error("Search error:", error);
@@ -83,14 +129,46 @@ export default function NavbarLoL() {
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) { 
+      toast.error("Please enter a summoner name"); 
+      return; 
+    }
+    
+    const input = searchQuery.trim();
+    let gameName: string, tagLine: string;
+    
+    if (input.includes('#')) {
+      const parts = input.split('#');
+      gameName = parts[0];
+      tagLine = parts[1];
+    } else {
+      gameName = input;
+      const serverDefaults: Record<string, string> = {
+        'na1': 'NA1', 'euw1': 'EUW', 'eun1': 'EUNE', 'kr': 'KR', 
+        'br1': 'BR', 'la1': 'LAN', 'la2': 'LAS', 'oc1': 'OCE', 
+        'ru': 'RU', 'tr1': 'TR', 'jp1': 'JP'
+      };
+      tagLine = serverDefaults[selectedServer] || 'EUNE';
+    }
+    
+    if (!gameName || !tagLine) {
+      toast.error("Invalid Riot ID format. Use: GameName#TAG");
+      return;
+    }
+
+    performSearch(gameName, tagLine, selectedServer);
+  };
+
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-zinc-800/50 backdrop-blur-sm bg-zinc-950/90 justify-stretch">
-        <div className="max-w-7xl mx-auto pl-2 pr-2 sm:pl-3 sm:pr-3 ">
-          <div className="flex items-center justify-between h-16 space-">
+      <nav className="sticky top-0 z-50 border-b border-zinc-800/50 backdrop-blur-sm bg-zinc-950/90">
+        <div className="max-w-7xl mx-auto pl-2 pr-2 sm:pl-3 sm:pr-3">
+          <div className="flex items-center justify-between h-16">
             {/* Logo - Left */}
-            <Link href="/" className="flex items-center gap-2 shrink-0 mr-8">
-              <div className="w-9 h-9 bg-linear-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
+            <Link href="/" className="flex items-center gap-2 shrink-0 mr-4">
+              <div className="w-9 h-9 bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/20">
                 <Anvil className="w-5 h-5 text-white" />
               </div>
               <span className="font-bold text-white text-xl">StatsForge</span>
@@ -109,16 +187,60 @@ export default function NavbarLoL() {
                 ))}
               </select>
 
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <div className="relative flex-1" ref={dropdownRef}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 z-10" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowDropdown(true)}
                   placeholder="Player#TAG"
                   disabled={isSearching}
                   className="w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600 transition-colors disabled:opacity-50"
                 />
+
+                {/* Recent Searches Dropdown */}
+                {showDropdown && recentSearches.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                    <div className="p-2 border-b border-zinc-800 flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-zinc-500" />
+                      <span className="text-xs font-medium text-zinc-400">Recent Searches</span>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {recentSearches.map((search, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleRecentSearchClick(search)}
+                          className="w-full px-4 py-2 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-8 h-8 bg-orange-950/30 border border-orange-900/30 rounded-lg  flex items-center justify-center ">
+                              <span className="text-xs text-orange-500 "> 
+                                {SERVERS.find(s => s.value === search.server)?.label || search.server.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="text-left min-w-0 flex-1">
+                              <p className="text-sm font-medium text-white truncate">
+                                {search.gameName}
+                                <span className="text-zinc-500">#{search.tagLine}</span>
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {new Date(search.timestamp).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => removeRecentSearch(index, e)}
+                            className="p-1.5 rounded-lg hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                          >
+                            <X className="w-4 h-4 text-zinc-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button
@@ -135,7 +257,7 @@ export default function NavbarLoL() {
             </form>
 
             {/* Links - Right (Desktop) */}
-            <div className="hidden md:flex items-end gap-1 shrink-0">
+            <div className="hidden md:flex items-center gap-1 shrink-0">
               <a href="#features" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
                 Features
               </a>
@@ -193,6 +315,43 @@ export default function NavbarLoL() {
                     className="w-full pl-10 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600 transition-colors disabled:opacity-50"
                   />
                 </div>
+
+                {/* Recent Searches in Mobile */}
+                {recentSearches.length > 0 && (
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
+                    <div className="p-2 border-b border-zinc-800 flex items-center gap-2">
+                      <Clock className="w-3 h-3 text-zinc-500" />
+                      <span className="text-xs font-medium text-zinc-400">Recent</span>
+                    </div>
+                    <div className="max-h-40 overflow-y-auto">
+                      {recentSearches.slice(0, 5).map((search, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleRecentSearchClick(search)}
+                          className="px-3 py-2 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="w-6 h-6 bg-orange-950/30 border border-orange-900/30 rounded flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-bold text-orange-500">
+                                {SERVERS.find(s => s.value === search.server)?.label || search.server.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-xs font-medium text-white truncate">
+                              {search.gameName}<span className="text-zinc-500">#{search.tagLine}</span>
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => removeRecentSearch(index, e)}
+                            className="p-1 rounded hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                          >
+                            <X className="w-3 h-3 text-zinc-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"

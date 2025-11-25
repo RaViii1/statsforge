@@ -169,6 +169,11 @@ export const CHAMPION_ID_TO_NAME: Record<number, string> = {
   910: "Hwei",
   950: "Naafiri",
   901: "Smolder",
+  904: "Zaahen",
+  800:  "Mel",
+  804:  "Yunara",
+  799: "Ambessa"
+
 };
 
 export function getChampionNameById(championId: number): string {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Navbar from "@/Components/navbar";
+import Navbar from "@/components/navbar";
 
 const REGIONS = [
   { value: "global", label: "Global" },

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { Gamepad2, TrendingUp, Trophy, Users, Zap, Shield, Bell, Calendar, BarChart3, Target, Award, Eye, PieChart, Activity, Lock, Globe, Clock, Star } from "lucide-react";
-import Navbar from "@/Components/navbar";
-import Footer from "@/Components/footer";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import Link from "next/link";
 
 const featuredGames = [

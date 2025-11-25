@@ -56,6 +56,9 @@ export interface MatchParticipant {
   playerAugment2?: number;
   playerAugment3?: number;
   playerAugment4?: number;
+  playerAugment5?: number;
+  playerSubteamId?: number;
+  subteamPlacement?: number;
 }
 
 export interface MatchInfo {
@@ -67,6 +70,8 @@ export interface MatchInfo {
   participants: MatchParticipant[];
   gameEndedInEarlySurrender?: boolean;
   gameEndedInSurrender?: boolean;
+  teams: Array<{
+    teamId: number;}>;
 }
 
 export interface Match {

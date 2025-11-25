@@ -1,4 +1,4 @@
-import { Match, MatchParticipant } from "@/types/lolInterfaces";
+import { Match, MatchParticipant } from "@/app/types/lolInterfaces";
 
  export const formatGameDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -20,19 +20,87 @@ import { Match, MatchParticipant } from "@/types/lolInterfaces";
     return date.toLocaleDateString();
   };
 
- export const getQueueName = (queueId: number) => {
-    const queues: Record<number, string> = {
-      420: "Ranked Solo/Duo",
-      440: "Ranked Flex",
-      450: "ARAM",
-      400: "Normal Draft",
-      430: "Normal Blind",
-      490: "Normal Quickplay",
-      1700: "Arena",
-      1710: "Arena",
-    };
-    return queues[queueId] || "Custom Game";
+export const getQueueName = (queueId: number) => {
+  const queues: Record<number, string> = {
+    420: "Ranked Solo/Duo",
+    440: "Ranked Flex",
+    450: "ARAM",
+    400: "Normal Draft",
+    430: "Normal Blind",
+    490: "Normal Quickplay",
+    1700: "Arena",
+    1710: "Arena",
+    900: "ARURF",
+    62: "ARAM",
+    63: "ARAM",
+    64: "ARAM",
+    65: "ARAM",
+    // Clash modes
+    700: "Clash",
+    701: "Clash",
+    720: "Clash (ARAM)",
+    740: "Clash (ARURF)",
+    741: "Clash (ARURF)",
+    // Doom Bots modes
+    4200: "Doom Bots 5v5",
+    // Nexus Blitz
+    2400: "ARAM: Mayhem",
+    1200: "Nexus Blitz",
+    1300: "Nexus Blitz",
+    3270: "ARAM: Mayhem",
+    1400: "Ultimate Spellbook",
+    1900: "Ultra rapid Fire",
+  
   };
+  return queues[queueId] || "Custom Game";
+};
+
+
+export function getTeamIcon(teamId: number): string {
+    // Base URL fragment for all specific team icons
+    const baseIconPath = "https://raw.communitydragon.org/latest/game/assets/ux/cherry/teamicons/";
+
+    // Handle traditional LoL 5v5 team IDs (100 and 200) as primary check
+    if (teamId === 100) {
+        return baseIconPath + "teamsentinels.png";
+    }
+    if (teamId === 200) {
+        return baseIconPath + "teamraptors.png";
+    }
+
+    // Map Arena Subteam IDs (1-8) to their specific icons
+    switch (teamId) {
+        case 1: // Team Poro
+            return baseIconPath + "teamporos.png";
+        case 2: // Team Minion
+            return baseIconPath + "teamminions.png";
+        case 3: // Team Scuttle
+            return baseIconPath + "teamscuttles.png";
+        case 4: // Team Krug
+            return baseIconPath + "teamkrugs.png";
+        case 5: // Team Raptor
+            return baseIconPath + "teamraptors.png";
+        case 6: // Team Sentinel
+            return baseIconPath + "teamsentinel.png";
+        case 7: // Team Wolf (Murk Wolf)
+            return baseIconPath + "teamwolves.png";
+        case 8: // Team Gromp
+            return baseIconPath + "teamgromp.png";
+        default:
+            // Fallback for an unknown or unassigned team ID
+            return baseIconPath + "teamgromp.png"; 
+    }
+}
+
+export function formatGamenametoNameandTagline(gamename?: string | "noname") {
+  if (gamename?.includes('#')) {
+    const parts = gamename.split('#');
+    const liveGameParticipantGameName = parts[0];
+    const liveGameTagLine = parts[1];
+    return { liveGameParticipantGameName: liveGameParticipantGameName ?? "", liveGameTagLine: liveGameTagLine ?? "" };
+  }
+  return null;
+}
 
  export const isRemake = (match: Match) => {
     return match.info.gameDuration < 300 || (
