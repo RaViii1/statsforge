@@ -14,10 +14,15 @@ const PLATFORM_TO_REGION: Record<string, string> = {
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ server: string; matchId: string }> }
+  context: { params: Promise<{ server: string; matchid: string }> }
 ) {
-  const { server, matchId } = await context.params;
+  const { server, matchid } = await context.params;
   const region = PLATFORM_TO_REGION[server.toLowerCase()];
+  
+  console.log('=== MATCH STATS API DEBUG ===');
+  console.log('Received server:', server);
+  console.log('Received matchid:', matchid);
+  console.log('Mapped region:', region);
   
   if (!region) {
     return NextResponse.json({ 
@@ -26,21 +31,26 @@ export async function GET(
   }
   
   const regionalHost = `${region}.api.riotgames.com`;
+  const fullUrl = `https://${regionalHost}/lol/match/v5/matches/${matchid}`;
   const API_KEY = process.env.RIOT_API_KEY as string;
+
+  console.log('Full API URL:', fullUrl);
+  console.log('API Key present:', !!API_KEY);
 
   if (!API_KEY) {
     return NextResponse.json({ error: 'RIOT_API_KEY is missing' }, { status: 500 });
   }
 
   try {
-    const response = await axios.get(
-      `https://${regionalHost}/lol/match/v5/matches/${matchId}`,
-      {
-        headers: { 'X-Riot-Token': API_KEY },
-      }
-    );
+    const response = await axios.get(fullUrl, {
+      headers: { 'X-Riot-Token': API_KEY },
+    });
+
+    console.log('✅ API request successful!');
+    console.log('Response status:', response.status);
 
     const matchData = response.data;
+    
     const participants = matchData.info.participants;
 
     // Process each participant's data
@@ -51,9 +61,11 @@ export async function GET(
       return {
         // Basic Info
         puuid: p.puuid,
+        profileIcon: p.profileIcon,
         summonerName: p.riotIdGameName || p.summonerName,
         championName: p.championName,
         teamPosition: p.teamPosition,
+        teamId: p.teamId,
         win: p.win,
         
         // Combat metrics
@@ -65,6 +77,12 @@ export async function GET(
         totalDamageDealtToChampions: p.totalDamageDealtToChampions,
         teamDamagePercentage: p.challenges?.teamDamagePercentage || 0,
         killParticipation: p.challenges?.killParticipation || 0,
+        
+        // Multikills
+        pentaKills: p.pentaKills || 0,
+        quadraKills: p.quadraKills || 0,
+        tripleKills: p.tripleKills || 0,
+        doubleKills: p.doubleKills || 0,
         
         // Objective metrics
         baronKills: p.challenges?.baronTakedowns || 0,
@@ -80,6 +98,7 @@ export async function GET(
         
         // Survivability metrics
         totalDamageTaken: p.totalDamageTaken,
+        totalHeal: p.totalHeal || 0,
         damageSelfMitigated: p.damageSelfMitigated,
         timeSpentDead: p.totalTimeSpentDead,
         
@@ -96,13 +115,23 @@ export async function GET(
     });
 
     return NextResponse.json({
-      matchId: matchData.metadata.matchId,
+      matchid: matchData.metadata.matchid,
       gameDuration: matchData.info.gameDuration,
       participants: processedParticipants,
     });
   } catch (error) {
+    console.error('❌ API request failed!');
+    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
+      const statusText = error.response?.statusText;
+      const data = error.response?.data;
+      
+      console.error('Axios error status:', status);
+      console.error('Axios error statusText:', statusText);
+      console.error('Axios error data:', data);
+      console.error('Request URL:', error.config?.url);
       
       if (status === 404) {
         return NextResponse.json({ error: 'Match not found' }, { status: 404 });
@@ -115,12 +144,12 @@ export async function GET(
       }
       
       return NextResponse.json(
-        { error: 'Failed to fetch match data' }, 
+        { error: 'Failed to fetch match data', details: data }, 
         { status: status || 500 }
       );
     }
     
-    console.error('Server error:', error);
+    console.error('Non-Axios error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

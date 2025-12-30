@@ -14,12 +14,14 @@ export default function Footer() {
               Your ultimate gaming statistics and tracking companion.
             </p>
           </div>
-          <div>
-            <h4 className="font-semibold mb-4 text-white dark:text-orange-400">Product</h4>
+
+            <div>
+            <h4 className="font-semibold mb-4 text-white dark:text-orange-400">Games</h4>
             <ul className="space-y-2 text-slate-400 dark:text-gray-400 text-sm">
-              <li><a href="#" className="hover:text-white dark:hover:text-orange-500 transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-white dark:hover:text-orange-500 transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-white dark:hover:text-orange-500 transition-colors">API</a></li>
+              <li><a href="" className="hover:text-white dark:hover:text-orange-500 transition-colors">Counter strike 2</a></li>
+              <li><a href="/lol" className="hover:text-white dark:hover:text-orange-500 transition-colors">League of legends</a></li>
+              <li><a href="#" className="hover:text-white dark:hover:text-orange-500 transition-colors">Valorant</a></li>
+              <li><a href="#" className="hover:text-white dark:hover:text-orange-500 transition-colors">Teamfight tactics</a></li>
             </ul>
           </div>
           <div>

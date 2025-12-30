@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function LolBanner() {
   return (      
             
-            <div className="p-6 bg-orange-950/30 border border-orange-900/30 rounded-xl">
+            <div className="p-6 bg-orange-950/30 border border-orange-900/30 rounded-xl my-8">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-orange-600/20 rounded-lg flex items-center justify-center shrink-0">
                   <TrendingUp className="w-5 h-5 text-orange-500" />

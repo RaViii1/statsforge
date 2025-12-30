@@ -6,8 +6,6 @@ import { Match, MatchParticipant } from "@/app/types/lolInterfaces";
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  
-
  export const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -55,6 +53,40 @@ export const getQueueName = (queueId: number) => {
   return queues[queueId] || "Custom Game";
 };
 
+export const isGamemodeWithoutRoles = (queueId: number): boolean => {
+  if ([450, 900, 1700, 1710, 4200, 2400, 3270].includes(queueId)) {
+    return true;
+  }else{
+    return false;
+  }
+}
+
+export const getRoleIcon = (role: string): string => {
+  const baseUrl = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champ-select/global/default/svg/";
+  const roleMap: Record<string, string> = {
+    top: "position-top.svg",
+    jungle: "position-jungle.svg",
+    mid: "position-middle.svg",
+    adc: "position-bottom.svg",
+    support: "position-utility.svg",
+    unknown: "position-fill.svg"
+  };
+  return baseUrl + (roleMap[role] || roleMap.unknown);
+}
+
+export const determineRole = (player: any): string => {
+  const lane = player.lane || player.teamPosition || "";
+  const position = player.teamPosition || player.individualPosition || "";
+  
+  // Map API positions to role names
+  if (position === "TOP" || lane === "TOP") return "top";
+  if (position === "JUNGLE" || lane === "JUNGLE") return "jungle";
+  if (position === "MIDDLE" || lane === "MIDDLE" || lane === "MID") return "mid";
+  if (position === "BOTTOM" || lane === "BOTTOM") return "adc";
+  if (position === "UTILITY" || lane === "UTILITY") return "support";
+  
+  return "unknown";
+}
 
 export function getTeamIcon(teamId: number): string {
     // Base URL fragment for all specific team icons
@@ -92,16 +124,42 @@ export function getTeamIcon(teamId: number): string {
     }
 }
 
+export function getArenaTeamName(teamId: number): string {
+    switch (teamId) {
+        case 1:
+            return "Team Poro";
+        case 2:
+            return "Team Minion";
+        case 3:
+            return "Team Scuttle";
+        case 4:
+            return "Team Krug";
+        case 5:
+            return "Team Raptor";
+        case 6:
+            return "Team Sentinel";
+        case 7:
+            return "Team Wolf";
+        case 8:
+            return "Team Gromp";
+        default:
+            return "Unknown Team";
+    }
+}
+
 export function formatGamenametoNameandTagline(gamename?: string | "noname") {
   if (gamename?.includes('#')) {
     const parts = gamename.split('#');
-    const liveGameParticipantGameName = parts[0];
-    const liveGameTagLine = parts[1];
-    return { liveGameParticipantGameName: liveGameParticipantGameName ?? "", liveGameTagLine: liveGameTagLine ?? "" };
+    return { 
+      liveGameParticipantGameName: parts[0] ?? "unknown", 
+      liveGameTagLine: parts[1] ?? "unknown" 
+    };
   }
-  return null;
+  return { 
+    liveGameParticipantGameName: "unknown", 
+    liveGameTagLine: "unknown" 
+  };
 }
-
  export const isRemake = (match: Match) => {
     return match.info.gameDuration < 300 || (
       match.info.gameEndedInEarlySurrender || 
@@ -144,6 +202,16 @@ export function formatGamenametoNameandTagline(gamename?: string | "noname") {
     const tierLower = tier.toLowerCase();
     return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${tierLower}.png`;
   };
+
+  export const getChampionSplashByName = (championName: string) => {
+        if (championName === null || !championName) {
+      return 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/akshan/skins/base/images/akshan_splash_centered_0.jpg';
+
+    }
+    else{
+      return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/${championName}/skins/base/images/${championName}_splash_centered_0.jpg`;
+    }
+  }
 
  export const getQueueTypeName = (queueType: string) => {
     const names: Record<string, string> = {

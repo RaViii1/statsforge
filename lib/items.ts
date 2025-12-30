@@ -305,7 +305,7 @@ export const items: Item[] = [
       "Jungle"
     ],
     "description": "Jungle CompanionsSummon a Mosstomper that assists you against monsters.Mosstomper's CourageThe companion grows as you hunt monsters, empowering your Smite. When fully grown, it grants a shield that regenerates after killing large monsters or out of combat.",
-    "image": "1103_testitem2.png"
+    "image": "1103_jungle_t1_mosstomperseedling.png"
   },
   {
     "id": "1104",
@@ -4351,28 +4351,28 @@ export const items: Item[] = [
     "name": "Anvil Voucher",
     "stats": [],
     "description": "Redeem during a Shopping Phase to gain a Stat Anvil!",
-    "image": "default.png"
+    "image": "3865_worldatlas.png"
   },
   {
     "id": "220009",
     "name": "Gold Stat Anvil Voucher",
     "stats": [],
     "description": "Redeem during a Shopping Phase to gain a Stat Anvil!",
-    "image": "default.png"
+    "image": "3865_worldatlas.png"
   },
   {
     "id": "220010",
     "name": "Prismatic Stat Voucher",
     "stats": [],
     "description": "Redeem during a Shopping Phase to gain a Stat Anvil!",
-    "image": "default.png"
+    "image": "3865_worldatlas.png"
   },
   {
     "id": "220011",
     "name": "Bravery Voucher",
     "stats": [],
     "description": "Redeem during a Shopping Phase to gain a Stat Anvil and 1 bonus rerolls!",
-    "image": "default.png"
+    "image": "3865_worldatlas.png"
   },
   {
     "id": "221011",

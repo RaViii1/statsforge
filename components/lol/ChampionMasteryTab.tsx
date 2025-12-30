@@ -33,11 +33,11 @@ export function ChampionMasteryTab({ championMastery, loading }: ChampionMastery
               >
                 <div className="flex items-center gap-3 mb-3">
                   <img
-                    src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/${championName}.png`}
+                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${mastery.championId}.png`}
                     alt={championName}
                     className="w-12 h-12 rounded hover:scale-110 transition-transform"
                     onError={(e) => {
-                      e.currentTarget.src = `https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/29.png`;
+                      e.currentTarget.src = `/images/lol/default.png`;
                     }}
                   />
                   <div className="flex-1">

@@ -27,17 +27,17 @@ export function SummonerProfileHeader({ summonerData, championMastery, server }:
     : null;
 
   return (
-    <div className="mb-8 rounded-2xl overflow-hidden border border-zinc-800 relative">
+    <div className="overflow-hidden border-b border-zinc-800 relative h-64">
       {/* Champion Splash Art Background */}
       {highestMasterySplashArt && (
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ 
             backgroundImage: `url(${highestMasterySplashArt})`,
-            backgroundPosition: 'right 0% top 20%'
+            backgroundPosition: 'right 0% top 30%'
           }}
         >
-          <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/95 to-zinc-950/40"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/40"></div>
           <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-zinc-750"></div>
         </div>
       )}
@@ -46,13 +46,17 @@ export function SummonerProfileHeader({ summonerData, championMastery, server }:
       <div className="relative z-10 p-8">
         <div className="flex items-center gap-6">
           {/* Profile Icon */}
-          <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-orange-600 shadow-2xl shadow-orange-900/50 hover:scale-105 hover:border-orange-500 transition-all">
-            <img
-              src={`https://ddragon.leagueoflegends.com/cdn/14.1.1/img/profileicon/${summonerData.profileIconId}.png`}
-              alt="Profile Icon"
-              className="w-full h-full object-cover"
-            />
-          </div>
+        <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-orange-600 shadow-2xl shadow-orange-900/50 hover:scale-105 hover:border-orange-500 transition-all">
+          <img
+            src={summonerData?.profileIconId
+              ? `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${summonerData.profileIconId}.jpg`
+              
+              : "images/lol/default.png"}
+            alt="Profile Icon"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
 
           {/* Name and Level */}
           <div className="flex-1">

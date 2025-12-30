@@ -1,13 +1,14 @@
 "use client";
-import { Search, Loader2, Users, Trophy, Sparkles, Award, BarChart3, Swords } from "lucide-react";
-import { useState } from "react";
+
+import { Search, Loader2, TrendingUp, Users, Target, Clock, X, Trophy } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Footer from "@/components/footer";
 import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 
-const REGIONS = [
+const SERVERS = [
   { value: "na1", label: "NA" },
   { value: "euw1", label: "EUW" },
   { value: "eun1", label: "EUNE" },
@@ -16,61 +17,82 @@ const REGIONS = [
   { value: "la1", label: "LAN" },
   { value: "la2", label: "LAS" },
   { value: "oc1", label: "OCE" },
+  { value: "ru", label: "RU" },
+  { value: "tr1", label: "TR" },
   { value: "jp1", label: "JP" },
 ];
+
+interface RecentSearch {
+  gameName: string;
+  tagLine: string;
+  server: string;
+  timestamp: number;
+}
 
 export default function TFTPage() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("na1");
+  const [selectedServer, setSelectedServer] = useState("eun1");
   const [isSearching, setIsSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      toast.error("Please enter a summoner name");
-      return;
+  useEffect(() => {
+    const stored = localStorage.getItem("tft_recent_searches");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setRecentSearches(parsed);
+      } catch (e) {
+        console.error("Failed to parse recent searches:", e);
+      }
     }
+  }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const saveRecentSearch = (gameName: string, tagLine: string, server: string) => {
+    const newSearch: RecentSearch = {
+      gameName,
+      tagLine,
+      server,
+      timestamp: Date.now(),
+    };
+    const filtered = recentSearches.filter(
+      (s) => !(s.gameName === gameName && s.tagLine === tagLine && s.server === server)
+    );
+    const updated = [newSearch, ...filtered].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem("tft_recent_searches", JSON.stringify(updated));
+  };
+
+  const removeRecentSearch = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = recentSearches.filter((_, i) => i !== index);
+    setRecentSearches(updated);
+    localStorage.setItem("tft_recent_searches", JSON.stringify(updated));
+  };
+
+  const performSearch = async (gameName: string, tagLine: string, server: string) => {
     setIsSearching(true);
-
     try {
-      const input = searchQuery.trim();
-      let gameName: string;
-      let tagLine: string;
-
-      if (input.includes('#')) {
-        const parts = input.split('#');
-        gameName = parts[0];
-        tagLine = parts[1];
-      } else {
-        gameName = input;
-        const serverDefaults: Record<string, string> = {
-          'na1': 'NA1',
-          'euw1': 'EUW',
-          'eun1': 'EUNE',
-          'kr': 'KR',
-          'br1': 'BR1',
-          'la1': 'LAN',
-          'la2': 'LAS',
-          'oc1': 'OCE',
-          'jp1': 'JP1'
-        };
-        tagLine = serverDefaults[selectedRegion] || 'NA1';
-      }
-
-      if (!gameName || !tagLine) {
-        toast.error("Invalid Riot ID format. Use: GameName#TAG");
-        setIsSearching(false);
-        return;
-      }
-
       const response = await fetch(
-        `/api/tft/profile/${selectedRegion}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
+        `/api/tft/profile/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
       );
 
       if (response.status === 404) {
-        router.push(`/tft/profile/player-not-found?name=${encodeURIComponent(gameName)}&tag=${encodeURIComponent(tagLine)}&region=${selectedRegion}`);
+        toast.error("Player not found");
+        setIsSearching(false);
         return;
       }
 
@@ -81,7 +103,8 @@ export default function TFTPage() {
         return;
       }
 
-      router.push(`/tft/profile/${selectedRegion}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
+      saveRecentSearch(gameName, tagLine, server);
+      router.push(`/tft/profile/${server}/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
     } catch (error) {
       console.error("Search error:", error);
       toast.error("An error occurred while searching");
@@ -89,225 +112,178 @@ export default function TFTPage() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) {
+      toast.error("Please enter a Riot ID");
+      return;
     }
+
+    const input = searchQuery.trim();
+    let gameName: string;
+    let tagLine: string;
+
+    if (input.includes('#')) {
+      const parts = input.split('#');
+      gameName = parts[0];
+      tagLine = parts[1];
+    } else {
+      gameName = input;
+      const serverDefaults: Record<string, string> = {
+        'na1': 'NA1', 'euw1': 'EUW', 'eun1': 'EUNE', 'kr': 'KR',
+        'br1': 'BR1', 'la1': 'LAN', 'la2': 'LAS', 'oc1': 'OCE',
+        'ru': 'RU', 'tr1': 'TR1', 'jp1': 'JP1'
+      };
+      tagLine = serverDefaults[selectedServer] || 'EUNE';
+    }
+
+    if (!gameName || !tagLine) {
+      toast.error("Invalid Riot ID format. Use: Name#TAG");
+      return;
+    }
+
+    performSearch(gameName, tagLine, selectedServer);
   };
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/3 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Navigation */}
-<Navbar />
+      <Navbar />
+
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
-        {/* Hero Section */}
         <div className="text-center mb-16">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-purple-950/30 border border-purple-900/30 rounded-full">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-            </span>
-            <span className="text-purple-600 text-sm font-medium">Teamfight Tactics Analytics</span>
+          <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-orange-950/30 border border-orange-900/30 rounded-full">
+            <span className="text-orange-600 text-sm font-medium">Teamfight Tactics Stats</span>
           </div>
 
-          {/* Headline */}
           <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6 leading-tight">
-            Master the
-            <span className="block mt-2 text-transparent bg-clip-text bg-linear-to-r from-purple-500 via-blue-500 to-purple-600">
-              Strategic Battleground
+            Analyze Your
+            <span className="block mt-2 text-transparent bg-clip-text bg-linear-to-r from-orange-500 to-yellow-500">
+              TFT Performance
             </span>
           </h1>
 
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-12">
-            Track your TFT performance with detailed match history, comp analytics, placement trends, and climb statistics across all ranks
+            Search any TFT player, view match history, synergies, and ranked progression
           </p>
 
-          {/* Search Bar */}
-          <div className="max-w-3xl mx-auto mb-12">
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
             <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
               <div className="flex gap-2">
-                {/* Region Selector */}
                 <select
-                  value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  value={selectedServer}
+                  onChange={(e) => setSelectedServer(e.target.value)}
                   disabled={isSearching}
-                  className="px-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-purple-600/50 focus:bg-zinc-900/80 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {REGIONS.map((region) => (
-                    <option key={region.value} value={region.value}>
-                      {region.label}
+                  {SERVERS.map((server) => (
+                    <option key={server.value} value={server.value}>
+                      {server.label}
                     </option>
                   ))}
                 </select>
 
-                {/* Search Input */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <div className="relative flex-1" ref={dropdownRef}>
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-10" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Enter summoner name (e.g., Dishsoap#NA1)"
-                    onFocus={() => setSearchFocused(true)}
+                    placeholder="Enter Riot ID (e.g., Faker#KR1)"
+                    onFocus={() => {
+                      setSearchFocused(true);
+                      setShowDropdown(true);
+                    }}
                     onBlur={() => setSearchFocused(false)}
                     disabled={isSearching}
-                    className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-600/50 focus:bg-zinc-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                    className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                   />
+
+                  {showDropdown && recentSearches.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
+                      <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-zinc-500" />
+                        <span className="text-sm font-medium text-zinc-400">Recent Searches</span>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {recentSearches.map((search, index) => (
+                          <div
+                            key={index}
+                            onClick={() => {
+                              setSearchQuery(`${search.gameName}#${search.tagLine}`);
+                              setSelectedServer(search.server);
+                              setShowDropdown(false);
+                              performSearch(search.gameName, search.tagLine, search.server);
+                            }}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="w-8 h-8 bg-orange-950/30 border border-orange-900/30 rounded-lg flex items-center justify-center shrink-0">
+                                <span className="text-xs font-bold text-orange-500">
+                                  {SERVERS.find(s => s.value === search.server)?.label || search.server.toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="text-left min-w-0 flex-1">
+                                <p className="text-sm font-medium text-white truncate">
+                                  {search.gameName}
+                                  <span className="text-zinc-500">#{search.tagLine}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => removeRecentSearch(index, e)}
+                              className="p-1.5 rounded-lg hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                            >
+                              <X className="w-4 h-4 text-zinc-400" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Search Button */}
                 <button
-                  onClick={handleSearch}
+                  type="submit"
                   disabled={isSearching}
-                  className="px-8 py-5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-purple-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Searching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-5 h-5" />
-                      <span>Search</span>
-                    </>
-                  )}
+                  {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+                  <span>{isSearching ? 'Searching...' : 'Search'}</span>
                 </button>
               </div>
               <p className="text-xs text-zinc-500 mt-3 text-left">
-                Search format: GameName#TAG (e.g., Dishsoap#NA1 or setsuko#KR1)
+                Search format: Name#TAG (e.g., Player#EUNE)
               </p>
             </div>
-          </div>
-
-          {/* Quick Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/tft/leaderboard"
-              className="px-6 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-lg font-semibold hover:bg-zinc-800 hover:border-purple-600 transition-all flex items-center gap-2"
-            >
-              <Award className="w-5 h-5 text-purple-500" />
-              Challenger Leaderboard
-            </Link>
-            <Link
-              href="/tft/meta"
-              className="px-6 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-lg font-semibold hover:bg-zinc-800 hover:border-purple-600 transition-all flex items-center gap-2"
-            >
-              <Swords className="w-5 h-5 text-purple-500" />
-              Meta Compositions
-            </Link>
-          </div>
+          </form>
         </div>
 
-        {/* Features Section */}
         <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-purple-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-purple-950/50 border border-purple-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-950/70 transition-colors">
-              <Users className="w-6 h-6 text-purple-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Player Profiles</h3>
-            <p className="text-zinc-400">
-              Comprehensive stats including LP gains, average placement, rank progression, and detailed match history analysis
-            </p>
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
+            <Trophy className="w-10 h-10 text-orange-500 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Ranked Tracking</h3>
+            <p className="text-zinc-400">Monitor your LP gains, win rate, and rank progression in real-time.</p>
           </div>
-
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-blue-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-blue-950/50 border border-blue-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-950/70 transition-colors">
-              <Swords className="w-6 h-6 text-blue-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Comp Analytics</h3>
-            <p className="text-zinc-400">
-              Discover meta team compositions, trait synergies, item optimization, and unit positioning strategies for every set
-            </p>
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
+            <Users className="w-10 h-10 text-orange-500 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Lobby Details</h3>
+            <p className="text-zinc-400">See what others built in your games and compare your performance.</p>
           </div>
-
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-purple-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-purple-950/50 border border-purple-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-950/70 transition-colors">
-              <BarChart3 className="w-6 h-6 text-purple-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Match Insights</h3>
-            <p className="text-zinc-400">
-              Deep match analysis with placement patterns, economy tracking, augment choices, and performance trends over time
-            </p>
-          </div>
-        </div>
-
-        {/* Stats Preview Section */}
-        <div className="grid md:grid-cols-4 gap-4 mb-16">
-          <div className="p-6 bg-linear-to-br from-purple-950/30 to-zinc-900/50 border border-purple-900/30 rounded-xl">
-            <div className="text-3xl font-bold text-purple-500 mb-1">3.8</div>
-            <div className="text-sm text-zinc-400">Avg Placement</div>
-          </div>
-          <div className="p-6 bg-linear-to-br from-blue-950/30 to-zinc-900/50 border border-blue-900/30 rounded-xl">
-            <div className="text-3xl font-bold text-blue-500 mb-1">42%</div>
-            <div className="text-sm text-zinc-400">Top 4 Rate</div>
-          </div>
-          <div className="p-6 bg-linear-to-br from-green-950/30 to-zinc-900/50 border border-green-900/30 rounded-xl">
-            <div className="text-3xl font-bold text-green-500 mb-1">+187</div>
-            <div className="text-sm text-zinc-400">LP This Week</div>
-          </div>
-          <div className="p-6 bg-linear-to-br from-pink-950/30 to-zinc-900/50 border border-pink-900/30 rounded-xl">
-            <div className="text-3xl font-bold text-pink-500 mb-1">24</div>
-            <div className="text-sm text-zinc-400">Games Played</div>
-          </div>
-        </div>
-
-        {/* Background Image */}
-        <div className="relative rounded-2xl overflow-hidden border border-zinc-800">
-          <img
-            src="https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/e991c6b6b89f0e94c8f5643fca56a51654f2f0f7-3840x2160.jpg"
-            alt="Teamfight Tactics"
-            className="w-full h-96 object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/80 to-transparent"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center px-4">
-              <h2 className="text-3xl font-bold text-white mb-3">Ready to Climb to Challenger?</h2>
-              <p className="text-zinc-400 mb-6">Optimize your strategy and dominate every lobby</p>
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="px-4 py-2 bg-purple-600/20 border border-purple-600/50 rounded-lg">
-                  <span className="text-purple-400 font-semibold">Ranked</span>
-                </div>
-                <div className="px-4 py-2 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-                  <span className="text-blue-400 font-semibold">Hyper Roll</span>
-                </div>
-                <div className="px-4 py-2 bg-pink-600/20 border border-pink-600/50 rounded-lg">
-                  <span className="text-pink-400 font-semibold">Double Up</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Traits Section */}
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Popular Traits</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {["Sentinel", "Bastion", "Invoker", "Gunner", "Quickshot", "Rebel", "Conqueror", "Enforcer", "Sorcerer", "Visionary"].map((trait) => (
-              <Link
-                key={trait}
-                href={`/tft/traits/${trait.toLowerCase()}`}
-                className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg hover:border-purple-600 hover:bg-zinc-900 transition-all text-center group"
-              >
-                <div className="text-white font-semibold mb-1 group-hover:text-purple-500 transition-colors">{trait}</div>
-                <div className="text-xs text-zinc-500">View Stats</div>
-              </Link>
-            ))}
+          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
+            <TrendingUp className="w-10 h-10 text-orange-500 mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">Meta Analysis</h3>
+            <p className="text-zinc-400">Discover which synergies and units are winning you games.</p>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-<Footer />
+      <Footer />
     </div>
   );
 }

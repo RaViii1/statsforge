@@ -179,3 +179,10 @@ export const CHAMPION_ID_TO_NAME: Record<number, string> = {
 export function getChampionNameById(championId: number): string {
   return CHAMPION_ID_TO_NAME[championId] || `Champion${championId}`;
 }
+
+export function getChampionIdByName(championName: string): number | null {
+  const entry = Object.entries(CHAMPION_ID_TO_NAME).find(
+    ([, name]) => name.toLowerCase() === championName.toLowerCase()
+  );
+  return entry ? parseInt(entry[0], 10) : null;
+}

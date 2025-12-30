@@ -16,6 +16,8 @@ import { RankedStatsSection } from "@/components/lol/RankedStatsSection";
 import { MatchHistoryTab } from "@/components/lol/MatchHistoryTab";
 import { ChampionMasteryTab } from "@/components/lol/ChampionMasteryTab";
 import { LiveGameTab } from "@/components/lol/LiveGameTab";
+import { PlayedWithComponent } from "@/components/lol/PlayedWithComponent";
+
 
 export default function ProfilePage() {
   const params = useParams();
@@ -115,6 +117,13 @@ export default function ProfilePage() {
     }
   };
 
+  const refreshMatches = () => {
+    if (summonerData && !matchesLoading) {
+      offsetRef.current = 0;
+      fetchMatchHistory(summonerData.puuid, 0, 10, false);
+    }
+  };
+
   useEffect(() => {
     const fetchSummonerData = async () => {
       try {
@@ -196,18 +205,19 @@ export default function ProfilePage() {
 
       <NavbarLol />
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <main className="relative max-w-[1400px] mx-auto px-6 lg:px-8 pb-8">
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
             <p className="text-lg text-zinc-400">Loading player data...</p>
+            
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto my-16">
             <div className="p-8 bg-red-950/30 border border-red-900/30 rounded-xl text-center">
               <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-8 h-8 text-red-500" />
@@ -233,14 +243,6 @@ export default function ProfilePage() {
               championMastery={championMastery}
               server={server}
             />
-
-            {/* Ranked Stats Section */}
-            <RankedStatsSection rankedData={rankedData} />
-            
-            {/* Champion Stats Card */}
-            {rankedData.length > 0 && (
-              <ChampionStatsCard server={server} puuid={summonerData.puuid} />
-            )}
 
             {/* Tab Navigation */}
             <div className="flex gap-4 mb-6 border-b border-zinc-800">
@@ -290,18 +292,39 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* Tab Content */}
+            {/* Tab Content with Two-Column Layout */}
             {activeTab === "matches" && matchHistory && (
-              <MatchHistoryTab
-                matches={matchHistory.matches}
-                loading={matchesLoading}
-                loadingMore={loadingMore}
-                summonerPuuid={summonerData.puuid}
-                server={server}
-                rankedData={rankedData}
-                onLoadMore={loadMoreMatches}
-                onPlayerClick={handlePlayerClick}
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
+                {/* Left Sidebar */}
+                <div className="space-y-6">
+                  <RankedStatsSection rankedData={rankedData} />
+                  {rankedData.length > 0 && (
+                      <ChampionStatsCard server={server} puuid={summonerData.puuid} />
+                    )}
+                  <PlayedWithComponent
+                    matches={matchHistory.matches}
+                    matchesLoaded={matchHistory.matches.length || 0}
+                    summonerPuuid={summonerData.puuid}
+                    onPlayerClick={handlePlayerClick}
+                  />
+                  
+                </div>
+
+                {/* Right Main Content */}
+                <div className="min-w-0 mb-8">
+                  <MatchHistoryTab
+                    matches={matchHistory.matches}
+                    loading={matchesLoading}
+                    loadingMore={loadingMore}
+                    summonerPuuid={summonerData.puuid}
+                    server={server}
+                    rankedData={rankedData}
+                    onLoadMore={loadMoreMatches}
+                    onPlayerClick={handlePlayerClick}
+                    onRefresh={refreshMatches}
+                  />
+                </div>
+              </div>
             )}
 
             {activeTab === "mastery" && (

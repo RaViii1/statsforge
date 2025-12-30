@@ -160,23 +160,43 @@ export const RUNES: Record<number, Rune> = {
   },
 
   // Domination Slot 2
-  8136: { 
-    id: 8136, 
-    name: "Zombie Ward", 
-    shortDesc: "Takedowns on enemy wards cause friendly Zombie Wards to sprout",
-    longDesc: "After killing a ward, a friendly Zombie Ward is raised in its place for 120s. When your wards expire, they also reanimate as Zombie Wards. Gain adaptive force for every Zombie Ward spawned plus additional adaptive force for each Zombie Ward active."
+  // 8136: { 
+  //   id: 8136, 
+  //   name: "Zombie Ward", 
+  //   shortDesc: "Takedowns on enemy wards cause friendly Zombie Wards to sprout",
+  //   longDesc: "After killing a ward, a friendly Zombie Ward is raised in its place for 120s. When your wards expire, they also reanimate as Zombie Wards. Gain adaptive force for every Zombie Ward spawned plus additional adaptive force for each Zombie Ward active."
+  // },
+
+  
+    8137: { 
+    id: 8137, 
+    name: "Sixth Sense", 
+    shortDesc: "Passive: Upon moving near an un-tracked enemy ward, it is automatically tracked with a ward timer.",
+    longDesc: "Passive: Upon moving near an un-tracked enemy ward, it is automatically tracked with a ward timer. At level 11, additionally reveals nearby enemy stealthed wards for 10 seconds upon being triggered. Cooldown: 250 seconds, Range: 900"
   },
-  8120: { 
-    id: 8120, 
-    name: "Ghost Poro", 
-    shortDesc: "Gain adaptive force when entering brush without nearby allies",
-    longDesc: "When your wards expire, they leave behind a Ghost Poro. The Ghost Poro grants vision until discovered. Gain 1.2-14.4 adaptive force per Ghost Poro spawned plus 1.2-14.4 adaptive force if you have at least 10 spawned."
+  // 8120: { 
+  //   id: 8120, 
+  //   name: "Ghost Poro", 
+  //   shortDesc: "Gain adaptive force when entering brush without nearby allies",
+  //   longDesc: "When your wards expire, they leave behind a Ghost Poro. The Ghost Poro grants vision until discovered. Gain 1.2-14.4 adaptive force per Ghost Poro spawned plus 1.2-14.4 adaptive force if you have at least 10 spawned."
+  // },
+    8140: { 
+    id: 8140, 
+    name: "Grisly Mementos", 
+    shortDesc: "Gain 6 trinket haste per Memento stack, up to 108 haste at maximum stacks.",
+    longDesc: "Passive: Gain 6 trinket haste per Memento stack, up to 108 haste at maximum stacks. Earn a Memento stack whenever scoring a champion takedown, up to 18 stacks."
   },
-  8138: { 
-    id: 8138, 
-    name: "Eyeball Collection", 
-    shortDesc: "Collect eyeballs for champion and ward takedowns",
-    longDesc: "Collect 1 eyeball per champion takedown or ward killed (max 10). Gain 1.2 adaptive force per eyeball plus 6 adaptive force upon completing your collection."
+  // 8138: { 
+  //   id: 8138, 
+  //   name: "Eyeball Collection", 
+  //   shortDesc: "Collect eyeballs for champion and ward takedowns",
+  //   longDesc: "Collect 1 eyeball per champion takedown or ward killed (max 10). Gain 1.2 adaptive force per eyeball plus 6 adaptive force upon completing your collection."
+  // },
+    8141: { 
+    id: 8141, 
+    name: "Deep Ward", 
+    shortDesc: "Wards placed in the enemy jungle and river are considered Deep and gain +1 bonus health and increased duration.",
+    longDesc: "Passive:  Stealth Wards and  Totem Wards placed in the enemy jungle are considered Deep. All Deep wards are granted 1 bonus health, Deep  Stealth Wards last 30 - 45 (based on average champion level) seconds longer, and Deep  Totem Wards last 45 - 150 (based on average champion level) seconds longer. At level 9, wards placed in the river will also be considered Deep."
   },
 
   // Domination Slot 3
@@ -528,8 +548,11 @@ function getRuneIconPath(runeId: number): string {
     
     // Domination Slot 2
     8136: "styles/domination/zombieward/zombieward.png",
+    8137: "styles/domination/sixthsense/sixthsense.png",
     8120: "styles/domination/ghostporo/ghostporo.png",
+    8140: "styles/domination/grislymementos/grislymementos.png",
     8138: "styles/domination/eyeballcollection/eyeballcollection.png",
+    8141: "styles/domination/deepward/deepward.png",
     
     // Domination Slot 3
     8135: "styles/domination/treasurehunter/treasurehunter.png",
@@ -651,7 +674,7 @@ export function getRunesForTree(treeId: number): number[][] {
     8100: [
       [8112, 8128, 9923], // Keystones
       [8126, 8139, 8143], // Slot 1
-      [8136, 8120, 8138], // Slot 2
+      [8137, 8140, 8141], // Slot 2
       [8135, 8105, 8106], // Slot 3
     ],
     // Sorcery

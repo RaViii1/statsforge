@@ -60,9 +60,6 @@ export async function GET(
       }
     );
 
-
-
-
     // Combine both data sources
     return NextResponse.json({
       ...summonerResponse.data,

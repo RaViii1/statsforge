@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import  Navbar  from "@/components/navbar";
 import Footer  from "@/components/footer";
+import NavbarLoL from "@/components/navbarlol";
 
 const SERVERS = [
   { value: "na1", label: "NA" },
@@ -180,7 +181,7 @@ export default function LolPage() {
       </div>
 
       {/* Navigation */}
-      <Navbar />
+      <NavbarLoL />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         {/* Hero Section */}

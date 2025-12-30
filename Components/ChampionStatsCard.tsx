@@ -225,16 +225,26 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
   const displayedChampions = isExpanded ? filteredChampionStats : filteredChampionStats.slice(0, 5);
   const hasMore = filteredChampionStats.length > 5;
 
+  // Calculate total games being displayed
+  const totalGamesDisplayed = filteredChampionStats.reduce((sum, stat) => sum + stat.gamesPlayed, 0);
+
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mt-8">
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mb-6">
       {/* Header */}
-      <div className="p-4 border-b border-zinc-800">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-orange-500" />
-            Champion Stats for recent ranked games
-          </h2>
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="p-5 border-b border-zinc-800">
+        <div className="flex flex-col sm:flex-col sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-md font-bold text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-orange-500" />
+              Champion Stats
+            </h2>
+            {totalGamesDisplayed > 0 && (
+              <span className="px-3 py-1 bg-orange-950/50 border border-orange-600/30 rounded-lg text-orange-400 text-sm font-semibold">
+                {totalGamesDisplayed} {totalGamesDisplayed === 1 ? 'Game' : 'Games'}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap flex-colitems-center gap-2">
             <div className="flex gap-1 bg-zinc-800/50 rounded-lg p-1">
               <button
                 onClick={() => setQueueType("all")}
@@ -268,11 +278,6 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
             >
               {isLoading ? "Loading..." : "Update"}
             </button>
-            {/* {loadedMatchIds.length > 0 && (
-              <span className="text-xs text-zinc-400">
-                {loadedMatchIds.length}/{totalAvailableMatches} matches loaded
-              </span>
-            )} */}
           </div>
         </div>
       </div>
@@ -530,27 +535,14 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
                     Show Less
                   </>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-left mr-8">
-                      Champions: <span className="text-white font-semibold">{filteredChampionStats.length}</span>
-                    </span>
+                  <>
                     <ChevronDown className="w-4 h-4" />
-                    Show All ({filteredChampionStats.length})
-
-                    <span className="ml-8">
-                      Total Games: <span className="text-white font-semibold">
-                        {filteredChampionStats.reduce((sum, stat) => sum + stat.gamesPlayed, 0)}
-                      </span>
-                    </span>
-
-                  </div>
+                    Show All ({filteredChampionStats.length} Champions)
+                  </>
                 )}
               </button>
             </div>
           )}
-
-          {/* Footer Stats */}
-
         </>
       )}
     </div>

@@ -8,12 +8,22 @@ export interface SummonerData {
   gameName: string;
   tagLine: string;
   profileIconId: number;
+    rankedData?: {
+    tier?: string;
+    rank?: string;
+    leaguePoints?: number;
+    wins?: number;
+    losses?: number;
+  };
+  error?: string;
   revisionDate: number;
   summonerLevel: number;
+  isStreamerMode?: boolean;
 }
 
 export interface MatchParticipant {
   puuid: string;
+  profileIconId: number;
   summonerName: string;
   riotIdGameName: string;
   riotIdTagline: string;
@@ -26,6 +36,13 @@ export interface MatchParticipant {
   teamId: number;
   totalMinionsKilled: number;
   neutralMinionsKilled: number;
+  firstBloodKill?: boolean;
+  lane: string;
+  multikills?: number;
+  pentaKills?: number;
+  quadraKills?: number;
+  tripleKills?: number;
+  doubleKills?: number;
   goldEarned: number;
   champLevel: number;
   summoner1Id: number;

@@ -258,10 +258,10 @@ export default function NavbarLoL() {
 
             {/* Links - Right (Desktop) */}
             <div className="hidden md:flex items-center gap-1 shrink-0">
-              <a href="#features" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
-                Features
+              <a href="/lol/multisearch" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
+                Multi Search
               </a>
-              <a href="#games" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
+              <a href="/#games" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
                 Games
               </a>
               <Link href="/login" className="px-4 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors">
@@ -375,14 +375,14 @@ export default function NavbarLoL() {
               {/* Mobile Links */}
               <div className="pt-4 border-t border-zinc-800/50 space-y-2">
                 <a 
-                  href="#features" 
+                  href="/lol/multisearch" 
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
                 >
-                  Features
+                  MultiSearch
                 </a>
                 <a 
-                  href="#games"
+                  href="/#games"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
                 >

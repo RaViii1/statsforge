@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blacksmith Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 600px;
+        }
+        
+        svg {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+        }
+        
+        /* Hammer animation along curved path */
+        .hammer {
+            offset-path: path('M 150 30 Q 130 60, 150 95');
+            offset-distance: 0%;
+            transform-origin: center;
+            will-change: transform;
+            animation: hammerSwing 2.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+        }
+        
+        @keyframes hammerSwing {
+            0% {
+                offset-distance: 0%;
+                transform: rotate(-45deg) scale(1);
+            }
+            45% {
+                offset-distance: 100%;
+                transform: rotate(20deg) scale(1);
+            }
+            50% {
+                offset-distance: 100%;
+                transform: rotate(25deg) scale(0.98);
+            }
+            55% {
+                offset-distance: 100%;
+                transform: rotate(20deg) scale(1);
+            }
+            100% {
+                offset-distance: 0%;
+                transform: rotate(-45deg) scale(1);
+            }
+        }
+        
+        /* Spark animations - triggered at impact moment */
+        .spark {
+            transform-origin: center;
+            will-change: transform, opacity;
+            opacity: 0;
+        }
+        
+        .spark1 {
+            animation: sparkFly1 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark2 {
+            animation: sparkFly2 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark3 {
+            animation: sparkFly3 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark4 {
+            animation: sparkFly4 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark5 {
+            animation: sparkFly5 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark6 {
+            animation: sparkFly6 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark7 {
+            animation: sparkFly7 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        .spark8 {
+            animation: sparkFly8 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+        }
+        
+        /* Spark keyframes - all start at 45% (impact moment) */
+        @keyframes sparkFly1 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(-15px, -20px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(-15px, -20px) scale(0); }
+        }
+        
+        @keyframes sparkFly2 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(-8px, -25px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(-8px, -25px) scale(0); }
+        }
+        
+        @keyframes sparkFly3 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(5px, -22px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(5px, -22px) scale(0); }
+        }
+        
+        @keyframes sparkFly4 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(15px, -18px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(15px, -18px) scale(0); }
+        }
+        
+        @keyframes sparkFly5 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(-20px, -12px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(-20px, -12px) scale(0); }
+        }
+        
+        @keyframes sparkFly6 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(18px, -10px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(18px, -10px) scale(0); }
+        }
+        
+        @keyframes sparkFly7 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(-10px, -15px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(-10px, -15px) scale(0); }
+        }
+        
+        @keyframes sparkFly8 {
+            0%, 44% { opacity: 0; transform: translate(0, 0) scale(0); }
+            45% { opacity: 1; transform: translate(0, 0) scale(1); filter: blur(0px); }
+            60% { opacity: 0; transform: translate(10px, -16px) scale(0.3); filter: blur(1px); }
+            100% { opacity: 0; transform: translate(10px, -16px) scale(0); }
+        }
+        
+        /* Glow effect at impact */
+        .impact-glow {
+            opacity: 0;
+            animation: glowPulse 2.5s ease-in-out infinite;
+        }
+        
+        @keyframes glowPulse {
+            0%, 44% { opacity: 0; }
+            45% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+            55%, 100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Gradient for metal glow -->
+                <radialGradient id="metalGlow">
+                    <stop offset="0%" style="stop-color:#ffaa00;stop-opacity:0.8" />
+                    <stop offset="100%" style="stop-color:#ff6600;stop-opacity:0" />
+                </radialGradient>
+                
+                <!-- Filter for spark blur -->
+                <filter id="sparkBlur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="0.5" />
+                </filter>
+            </defs>
+            
+            <!-- Background subtle gradient -->
+            <rect width="300" height="200" fill="url(#metalGlow)" opacity="0.05"/>
+            
+            <!-- Anvil (positioned at bottom center) -->
+            <g transform="translate(100, 100)">
+                <image href="https://img.recraft.ai/h7oXKzY_e3AhwzHrCSF8HF3LKle1Sd91UrfKqTflYzE/raw:1/plain/abs://prod/images/3e9a075a-f935-4ecc-a3bb-bbcb6ee2c60b" 
+                       width="100" height="100" x="-50" y="-30"/>
+                
+                <!-- Impact glow at anvil top -->
+                <circle class="impact-glow" cx="0" cy="-25" r="20" fill="url(#metalGlow)"/>
+            </g>
+            
+            <!-- Sparks (positioned at impact point) -->
+            <g transform="translate(150, 75)">
+                <circle class="spark spark1" r="2.5" fill="#ffdd44" filter="url(#sparkBlur)"/>
+                <circle class="spark spark2" r="2" fill="#ffaa22" filter="url(#sparkBlur)"/>
+                <circle class="spark spark3" r="2.2" fill="#ffcc33" filter="url(#sparkBlur)"/>
+                <circle class="spark spark4" r="1.8" fill="#ff9922" filter="url(#sparkBlur)"/>
+                <circle class="spark spark5" r="2.3" fill="#ffbb33" filter="url(#sparkBlur)"/>
+                <circle class="spark spark6" r="2" fill="#ffaa44" filter="url(#sparkBlur)"/>
+                <circle class="spark spark7" r="1.9" fill="#ffcc22" filter="url(#sparkBlur)"/>
+                <circle class="spark spark8" r="2.1" fill="#ff9933" filter="url(#sparkBlur)"/>
+            </g>
+            
+            <!-- Hammer (animated along path) -->
+            <g class="hammer">
+                <image href="https://img.recraft.ai/VD6vdz3ox2EV3dMhYBORydGP7-U2aAId6uDEEFUdO0c/raw:1/plain/abs://prod/images/a77f1971-d80a-4c5d-aad6-26f427c1234a" 
+                       width="60" height="60" x="-30" y="-30"/>
+            </g>
+        </svg>
+    </div>
+</body>
+</html>
