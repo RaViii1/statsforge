@@ -1,3 +1,5 @@
+import { itemstft } from "./itemstft";
+
 export const PLATFORM_TO_REGION: Record<string, string> = {
   'na1': 'americas',
   'br1': 'americas',
@@ -102,21 +104,39 @@ export interface RankedDto {
   veteran: boolean;
   freshBlood: boolean;
   inactive: boolean;
+  companion?: CompanionDto;
 }
 
 export const getTFTUnitIcon = (characterId: string, tft_set_number: number) => {
 
   const id = characterId.toLowerCase();
   const setNumber = `tft_set${tft_set_number}`;
+  // console.log('Getting icon for:', id, 'Set:', );
+  // console.log(`https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`);
   return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`;
 };
+export const getTFTUnitIconOutdated = (characterId: string, tft_set_number: number) => {
+  
+  const baseName = characterId.replace(/^TFT\d+_/i, '').toLowerCase(); // 'Anivia'
+  const setNumber = `tft_set${tft_set_number}`;          // 'tft_set16'
+  // console.log('Getting icon for:', baseName, 'Set:', tft_set_number);
+  // console.log(`https://raw.communitydragon.org/latest/game/assets/characters/${baseName}/hud/${baseName}_square.png`);
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${baseName}/hud/${baseName}_square.png`;
+  
+};
+
+const ITEM_MAPPING: Record<string, string> = itemstft.reduce((acc, item) => {
+  acc[item.id] = item.path;
+  acc[item.name] = item.path;
+  return acc;
+}, {} as Record<string, string>);
 
 export const getTFTItemIcon = (itemName: string) => {
-  // itemNames are strings like "TFT_Item_Bloodthirster"
-  const name = itemName.toLowerCase().replace(/ /g, '_');
-  return `https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/items/hexcore/tft5_item_archangelsstaffradiant.tft_set13.png`;
-  // return `https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/items/${name}.png`;
-};
+  if (ITEM_MAPPING[itemName]) {
+    return `https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/items/hexcore/${ITEM_MAPPING[itemName]}`;
+  }
+  return 'https://raw.communitydragon.org/latest/game/assets/maps/tft/icons/items/hexcore/tft_item_emptybag.tft_set13.png';
+}
 
 // export const getTFTTraitIcon = (traitId: string, setNumber?: number) => {
 //   if (setNumber) {
@@ -156,17 +176,32 @@ export const getPlacementColor = (placement: number) => {
 export const getPlacementBg = (placement: number) => {
   if (placement === 1) return "bg-yellow-500/10 border-yellow-500/50 shadow-[0_0_10px_rgba(234,179,8,0.1)] hover:shadow-[0_0_20px_rgba(234,179,8,0.2)] hover:border-yellow-500/70";
    if (placement === 2) return "bg-slate-500/20 border-slate-500/50 shadow-[0_0_10px_rgba(148,163,184,0.1)] hover:shadow-[0_0_20px_rgba(148,163,184,0.2)] hover:border-slate-500/70";
-   if (placement === 3) return "bg-orange-500/20 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.1)] hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:border-orange-500/70";
+   if (placement === 3) return "bg-orange-800/10 border-orange-500/50 shadow-[0_0_10px_rgba(249,115,22,0.1)] hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:border-orange-500/70";
   if (placement <= 4) return "bg-orange-500/10 border-orange-500/50 hover:border-orange-500/70";
   return "bg-zinc-900/50 border-zinc-800  hover:border-zinc-700";
 };
 
-export const getRankIcon = (tier: string | undefined) => {
+export const getRankIcon = (tier: string | undefined, queueType?: string) => {
   if (!tier) return 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png';
+  
   const tierLower = tier.toLowerCase();
+
+  // Handle Hyper Roll (Turbo) badges
+  if (queueType === 'RANKED_TFT_TURBO') {
+    const turboTiers: Record<string, string> = {
+      'gray': 'gray',
+      'green': 'green',
+      'blue': 'blue',
+      'purple': 'purple',
+      'orange': 'hyper',
+      'hyper': 'hyper'
+    };
+    const badge = turboTiers[tierLower] || 'gray';
+    return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/loadouts/tft/turbobadge/tft_turbo_badge_${badge}.png`;
+  }
+
   return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${tierLower}.png`;
 };
-
 export const getQueueName = (queueId: number) => {
   const queues: Record<number, string> = {
     1090: "Normal",
@@ -177,4 +212,31 @@ export const getQueueName = (queueId: number) => {
     1160: "Double Up",
   };
   return queues[queueId] || "TFT Match";
+};
+
+export const convertRoundToStage = (round: number): string => {
+
+  if (round <= 4) {
+    return `1-${round}`;
+
+  }
+  const roundSinceStage2 = round - 4;
+  const stage = Math.floor((roundSinceStage2 - 1) / 7) + 2;
+  const roundInStage = ((roundSinceStage2 - 1) % 7) + 1;
+  return `${stage}-${roundInStage}`;
+
+};
+
+export const getTFTCompanionIcon = (skinId: number) => {
+  return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/companions/${skinId}.png`;
+
+};
+
+export const getQueueDisplayName = (queueType: string) => {
+  const names: Record<string, string> = {
+    'RANKED_TFT': 'Ranked',
+    'RANKED_TFT_TURBO': 'Hyper Roll',
+    'RANKED_TFT_DOUBLE_UP': 'Double Up',
+  };
+  return names[queueType] || 'Standard';
 };

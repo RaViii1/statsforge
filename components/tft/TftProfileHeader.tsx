@@ -14,6 +14,7 @@ interface TFTProfileHeaderProps {
       rank: string;
       leaguePoints: number;
     }>;
+    
   };
   server: string;
   avgPlacement: string;
@@ -24,8 +25,9 @@ export default function TftProfileHeader({
   server = "euw1",
   avgPlacement,
 }: TFTProfileHeaderProps) {
-  const profileIconUrl = `https://ddragon.leagueoflegends.com/cdn/14.21.1/img/profileicon/${profile?.profileIconId || 0}.png`;
+  const profileIconUrl = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${profile?.profileIconId || 0}.jpg`;
   const mainRank = profile?.ranked?.[0] || { tier: 'UNRANKED', rank: '', leaguePoints: 0 };
+
   const safeServer = server || "euw1";
 
   return (
@@ -74,6 +76,7 @@ export default function TftProfileHeader({
                   <span className="text-orange-500 ml-2">{mainRank.leaguePoints} LP</span>
                 </p>
               </div>
+
             </div>
 
             {/* Avg Placement Badge */}
