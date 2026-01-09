@@ -3139,6 +3139,126 @@ export const items: Item[] = [
     "description": "90 Ability Power 15 Magic Penetration 6% Move SpeedStormraiderDealing 25% of a champion's maximum Health within 2.5s applies Squall to them.SquallAfter 2 seconds, deal magic damage. If the target dies before Squall triggers, it damages nearby enemies.",
     "image": "4646_stormsurge.png"
   },
+    {
+    "id": "2522",
+    "name": "Actualizer",
+    "stats": [
+      "SpellDamage",
+      "Mana",
+      "AbilityHaste",
+      "Active"
+
+    ],
+    "description": "Ability Power: 90 Mana: 300 Ability Haste: 10, [ACTIVE] Mana Made Real (60s cooldown): For 8 seconds, your mana is Empowered. While Empowered, your spells cost 100% more mana, you gain (15 + .005% bonus mana)% increased ability damage, healing, and shielding, and your basic ability cooldowns progress 30% faster",
+    "image": "2522_manaactive.png"
+  },
+      {
+    "id": "2510",
+    "name": "Dusk and Dawn",
+    "stats": [
+      "SpellDamage",
+      "Mana",
+      "Health",
+      "AbilityHaste",
+      "AttackSpeed"
+    ],
+    "description": "Ability Power: 70 Health: 300 Ability Haste: 20 Attack Speed: 25% Spellblade (1.5s cooldown): After using an Ability, your next Attack deals 100% base AD + 10% AP bonus magic damage on-hit and applies on-hit effects an additional time.",
+    "image": "2510_apfightersheen.png"
+  },
+      {
+    "id": "2512",
+    "name": "Fiendhunter Bolts",
+    "stats": [
+      "AttackSpeed",
+      "CriticalStrike",
+      "NonbootsMovement"
+    ],
+    "description": "Attack Speed: 40% Critical Strike Chance: 25% Movement Speed: 4% Night Vigil: Gain 30 Ultimate Haste. Opening Barrage (45s cooldown): After casting your Ultimate, your next 3 basic attacks within 8s gain 50% attack speed and critically strike for 75% of your normal critical strike damage. If an attack would already critically strike, it deals normal critical strike damage and also deals 10% bonus true damage.",
+    "image": "2512_adcallin.png"
+  },
+    {
+    "id": "2517",
+    "name": "Endless Hunger",
+    "stats": [
+      "damage",
+      "tenacity",
+      "SpellVamp"
+    ],
+    "description": "Attack Damage: 60 Tenacity: 20% Omnivamp: 5% Famine: Gain (5 + 10% bonus AD) Ability Haste Feast: When a champion that you damaged within 3 seconds dies, gain 15% omnivamp for 8 seconds.",
+    "image": "2517_adfighteromnivamp.png"
+  },
+        {
+    "id": "2520",
+    "name": "Bastionbreaker",
+    "stats": [
+      "damage",
+      "armorpenetration",
+      "abilityhaste"
+    ],
+    "description": "Attack Damage: 55 Lethality: 22 Ability Haste: 15 Shaped Charge: Dealing Ability damage to a champion or epic monster deals an additional (30 + 150% lethality) true damage. Sabotage: Taking down a champion within 3 seconds of damaging them grants Sabotage for 90 seconds. While you have Sabotage, your next attack against an epic monster or turret deals an additional (300 + 2500% lethality) true damage over 3 seconds.",
+    "image": "2520_adassassingameender.png"
+  },
+
+  {
+    "id": "2523",
+    "name": "Hexoptics C44",
+    "stats": [
+        "attackdamage",
+        "critchance"
+    ],
+    "description": "Attack Damage: 50 Critical Strike Chance: 25% Magnification: Deal up to 10% increased damage with attacks, based on how far away the enemy is (max damage at 750 range). Arcane Aim: When a champion that you damaged within 3 seconds dies, gain 100 additional attack range for 6 seconds.",
+    "image": "2523_adcscope.png"
+},
+
+{
+    "id": "2524",
+    "name": "Bandlepipes",
+    "stats": [
+        "health",
+        "armor",
+        "magicresist",
+        "abilityhaste"
+    ],
+    "description": "Health: 200 Armor: 20 Magic Resistance: 20 Ability Haste: 15 Fanfare: Slowing or Immobilizing an enemy champion grants Fanfare for 8 (melee) / 4 (ranged) seconds. Fanfare grants 20 Movement Speed. While you have Fanfare, nearby allies, including yourself, gain 30% (melee) / 20% (ranged) attack speed.",
+    "image": "2524_tankasaura.png"
+},
+
+{
+    "id": "2525",
+    "name": "Protoplasm Harness",
+    "stats": [
+        "health",
+        "abilityhaste"
+    ],
+    "description": "Health: 600 Ability Haste: 15 Lifeline: Taking damage that would reduce your health below 30% causes you to gain 200 maximum health for 5 seconds, then heal (200-400 [level scaling] + 250% armor + 250% magic resistance) health over the duration. While regenerating health, you gain 15% increased size, 10% Movement Speed, and 25% tenacity.",
+    "image": "2525_tanklifeline.png"
+},
+
+{
+    "id": "2526",
+    "name": "Whispering Circlet",
+    "stats": [
+        "health",
+        "mana",
+        "manaregen",
+        "healshieldpower"
+    ],
+    "description": "Health: 200 Mana: 300 Base Mana Regeneration: 75% Heal and Shield Power: 8% Harmony: Gain (.005% bonus mana)% Heal and Shield Power. Manaflow: Landing Abilities grants 4 max mana (doubled vs champions). Transforms into Diadem of Songs at 360 max mana.",
+    "image": "2526_enchantertearbase.png"
+},
+
+{
+    "id": "2530",
+    "name": "Diadem of Songs",
+    "stats": [
+        "health",
+        "mana",
+        "manaregen",
+        "healshieldpower"
+    ],
+    "description": "Health: 200 Mana: 1000 Base Mana Regeneration: 100% Heal and Shield Power: 8% Harmony: Gain (.005% bonus mana)% Heal and Shield Power. Consonance: While you or any ally you've healed or shielded in the last 3 seconds is in combat with champions, each second, heal the lowest health nearby ally champion for (.008% bonus mana).",
+    "image": "2530_enchantertearupgraded.png"
+},
   {
     "id": "6029",
     "name": "Ironspike Whip",
@@ -3332,7 +3452,7 @@ export const items: Item[] = [
       "AbilityHaste"
     ],
     "description": "100 Ability Power 600 Mana 10 Ability HasteFireDamaging Abilities fire 6 Shots that deal bonus magic damage to the target and nearby enemies. Remaining Shots fire on the primary target, dealing 20% damage.",
-    "image": "6655_casterscompanion.png"
+    "image": "6655_mage_t4_ludenstempest.png"
   },
   {
     "id": "6656",
@@ -5750,7 +5870,7 @@ export const items: Item[] = [
       "AbilityHaste"
     ],
     "description": "85 Ability Power 600 Mana 25 Ability HasteFireDamaging Abilities consume all the charges to deal an additional magic damage to the target and one additional nearby target per charge. If there are insufficient targets in range, for each remaining shot, repeat the damage on the primary target.",
-    "image": "6655_casterscompanion.png"
+    "image": "6655_mage_t4_ludenstempest.png"
   },
   {
     "id": "226656",
@@ -7231,6 +7351,7 @@ export function getItemName(id: string): string | undefined {
 
 export function getItemImage(id: string): string | undefined {
   const item = items.find(i => i.id === id);
+  // console.log("id", id, "item", item?.name);
   return item?.image;
 }
 

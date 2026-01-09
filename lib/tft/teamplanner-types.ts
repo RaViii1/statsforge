@@ -12,6 +12,7 @@ export type PhaseKey = 'early' | 'mid' | 'final';
 
 export interface TeamPhase {
   units: UnitPosition[];
+  notes?: string;
 }
 
 export interface LevelingStep {
@@ -42,6 +43,7 @@ export interface TeamComp {
   patch: string;
   difficulty?: DifficultyLevel;
   activePresetId?: string;
+  synergiesList?: string[];
 }
 
 export interface TooltipState {
@@ -52,7 +54,7 @@ export interface TooltipState {
   y: number;
 }
 
-export const PATCHES = ['14.23', '14.24', '16.1c'];
+export const PATCHES = ['14.23', '16.1', '16.1c', '16.2', '16.3', '16.4', '16.5', '16.6', '16.7'];
 
 export const DEFAULT_LEVELING: LevelingStep[] = [
   { level: 3, stage: '2-1', gold: '0' },

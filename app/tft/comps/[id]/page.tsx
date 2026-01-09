@@ -6,76 +6,63 @@ import {
   ChevronLeft, 
   Star,
   Crown,
-  Pencil
+  Pencil,
+  ChevronsUp,
+  Coins,
+  Swords,
+  Sparkles,
+  ArrowRight,
+  Target,
+  Zap,
+  Info,
+  Terminal,
+  Activity,
+  Layers,
+  Share2
 } from 'lucide-react';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey } from '@/lib/tft/teamplanner-types';
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
+import { CurrentSetNumber, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
+import { getDifficultyConfig } from '@/lib/tft/difficulty';
+import { toast } from 'sonner';
 
-const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; color: string; bgColor: string }> = {
-  easy: { 
-    label: 'Easy', 
+
+const PHASE_CONFIG: Record<PhaseKey, { label: string; color: string; accentColor: string; icon: React.ReactNode; desc: string }> = {
+  early: { 
+    label: 'Early game', 
     color: 'text-emerald-400', 
-    bgColor: 'bg-emerald-500/20 border border-emerald-500/30',
+    accentColor: 'emerald',
+    desc: 'Establish early economy and secure key low-cost foundations.',
+    icon: <Target className="w-5 h-5" /> 
   },
-  medium: { 
-    label: 'Medium', 
-    color: 'text-amber-400', 
-    bgColor: 'bg-amber-500/20 border border-amber-500/30',
+  mid: { 
+    label: 'Mid game', 
+    color: 'text-blue-400', 
+    accentColor: 'blue',
+    desc: 'Transition into core synergies and stabilize against the lobby.',
+    icon: <Zap className="w-5 h-5" /> 
   },
-  hard: { 
-    label: 'Hard', 
-    color: 'text-red-400', 
-    bgColor: 'bg-red-500/20 border border-red-500/30',
-  },
-  'augment-dependent': { 
-    label: 'Augment', 
-    color: 'text-purple-400', 
-    bgColor: 'bg-purple-500/20 border border-purple-500/30',
+  final: { 
+    label: 'Final board', 
+    color: 'text-orange-400', 
+    accentColor: 'orange',
+    desc: 'Final board execution. Maximize power spikes and cap out levels.',
+    icon: <Swords className="w-5 h-5" /> 
   }
-};
-
-const PHASE_CONFIG: Record<PhaseKey, { label: string; color: string; bgColor: string }> = {
-  early: { label: 'Early Game', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10 border-emerald-500/30' },
-  mid: { label: 'Mid Game', color: 'text-blue-400', bgColor: 'bg-blue-500/10 border-blue-500/30' },
-  final: { label: 'Final Board', color: 'text-orange-400', bgColor: 'bg-orange-500/10 border-orange-500/30' }
-};
-
-const getCostColor = (cost: number): string => {
-  switch (cost) {
-    case 1: return '#94a3b8';
-    case 2: return '#10b981';
-    case 3: return '#3b82f6';
-    case 4: return '#a855f7';
-    case 5: return '#eab308';
-    case 6: return '#ef4444';
-    default: return '#94a3b8';
-  }
-};
-
-const getUnitCost = (characterId: string): number => {
-  const costMap: Record<string, number> = {
-    'TFT16_Sion': 1, 'TFT16_Shen': 2, 'TFT16_Aphelios': 3, 'TFT16_Bard': 3,
-    'TFT16_DrMundo': 1, 'TFT16_Illaoi': 1, 'TFT16_Volibear': 3, 'TFT16_Wukong': 2,
-    'TFT16_KobukoYuumi': 3, 'TFT16_JarvanIV': 1
-  };
-  return costMap[characterId] || 1;
 };
 
 const getPresetStyle = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
-  if (preset) {
-    return preset.tagColor;
-  }
-  return 'text-zinc-400 bg-zinc-700/50 border-zinc-600';
+  return preset?.tagColor || 'text-zinc-400 bg-zinc-800/50 border-zinc-700';
 };
 
 const getPresetName = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
-  return preset?.name || 'Custom';
+  return preset?.name || 'Custom Tempo';
 };
 
 interface TooltipState {
@@ -97,45 +84,45 @@ const ReadOnlyHexGrid = ({
   setTooltip: React.Dispatch<React.SetStateAction<TooltipState>>;
   phase: PhaseKey;
 }) => {
-  const hexWidth = 75;
-  const hexHeight = 87;
-  const spacing = 88;
+  const hexWidth = 70;
+  const hexHeight = 81;
+  const spacing = 82;
 
   return (
     <div className="flex flex-col items-center">
       <div 
-        className="relative rounded-2xl bg-zinc-900/30 border border-zinc-800 overflow-hidden p-6"
-        style={{ width: '698px', height: '402px' }}
+        className="relative rounded-3xl bg-black/40 border border-white/5 overflow-hidden p-8 backdrop-blur-md shadow-2xl"
+        style={{ width: '680px', height: '390px' }}
       >
-        <div className="relative" style={{ width: '650px', height: '370px' }}>
+        <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(249,115,22,0.1),transparent)]" />
+        
+        <div className="relative" style={{ width: '600px', height: '330px' }}>
           {[0, 1, 2, 3].map(row => [0, 1, 2, 3, 4, 5, 6].map(col => {
             const unit = units.find(u => u.row === row && u.col === col);
             const isOffset = row % 2 !== 0;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
-            const cost = unit ? getUnitCost(unit.characterId) : 1;
+            const cost = unit ? getChampionCost(unit.characterId) : 1;
             
             return (
               <div 
                 key={`${phase}-${row}-${col}`} 
-                className="absolute transition-all" 
+                className="absolute transition-all duration-500" 
                 style={{ 
                   left: `${col * spacing + (isOffset ? spacing / 2 : 0)}px`, 
-                  top: `${row * spacing}px`, 
+                  top: `${row * 75}px`, 
                   width: `${hexWidth}px`, 
                   height: `${hexHeight}px` 
                 }}
               >
-                <div className={`relative w-full h-full flex items-center justify-center ${unit ? 'scale-100' : 'scale-90 opacity-20'}`}>
-                  <svg viewBox="-10 -10 120 135.47" className="w-full h-full filter drop-shadow-lg overflow-visible">
+                <div className={`relative w-full h-full flex items-center justify-center ${unit ? 'scale-100' : 'scale-90 opacity-10'}`}>
+                  <svg viewBox="-10 -10 120 135.47" className="w-full h-full filter drop-shadow-xl overflow-visible">
                     <path 
                       d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" 
-                      fill={unit ? '#18181b' : 'rgba((53, 54, 54, 0.3)'} 
-                      stroke={unit ? (isCarry ? '#ea580c' : getCostColor(cost)) : 'rgb(53, 54, 54)'} 
-                      strokeWidth={unit ? '4' : '1'}
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                      vectorEffect="non-scaling-stroke"
-                    />
+                      fill={unit ? '#09090b' : 'rgba(70, 70, 72, 0.9)'} 
+                      stroke={unit ? (isCarry ? '#f97316' : getCostColor(cost)) : 'rgba(100, 100, 102, 0.6)'} 
+                      strokeWidth={unit ? (isCarry ? '4' : '2') : '2'}
+                      className="transition-colors duration-300"
+                    />z
                     {unit && (
                       <>
                         <defs>
@@ -144,7 +131,7 @@ const ReadOnlyHexGrid = ({
                           </clipPath>
                         </defs>
                         <image 
-                          href={getTFTUnitIcon(unit.characterId, 16)} 
+                          href={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} 
                           width="94" 
                           height="108" 
                           x="3" 
@@ -159,19 +146,19 @@ const ReadOnlyHexGrid = ({
                   {unit && (
                     <>
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-20">
-                        {isCarry && <Crown className="w-4 h-4 text-orange-500 fill-orange-500" />}
-                        <div className="flex -space-x-0.5 ml-0.5">
+                        {isCarry && <Crown className="w-4 h-4 text-orange-500 fill-orange-500 filter drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />}
+                        <div className="flex -space-x-1">
                           {Array.from({ length: unit.stars }).map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                            <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                           ))}
                         </div>
                       </div>
                       {unit.items.length > 0 && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex -space-x-0.5 z-30">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex -space-x-1 z-30">
                           {unit.items.map((item, i) => (
                             <div 
                               key={i} 
-                              className="w-5 h-5 rounded border border-zinc-600 overflow-hidden bg-zinc-800 cursor-help"
+                              className="w-5 h-5 rounded-md border border-zinc-700 overflow-hidden bg-zinc-900 cursor-help hover:scale-150 hover:z-10 transition-all duration-300 shadow-xl"
                               onMouseEnter={(e) => setTooltip({ 
                                 visible: true, 
                                 title: item, 
@@ -222,181 +209,332 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-bold text-white mb-2">Comp Not Found</h2>
-          <Link href="/tft/comps" className="text-orange-500 hover:underline">
-            Back to Comps
+          <div className="w-24 h-24 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-8 mx-auto animate-pulse">
+            <Activity className="w-10 h-10 text-zinc-700" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2 tracking-tighter uppercase">Comp Missing</h2>
+          <p className="text-zinc-500 mb-8 max-w-xs mx-auto text-sm">The requested tactical data could not be retrieved from local storage.</p>
+          <Link href="/tft/comps" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-xl">
+            <ChevronLeft className="w-4 h-4" />
+            Back to Hub
           </Link>
         </div>
       </div>
     );
   }
 
-  const difficulty = DIFFICULTY_CONFIG[comp.difficulty || 'medium'];
+  const difficulty = getDifficultyConfig(comp.difficulty || 'medium');
   const presetStyle = getPresetStyle(comp.activePresetId);
   const presetName = getPresetName(comp.activePresetId);
 
+  const finalUnits = comp.phases.final.units;
+  const carries = comp.mainCarryIds
+    .map(id => {
+      const unit = finalUnits.find(u => u.characterId === id);
+      return unit ? { unit, cost: getChampionCost(id) } : null;
+    })
+    .filter(Boolean) as { unit: UnitPosition; cost: number }[];
+
+  const carryItems = carries.flatMap(c => c.unit.items);
+  const priorityItems = [...new Set(carryItems)];
+
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500/30">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-50">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-orange-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute top-[20%] -right-[10%] w-[30%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]"></div>
       </div>
 
       <Navbar />
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
-          <ChevronLeft className="w-4 h-4" />
-          Back to Comps
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white mb-10 transition-all group uppercase text-[10px] font-black tracking-widest">
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Return to Teamcomps list
         </Link>
 
-        <div className="mb-8 flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-3 flex-wrap">
-              <h1 className="text-3xl font-bold text-white">{comp.name}</h1>
-              <span className="px-3 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-sm font-bold rounded">
-                {comp.patch}
-              </span>
-              <span className={`px-3 py-1 text-sm font-medium rounded border ${presetStyle}`}>
-                {presetName}
-              </span>
-              <span className={`px-3 py-1 ${difficulty.bgColor} ${difficulty.color} text-sm font-bold rounded`}>
-                {difficulty.label}
-              </span>
-            </div>
-            {comp.description && comp.description !== 'Click to add operational notes...' && (
-              <p className="text-zinc-400 max-w-2xl">{comp.description}</p>
-            )}
+        {/* Header Section */}
+        <div className="relative bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 md:p-12 mb-12 backdrop-blur-xl shadow-2xl overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Layers className="w-64 h-64 text-white" />
           </div>
-          <Link href={`/tft/planner?edit=${comp.id}`}>
-            <button className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white rounded-lg transition-colors">
-              <Pencil className="w-4 h-4" />
-              Edit in Planner
-            </button>
-          </Link>
+          
+          <div className="relative z-10 flex items-start justify-between flex-wrap gap-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="px-3 py-1 bg-white/5 border border-white/10 text-white/40 text-[10px] font-black rounded tracking-widest uppercase">
+                  {comp.patch} Build
+                </span>
+                <span className={`px-3 py-1 text-[10px] font-black rounded border uppercase tracking-widest ${presetStyle}`}>
+                  {presetName}
+                </span>
+                  <span 
+                    className="px-3 py-1 text-[10px] font-black rounded border uppercase tracking-widest"
+                    style={{ 
+                      backgroundColor: difficulty.bgColor, 
+                      color: difficulty.color, 
+                      borderColor: difficulty.borderColor 
+                    }}
+                  >
+                    {difficulty.label}
+                  </span>
+              </div>
+              
+              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none italic">
+                {comp.name}
+              </h1>
+              
+              {comp.description && comp.description !== 'Click to add operational notes...' && (
+                <p className="text-zinc-400 max-w-2xl leading-relaxed text-sm font-medium border-l-2 border-orange-500/50 pl-6 py-1">
+                  {comp.description}
+                </p>
+              )}
+            </div>
+            
+            <Link href={`/tft/planner?edit=${comp.id}`}>
+              <button className="flex items-center gap-3 px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-[0_0_30px_rgba(234,88,12,0.3)] hover:scale-105 active:scale-95 group">
+                <Pencil className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                Edit in Planner
+              </button>
+            </Link>
+          </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {comp.mainCarryIds.length > 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-zinc-300 mb-4 uppercase tracking-wider flex items-center gap-2">
-                <Crown className="w-4 h-4 text-orange-500" />
-                Main Carries
+        {/* Tactical Overview Grid */}
+        <div className="grid lg:grid-cols-12 gap-8 mb-16">
+          {/* Main Carries */}
+          {carries.length > 0 && (
+            <div className="lg:col-span-5 bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
+              <h3 className="text-[10px] font-black text-orange-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-3">
+                <Crown className="w-4 h-4" />
+                High Value Assets
               </h3>
-              <div className="space-y-3">
-                {comp.mainCarryIds.map(id => {
-                  const unit = comp.phases.final.units.find(u => u.characterId === id);
-                  if (!unit) return null;
-                  const cost = getUnitCost(id);
-                  
-                  return (
-                    <div key={id} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl">
-                      <div 
-                        className="w-12 h-12 rounded-lg border-2 overflow-hidden"
-                        style={{ borderColor: getCostColor(cost) }}
-                      >
-                        <img src={getTFTUnitIcon(id, 16)} alt={unit.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-white">{unit.name}</p>
-                        <p className="text-xs text-zinc-500">{cost} cost</p>
-                      </div>
-                      {unit.items.length > 0 && (
-                        <div className="flex gap-1">
-                          {unit.items.map((item, i) => (
-                            <div 
-                              key={i} 
-                              className="w-7 h-7 rounded bg-zinc-700 border border-zinc-600 overflow-hidden cursor-help"
-                              onMouseEnter={(e) => setTooltip({ 
-                                visible: true, 
-                                title: item, 
-                                description: getItemDescription(item) || 'No description', 
-                                x: e.clientX, 
-                                y: e.clientY 
-                              })}
-                              onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
-                            >
-                              <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+              <div className="grid gap-4">
+                {carries.map(({ unit, cost }, i) => (
+                  <div 
+                    key={i} 
+                    className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-orange-500/30 transition-all group"
+                  >
+                    <div 
+                      className={`w-16 h-16 rounded-xl border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} shadow-lg transform group-hover:scale-105 transition-transform`}
+                    >
+                      <img src={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} alt={unit.name} className="w-full h-full object-cover" />
                     </div>
-                  );
-                })}
+                    <div className="flex-1">
+                      <p className="font-black text-white uppercase tracking-tight text-lg italic">{unit.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Credit Unit</span>
+                      </div>
+                    </div>
+                    {unit.items.length > 0 && (
+                      <div className="flex gap-1.5">
+                        {unit.items.map((item, idx) => (
+                          <div 
+                            key={idx} 
+                            className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden cursor-help hover:scale-125 transition-all shadow-xl"
+                            onMouseEnter={(e) => setTooltip({ 
+                              visible: true, 
+                              title: item, 
+                              description: getItemDescription(item) || 'No description', 
+                              x: e.clientX, 
+                              y: e.clientY 
+                            })}
+                            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                          >
+                            <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          <div className={`bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 ${comp.mainCarryIds.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
-            <h3 className="text-sm font-bold text-zinc-300 mb-4 uppercase tracking-wider">Leveling Guide</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              {comp.levelingSteps.map((step, i) => (
-                <div 
-                  key={i} 
-                  className={`flex flex-col items-center p-3 rounded-lg transition-all ${step.isCurrent ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-zinc-800/30 border border-zinc-800'}`}
-                >
-                  <span className="w-10 h-10 rounded-lg bg-orange-950/50 border border-orange-900/30 flex items-center justify-center text-orange-500 font-bold text-lg mb-2">
-                    {step.level}
-                  </span>
-                  <span className="text-zinc-300 text-sm font-medium">{step.stage}</span>
-                  <span className="text-orange-400 text-xs font-bold">{step.gold}g</span>
-                  {step.description && (
-                    <span className="text-[10px] text-zinc-500 mt-1 text-center">{step.description}</span>
-                  )}
+          {/* Levelling & Priority Items */}
+          <div className={`${carries.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-8`}>
+            {/* Priority Items */}
+            {priorityItems.length > 0 && (
+              <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
+                  <Sparkles className="w-4 h-4" />
+                  Itemization Priority
+                </h3>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {priorityItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div 
+                        className="relative w-14 h-14 rounded-2xl bg-zinc-800 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
+                        onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: getItemDescription(item) || '', x: e.clientX, y: e.clientY })}
+                        onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                      >
+                        <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      {idx < priorityItems.length - 1 && (
+                        <ArrowRight className="w-4 h-4 text-white/10" />
+                      )}
+                    </div>
+                  ))}
+                  <div className="ml-auto bg-white/5 border border-white/5 rounded-2xl px-5 py-3 flex items-center gap-3">
+                    <Info className="w-4 h-4 text-amber-500" />
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Sequence: Standard Optimization</span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="space-y-8">
-          {(['early', 'mid', 'final'] as PhaseKey[]).map(phase => {
+              <div className="border-t border-zinc-800/50 pt-5">
+                <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">
+                  Levelling Guide
+                </h4>
+                <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+                  {comp.levelingSteps.map((step, i) => (
+                    <div key={i} className="flex items-center">
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <div className="flex items-center gap-1">
+                          <ChevronsUp className={`w-4 h-4 text-yellow-600`} />
+                          <span className={`text-2xl font-black text-white border-l border-orange-500/40  pl-2`}>
+                            {step.level}
+                          </span>
+                        
+                          <div className="flex flex-col items-start ml-0.5">
+                            <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
+                            <div className="flex items-center gap-0.5">
+                              <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>
+                                {step.gold}
+                              </span>
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="h-4 flex items-center justify-center">
+                          {step.description && (
+                            <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
+                          )}
+                        </div>
+                      </div>
+                      {i < comp.levelingSteps.length - 1 && (
+                        <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+        {/* Detailed Phase Analysis */}
+        <div className="space-y-24 mt-24">
+          {(['early', 'mid', 'final'] as PhaseKey[]).map((phase, idx) => {
             const config = PHASE_CONFIG[phase];
             const units = comp.phases[phase].units;
+            const hasNotes = comp.phases[phase].notes && comp.phases[phase].notes.length > 0;
             
             return (
-              <div key={phase} className="bg-zinc-900/30 border border-zinc-800 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <h2 className={`text-xl font-bold ${config.color}`}>{config.label}</h2>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-medium border ${config.bgColor} ${config.color}`}>
-                      {units.length} units
-                    </span>
+              <div key={phase} className="relative">
+                {/* Connector Line */}
+                {idx < 2 && (
+                  <div className="absolute left-10 top-full h-24 w-px bg-linear-to-b from-white/10 to-transparent" />
+                )}
+
+                <div className="grid lg:grid-cols-12 gap-12 items-start">
+                  <div className="lg:col-span-4 space-y-8">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-zinc-900 border border-white/10 ${config.color} shadow-xl`}>
+                          {config.icon}
+                        </div>
+                        <div>
+                          <h2 className="text-sm font-black text-white uppercase tracking-[0.4em]">{config.label}</h2>
+                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{units.length} units Deployed</p>
+                        </div>
+                      </div>
+                      <p className="text-zinc-500 text-xs font-medium leading-relaxed max-w-sm">
+                        {config.desc}
+                      </p>
+                    </div>
+
+                    {/* Aesthetic Notes Display */}
+                    <div className="relative group">
+                      <div className="absolute -inset-2 bg-linear-to-r from-zinc-800 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      
+                      <div className="relative space-y-4">
+                        <div className="flex items-center gap-3 px-4 py-1.5 bg-black/40 border border-white/5 rounded-full w-fit">
+                          <Terminal className={`w-3 h-3 ${config.color}`} />
+                          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest italic">Game Plan</span>
+                        </div>
+
+                        {hasNotes ? (
+                          <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+                            <p className="text-zinc-300 text-sm font-medium leading-relaxed italic whitespace-pre-wrap">
+                              {comp.phases[phase].notes}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-white/2 border border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center text-center">
+                            <Info className="w-5 h-5 text-zinc-800 mb-2" />
+                            <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">No phase plan logged</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="lg:col-span-8 flex justify-center">
+                    {units.length > 0 ? (
+                      <ReadOnlyHexGrid 
+                        units={units} 
+                        mainCarryIds={comp.mainCarryIds}
+                        setTooltip={setTooltip}
+                        phase={phase}
+                      />
+                    ) : (
+                      <div className="w-[680px] h-[390px] flex items-center justify-center bg-white/2 border-2 border-dashed border-white/5 rounded-[2.5rem]">
+                        <div className="text-center space-y-4">
+                          <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center mx-auto shadow-2xl">
+                            {config.icon}
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-black text-zinc-600 uppercase tracking-widest">Sector Inactive</p>
+                            <p className="text-[10px] font-medium text-zinc-800 uppercase tracking-widest">No units placed for this phase</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
-                {units.length > 0 ? (
-                  <div className="flex justify-center">
-                    <ReadOnlyHexGrid 
-                      units={units} 
-                      mainCarryIds={comp.mainCarryIds}
-                      setTooltip={setTooltip}
-                      phase={phase}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-48 flex items-center justify-center text-zinc-600 border border-dashed border-zinc-800 rounded-xl">
-                    No units placed for {config.label.toLowerCase()}
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
       </main>
+      <div className='flex flex-row items-center justify-center mb-16'><button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Operation link copied"); }} className="flex items-center gap-3 px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-[0_0_30px_rgba(234,88,12,0.3)] hover:scale-105 active:scale-95 group"><Share2 className="w-4 h-4" /> Share Teamcomp</button>
+</div>
+     
 
       <Footer />
 
       {tooltip.visible && (
         <div 
-          className="fixed z-50 pointer-events-none bg-zinc-900 border border-zinc-700 rounded-xl p-3 shadow-2xl max-w-xs"
-          style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
+          className="fixed z-[100] pointer-events-none bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl max-w-[280px] transform-gpu transition-transform animate-in fade-in zoom-in duration-200"
+          style={{ left: tooltip.x + 20, top: tooltip.y + 20 }}
         >
-          <p className="font-bold text-orange-400 text-sm mb-1">{tooltip.title}</p>
-          <p className="text-xs text-zinc-300 leading-relaxed">{tooltip.description}</p>
+          <div className="absolute -top-2 -left-2 w-4 h-4 bg-orange-500 rounded-full opacity-20 blur-sm" />
+          <p className="font-black text-white text-xs mb-2 uppercase tracking-tight italic border-b border-white/10 pb-2">{tooltip.title}</p>
+          <p className="text-[10px] text-zinc-400 font-medium leading-relaxed tracking-tight uppercase opacity-80">{tooltip.description}</p>
         </div>
       )}
+
+      <style jsx global>{`
+        @keyframes subtle-pulse {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        .animate-subtle-pulse {
+          animation: subtle-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
     </div>
   );
 }

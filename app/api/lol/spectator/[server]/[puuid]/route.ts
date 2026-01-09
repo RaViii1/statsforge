@@ -12,41 +12,43 @@ export async function GET(
     return NextResponse.json({ error: 'RIOT_API_KEY is missing' }, { status: 500 });
   }
 
-  try {
-    const platformHost = `${server}.api.riotgames.com`;
+    try {
+      const platformHost = `${server}.api.riotgames.com`;
 
-    console.log(`[Spectator] Checking live game for puuid: ${puuid} on ${server}`);
+      console.log(`[Spectator] Fetching from Riot: https://${platformHost}/lol/spectator/v5/active-games/by-summoner/${puuid}`);
 
-    // Fetch active game data
-    const response = await axios.get(
-      `https://${platformHost}/lol/spectator/v5/active-games/by-summoner/${puuid}`,
-      {
-        headers: { 'X-Riot-Token': API_KEY },
-      }
-    );
+      // Fetch active game data
+      const response = await axios.get(
+        `https://${platformHost}/lol/spectator/v5/active-games/by-summoner/${puuid}`,
+        {
+          headers: { 'X-Riot-Token': API_KEY },
+        }
+      );
 
-    console.log(`[Spectator] Live game found for puuid: ${puuid}`);
+      console.log(`[Spectator] SUCCESS: Live game found for puuid: ${puuid} on ${server}`);
 
-    return NextResponse.json({
-      inGame: true,
-      gameData: response.data,
-    });
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
+      return NextResponse.json({
+        inGame: true,
+        gameData: response.data,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const errorData = error.response?.data;
 
-      if (status === 404) {
-        // Player not in game
-        return NextResponse.json({ inGame: false }, { status: 200 });
-      }
-      if (status === 401) {
-        return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
-      }
-      if (status === 429) {
-        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
-      }
+        console.log(`[Spectator] Riot API returned status ${status} for ${puuid} on ${server}`);
 
-      console.error(`[Spectator] Error:`, error.response?.data);
+        if (status === 404) {
+          // Player not in game
+          return NextResponse.json({ inGame: false }, { status: 200 });
+        }
+        
+        console.error(`[Spectator] Riot API Error:`, {
+          status,
+          data: errorData,
+          url: error.config?.url
+        });
+
       return NextResponse.json(
         { error: 'Failed to fetch spectator data' },
         { status: status || 500 }

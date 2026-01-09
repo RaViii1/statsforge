@@ -44,17 +44,19 @@ interface TftTeamPlannerProps {
 const createEmptyTeam = (): TeamComp => ({
   id: Math.random().toString(36).substr(2, 9),
   name: 'NEW TACTICAL PLAN',
-  description: 'Click to add operational notes...',
+  description: 'Click to add teamcomp description...',
   phases: {
-    early: { units: [] },
-    mid: { units: [] },
-    final: { units: [] }
+    early: { units: [], notes: '' },
+    mid: { units: [], notes: '' },
+    final: { units: [], notes: '' }
   },
   mainCarryIds: [],
   levelingSteps: JSON.parse(JSON.stringify(DEFAULT_LEVELING)),
-  patch: PATCHES[0],
-  difficulty: undefined
-});
+    patch: PATCHES[0],
+    difficulty: undefined,
+    synergiesList: [],
+  });
+
 
 export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const [currentTeam, setCurrentTeam] = useState<TeamComp | null>(null);
@@ -103,7 +105,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     if (saved) {
       try {
         teams = JSON.parse(saved);
-        toast.success("Teamcomp saved");
       } catch (e) {
         teams = [];
       }
@@ -117,6 +118,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     }
     
     localStorage.setItem('tft_planned_teams_v3', JSON.stringify(teams));
+    toast.success("Teamcomp saved locally");
     setShowSaveToast(true);
     setIsEditMode(true);
   };
@@ -306,11 +308,11 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
       <div className="flex items-center justify-between px-6 py-4 bg-white/2 border-b border-white/5">
         <div className="flex items-center gap-4">
-          <Link href="/tft/comps" className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-medium transition-all">
+          <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-all group uppercase text-[10px] font-black tracking-widest">
             <ArrowLeft className="w-4 h-4" />
             Back to Comps
           </Link>
-          <span className="text-[11px] font-black text-white/40 tracking-[0.2em]">
+          <span className="text-[11px] font-black text-orange-500 tracking-[0.2em]">
             {isEditMode ? 'EDITING' : 'NEW COMP'}
           </span>
         </div>
@@ -334,7 +336,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
               {PATCHES.map(p => <option key={p} value={p} className="bg-zinc-900">{p}</option>)}
             </select>
           </div>
-          <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Operation link copied"); }} className="p-2.5 hover:bg-white/5 rounded-xl border border-white/5 text-white/40 hover:text-white transition-all"><Share2 className="w-4 h-4" /></button>
+          <button onClick={() => { navigator.clipboard.writeText(`http://localhost:3000/tft/comps/${currentTeam.id}`); toast.success("Operation link copied"); }} className="p-2.5 hover:bg-white/5 rounded-xl border border-white/5 text-white/40 hover:text-white transition-all"><Share2 className="w-4 h-4" /></button>
           <button onClick={deleteTeam} className="p-2.5 hover:bg-red-500/10 rounded-xl border border-white/5 text-white/20 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>
         </div>
       </div>
@@ -343,6 +345,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
           <div className="p-8 lg:p-12 space-y-12 border-r border-white/5 min-w-0">
           <div className="flex flex-col md:flex-row items-end justify-between gap-8">
             <div className="space-y-4 flex-1">
+              
               {isEditingName ? (
                 <div className="flex items-center gap-2">
                   <input autoFocus value={currentTeam.name} onChange={(e) => updateTeam({ name: e.target.value })} onBlur={() => setIsEditingName(false)} onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)} className="bg-white/5 border border-orange-500/50 rounded-2xl px-5 py-3 text-2xl font-black text-white w-full focus:outline-none" />
@@ -353,6 +356,19 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                   <Edit3 className="w-5 h-5 opacity-0 group-hover:opacity-40 text-white transition-all" />
                 </div>
               )}
+            <div className="w-full md:w-80 group relative">
+              <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest py-2">Teamcomp Description</h3>
+              {isEditingDesc ? (
+                <textarea autoFocus value={currentTeam.description} onChange={(e) => updateTeam({ description: e.target.value })} onBlur={() => setIsEditingDesc(false)} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-24 focus:outline-none focus:border-orange-500/50 text-xs resize-none" />
+              ) : (
+                
+                <div className="flex gap-4 p-4 bg-white/2 rounded-2xl border border-white/5 items-start cursor-pointer hover:bg-white/4 transition-colors" onClick={() => setIsEditingDesc(true)}>
+                  <p className="text-white/40 text-[11px] font-medium leading-relaxed italic flex-1">"{currentTeam.description}"</p>
+                  <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-40 text-white" />
+                </div>
+              )}
+            </div>
+
               <div className="flex items-center gap-3">
                 <div className="flex p-1 bg-white/4 border border-white/5 rounded-2xl shadow-inner">
                   {(['early', 'mid', 'final'] as PhaseKey[]).map(phase => (
@@ -366,17 +382,20 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                   ))}
                 </div>
               </div>
-            </div>
-
-            <div className="w-full md:w-80 group relative">
-              {isEditingDesc ? (
-                <textarea autoFocus value={currentTeam.description} onChange={(e) => updateTeam({ description: e.target.value })} onBlur={() => setIsEditingDesc(false)} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-24 focus:outline-none focus:border-orange-500/50 text-xs resize-none" />
-              ) : (
-                <div className="flex gap-4 p-4 bg-white/2 rounded-2xl border border-white/5 items-start cursor-pointer hover:bg-white/4 transition-colors" onClick={() => setIsEditingDesc(true)}>
-                  <p className="text-white/40 text-[11px] font-medium leading-relaxed italic flex-1">"{currentTeam.description}"</p>
-                  <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-40 text-white" />
+              
+              <div className="w-full space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Phase Strategy Notes</span>
                 </div>
-              )}
+                  <textarea 
+                    key={activePhase}
+                    value={currentPhaseData.notes} 
+                    onChange={(e) => updateCurrentPhase({ notes: e.target.value })} 
+
+                  placeholder={`Add specific notes for the ${activePhase} game phase...`}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-32 focus:outline-none focus:border-orange-500/50 text-[11px] resize-none leading-relaxed italic"
+                />
+              </div>
             </div>
           </div>
 
@@ -394,15 +413,17 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
             setTooltip={setTooltip}
           />
 
-          <LevelingTempo
-            steps={currentTeam.levelingSteps}
-            activePresetId={currentTeam.activePresetId}
-            onStepChange={updateLevelingStep}
-            onApplyPreset={(presetId, steps) => updateTeam({ 
-              levelingSteps: steps,
-              activePresetId: presetId
-            })}
-          />
+            <LevelingTempo
+              steps={currentTeam.levelingSteps}
+              activePresetId={currentTeam.activePresetId}
+              onStepChange={updateLevelingStep}
+              onApplyPreset={(presetId, steps) => updateTeam({ 
+                levelingSteps: steps,
+                activePresetId: presetId
+              })}
+            />
+
+
 
           <HexGrid
             units={currentPhaseData.units}

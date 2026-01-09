@@ -265,16 +265,16 @@ export default function TFTPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
-            <Trophy className="w-10 h-10 text-orange-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Ranked Tracking</h3>
-            <p className="text-zinc-400">Monitor your LP gains, win rate, and rank progression in real-time.</p>
-          </div>
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
-            <Users className="w-10 h-10 text-orange-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Lobby Details</h3>
-            <p className="text-zinc-400">See what others built in your games and compare your performance.</p>
-          </div>
+            <Link href="/tft/comps" className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
+              <Trophy className="w-10 h-10 text-orange-500 mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Meta Teamcomps</h3>
+               <p className="text-zinc-400">Check current popular team compositions.</p>
+            </Link>
+            <Link href="/tft/shop-odds" className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
+              <Trophy className="w-10 h-10 text-orange-500 mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Shop odds</h3>
+               <p className="text-zinc-400">TFT Shop Odds, Level Chances & Pool Sizes</p>
+            </Link>
           <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
             <TrendingUp className="w-10 h-10 text-orange-500 mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Meta Analysis</h3>

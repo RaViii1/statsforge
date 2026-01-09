@@ -52,7 +52,7 @@ export const UnitSelector = ({
           onClick={onClearBoard} 
           className="w-full py-3 bg-white/5 hover:bg-red-500/10 text-white/10 hover:text-red-500 rounded-xl border border-white/5 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
         >
-          <Trash2 className="w-3.5 h-3.5" /> Wipe Board
+          <Trash2 className="w-3.5 h-3.5" /> Clear Board
         </button>
 
       </div>

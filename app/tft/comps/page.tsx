@@ -10,39 +10,24 @@ import {
   Pencil,
   Search,
   Crown,
-  Swords
+  Swords,
+  Coins,
+  ChevronsUp,
+  ArrowRight,
+  Info,
+  Sparkles
 } from 'lucide-react';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
-import { CurrentSetNumber, getChampionCost, getCostBorderColor } from '@/lib/tft/champions';
+import { CurrentSetNumber, getChampionCost, getCostBorderColor, SET_16_CHAMPIONS } from '@/lib/tft/champions';
 import { HexGrid } from '@/components/tft/planner'; 
 import { getItemDescription } from '@/lib/tft/itemstft';
+import { calculateActiveTraits } from '@/lib/tft/trait-utils';
+import { getDifficultyConfig, DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
 
-const DIFFICULTY_CONFIG: Record<DifficultyLevel, { label: string; color: string; bgColor: string }> = {
-  easy: { 
-    label: 'Easy', 
-    color: 'text-emerald-400', 
-    bgColor: 'bg-emerald-500/20 border border-emerald-500/30',
-  },
-  medium: { 
-    label: 'Medium', 
-    color: 'text-amber-400', 
-    bgColor: 'bg-amber-500/20 border border-amber-500/30',
-  },
-  hard: { 
-    label: 'Hard', 
-    color: 'text-red-400', 
-    bgColor: 'bg-red-500/20 border border-red-500/30',
-  },
-  'augment-dependent': { 
-    label: 'Augment', 
-    color: 'text-purple-400', 
-    bgColor: 'bg-purple-500/20 border border-purple-500/30',
-  }
-};
 
 const getPresetStyle = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
@@ -65,7 +50,7 @@ interface TeamCompCardProps {
 
 const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
-  const difficulty = DIFFICULTY_CONFIG[comp.difficulty || 'medium'];
+  const difficulty = getDifficultyConfig(comp.difficulty || 'medium');
   const finalUnits = comp.phases.final.units;
   
   const carries = comp.mainCarryIds
@@ -78,10 +63,27 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
   const presetStyle = getPresetStyle(comp.activePresetId);
   const presetName = getPresetName(comp.activePresetId);
 
-  const carryItems = carries.flatMap(c => c.unit.items);
-  const priorityItems = [...new Set(carryItems)];
+    const carryItems = carries.flatMap(c => c.unit.items);
+    const priorityItems = [...new Set(carryItems)];
 
-  const activeTraits: { name: string; count: number }[] = [];
+    const finalTraits = useMemo(() => {
+      const traitCounts: Record<string, number> = {};
+      const seenUnits = new Set<string>();
+
+      finalUnits.forEach(u => {
+        if (seenUnits.has(u.characterId)) return;
+        seenUnits.add(u.characterId);
+        const champ = SET_16_CHAMPIONS.find(c => c.id === u.characterId);
+        champ?.traits.forEach(t => {
+          traitCounts[t] = (traitCounts[t] || 0) + 1;
+        });
+      });
+
+      return Object.entries(traitCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
+    }, [finalUnits]);
+
 
   return (
     <>
@@ -107,17 +109,24 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
                 <span className="px-2.5 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-xs font-bold rounded">
                   {comp.patch}
                 </span>
-                <span className={`px-2.5 py-1 text-xs font-medium rounded border ${presetStyle}`}>
+                <span className={`px-2.5 py-1 text-xs font-bold rounded border ${presetStyle}`}>
                   {presetName}
                 </span>
-                <span className={`px-2.5 py-1 ${difficulty.bgColor} ${difficulty.color} text-xs font-bold rounded`}>
-                  {difficulty.label}
-                </span>
+                  <span 
+                    className="px-2.5 py-1 text-xs font-bold rounded border"
+                    style={{ 
+                      backgroundColor: difficulty.bgColor, 
+                      color: difficulty.color, 
+                      borderColor: difficulty.borderColor 
+                    }}
+                  >
+                    {difficulty.label}
+                  </span>
               </div>
             </div>
 
             {carries.length > 0 && (
-              <div className="shrink-0 flex items-center gap-1">
+              <div className="shrink-0 flex items-center gap-1 border border-r-orange-500/40 pr-4">
                 {carries.map(({ unit, cost }, i) => (
                   <div key={i} className="relative">
                     <div className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)}`}>
@@ -154,8 +163,8 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
                 const isCarry = comp.mainCarryIds.includes(unit.characterId);
                 
                 return (
-                  <div key={i} className="relative shrink-0">
-                    <div className={`w-12 h-12 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''}`}>
+                  <div key={i} className="relative shrink-0 py-1">
+                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''}`}>
                       <img 
                         src={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} 
                         alt={unit.name}
@@ -217,21 +226,22 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
                   Final Board
                 </h4>
                 {comp.description && comp.description !== 'Click to add operational notes...' && (
-                  <div>
+                  <div className='mb-8'>
                     <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Notes</h4>
                     <p className="text-zinc-400 text-sm leading-relaxed">{comp.description}</p>
                   </div>
                 )}
-              <HexGrid
-                units={finalUnits}
-                mainCarryIds={comp.mainCarryIds}
-                selectedHex={null}
-                activeTraits={activeTraits}
-                onHexClick={() => {}}
-                onDrop={() => {}}
-                onUnitDragStart={() => {}}
-                setTooltip={setTooltip}
-              />
+                <HexGrid
+                  units={finalUnits}
+                  mainCarryIds={comp.mainCarryIds}
+                  selectedHex={null}
+                  activeTraits={finalTraits}
+                  onHexClick={() => {}}
+                  onDrop={() => {}}
+                  onUnitDragStart={() => {}}
+                  setTooltip={setTooltip}
+                />
+
               </div>
 
               <div className="space-y-6">
@@ -270,40 +280,74 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
                   </div>
                 </div>
 
-                {priorityItems.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Priority Items</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {priorityItems.map((item, idx) => (
-                        <div 
-                          key={idx} 
-                          className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden hover:border-orange-500/50 transition-colors cursor-pointer"
-                          onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: getItemDescription(item), x: e.clientX, y: e.clientY })}
-                          onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
-                        >
-                          <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Leveling Guide</h4>
-                  <div className="space-y-2">
-                    {comp.levelingSteps.map((step, i) => (
-                      <div key={i} className={`flex items-center gap-3 p-2 rounded-lg ${step.isCurrent ? 'bg-orange-500/10 border border-orange-500/30' : 'bg-zinc-800/50'}`}>
-                        <span className="w-8 h-8 rounded-lg bg-orange-950/50 border border-orange-900/30 flex items-center justify-center text-orange-500 font-bold text-sm">
-                          {step.level}
-                        </span>
-                        <span className="text-zinc-300 text-sm">{step.stage}</span>
-                        <span className="text-orange-400 text-sm font-medium ml-auto">{step.gold}g</span>
+            {priorityItems.length > 0 && (
+              <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
+                  <Sparkles className="w-4 h-4" />
+                  Itemization Priority
+                </h3>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {priorityItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-4">
+                      <div 
+                        className="relative w-10 h-10 rounded-2xl bg-zinc-800/50 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
+                        onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: getItemDescription(item) || '', x: e.clientX, y: e.clientY })}
+                        onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                      >
+                        <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    ))}
-                  </div>
+                      {idx < priorityItems.length - 1 && (
+                        <ArrowRight className="w-4 h-4 text-white/10" />
+                      )}
+                    </div>
+                  ))}
+
                 </div>
               </div>
+            )}
+
+
+              </div>
+              
             </div>
+              <div className="border-t border-zinc-800/50 pt-5 mt-8">
+                <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">
+                  Levelling Guide
+                </h4>
+                <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+                  {comp.levelingSteps.map((step, i) => (
+                    <div key={i} className="flex items-center">
+                      <div className="flex flex-col items-center min-w-[70px]">
+                        <div className="flex items-center gap-1">
+                          <ChevronsUp className={`w-4 h-4 text-yellow-600`} />
+                          <span className={`text-2xl font-black text-white border-l border-orange-500/40  pl-2`}>
+                            {step.level}
+                          </span>
+                        
+                          <div className="flex flex-col items-start ml-0.5">
+                            <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
+                            <div className="flex items-center gap-0.5">
+                              <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>
+                                {step.gold}
+                              </span>
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="h-4 flex items-center justify-center">
+                          {step.description && (
+                            <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
+                          )}
+                        </div>
+                      </div>
+                      {i < comp.levelingSteps.length - 1 && (
+                        <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
           </div>
         )}
       </div>
@@ -400,17 +444,22 @@ export default function TeamCompsPage() {
             >
               All ({totalWithUnits})
             </button>
-            {(Object.entries(DIFFICULTY_CONFIG) as [DifficultyLevel, typeof DIFFICULTY_CONFIG.easy][]).map(([key, config]) => {
-              const count = teamComps.filter(c => c.difficulty === key && c.phases.final.units.length > 0).length;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setFilter(key)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === key ? config.bgColor + ' ' + config.color : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
-                >
-                  {config.label} ({count})
-                </button>
-              );
+            {DIFFICULTY_LEVELS.map((config) => {
+              const count = teamComps.filter(c => c.difficulty === config.id && c.phases.final.units.length > 0).length;
+                return (
+                  <button
+                    key={config.id}
+                    onClick={() => setFilter(config.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${filter === config.id ? '' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border-transparent'}`}
+                    style={filter === config.id ? { 
+                      backgroundColor: config.bgColor, 
+                      color: config.color,
+                      borderColor: config.borderColor
+                    } : {}}
+                  >
+                    {config.label} ({count})
+                  </button>
+                );
             })}
           </div>
 
@@ -446,7 +495,7 @@ export default function TeamCompsPage() {
                 ? `No comps found matching "${searchQuery}"`
                 : filter === 'all' 
                   ? "Create your first team composition in the Team Planner."
-                  : `No ${DIFFICULTY_CONFIG[filter as DifficultyLevel].label.toLowerCase()} difficulty comps found.`
+                  : `No ${getDifficultyConfig(filter as DifficultyLevel).label.toLowerCase()} difficulty comps found.`
               }
             </p>
             {!searchQuery && (

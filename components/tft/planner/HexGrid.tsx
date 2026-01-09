@@ -32,7 +32,7 @@ export const HexGrid = ({
       <div className="flex flex-wrap justify-center gap-2 px-10">
         {activeTraits.map(trait => (
           <div key={trait.name} className="group relative flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/4 border border-white/5 rounded-full hover:border-orange-500/30 transition-all cursor-default shadow-sm">
-            <div className="w-5 h-5 flex items-center justify-center bg-orange-500 rounded-full"><span className="text-[9px] font-black text-white">{trait.count}</span></div>
+            <div className="w-5 h-5 flex items-center justify-center bg-orange-500/60 rounded-full"><span className="text-[9px] font-black text-white">{trait.count}</span></div>
             <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">{trait.name}</span>
           </div>
         ))}

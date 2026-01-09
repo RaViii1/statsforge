@@ -5,7 +5,7 @@ export const LEVELING_PRESETS: LevelingPreset[] = [
     id: 'fast-9',
     name: 'Fast 9',
     highlightLevel: 9,
-    tagColor: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+    tagColor: 'text-red-400 bg-red-400/10 border-red-400/20',
     steps: [
       { level: 4, stage: '2-1', gold: '5+' },
       { level: 5, stage: '2-5', gold: '10+' },
