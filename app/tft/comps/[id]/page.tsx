@@ -21,14 +21,14 @@ import {
   Share2
 } from 'lucide-react';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
-import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey } from '@/lib/tft/teamplanner-types';
+import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, MetaTier } from '@/lib/tft/teamplanner-types';
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { CurrentSetNumber, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
-import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
+import NavbarTft from '@/components/navbartft';
 
 
 const PHASE_CONFIG: Record<PhaseKey, { label: string; color: string; accentColor: string; icon: React.ReactNode; desc: string }> = {
@@ -63,6 +63,25 @@ const getPresetStyle = (presetId: string | undefined) => {
 const getPresetName = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
   return preset?.name || 'Custom Tempo';
+};
+
+const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
+  if (!tier) return null;
+  
+  const config = META_TIER_CONFIG[tier];
+  
+  return (
+    <div className="inline-flex items-center gap-2">
+      <div className={`w-0.5 h-6 bg-gradient-to-b ${config.gradient} rounded-full`}></div>
+      <span className={`text-sm font-bold ${config.color}`}>
+        {tier}
+      </span>
+      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+        TIER
+      </span>
+      <div className={`w-0.5 h-6 bg-gradient-to-b ${config.gradient} rounded-full`}></div>
+    </div>
+  );
 };
 
 interface TooltipState {
@@ -246,7 +265,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
         <div className="absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]"></div>
       </div>
 
-      <Navbar />
+      <NavbarTft />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white mb-10 transition-all group uppercase text-[10px] font-black tracking-widest">
@@ -263,6 +282,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
           <div className="relative z-10 flex items-start justify-between flex-wrap gap-8">
             <div className="space-y-6">
               <div className="flex items-center gap-3 flex-wrap">
+                 <MetaTierBadge tier={comp.tier} />
                 <span className="px-3 py-1 bg-white/5 border border-white/10 text-white/40 text-[10px] font-black rounded tracking-widest uppercase">
                   {comp.patch} Build
                 </span>
@@ -279,7 +299,9 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                   >
                     {difficulty.label}
                   </span>
+                  
               </div>
+              
               
               <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none italic">
                 {comp.name}
@@ -308,7 +330,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
             <div className="lg:col-span-5 bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
               <h3 className="text-[10px] font-black text-orange-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-3">
                 <Crown className="w-4 h-4" />
-                High Value Assets
+                Main Carry Units
               </h3>
               <div className="grid gap-4">
                 {carries.map(({ unit, cost }, i) => (
@@ -324,7 +346,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                     <div className="flex-1">
                       <p className="font-black text-white uppercase tracking-tight text-lg italic">{unit.name}</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Credit Unit</span>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Gold</span>
                       </div>
                     </div>
                     {unit.items.length > 0 && (

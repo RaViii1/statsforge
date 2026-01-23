@@ -16,8 +16,7 @@ export const DifficultyPicker = ({ value, onChange, setTooltip }: DifficultyPick
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <Info className="w-3 h-3 text-white/30" />
-        <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">Difficulty</span>
+        <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Difficulty:</span>
       </div>
       <div className="flex gap-1.5">
         {DIFFICULTY_LEVELS.map((diff) => {
@@ -39,13 +38,13 @@ export const DifficultyPicker = ({ value, onChange, setTooltip }: DifficultyPick
                 border transition-all duration-200
                 ${isActive 
                   ? 'scale-105 shadow-lg' 
-                  : 'opacity-50 hover:opacity-80 hover:scale-102'
+                  : 'opacity-50 hover:opacity-80'
                 }
               `}
               style={{
                 backgroundColor: isActive ? diff.bgColor : 'transparent',
-                borderColor: isActive ? diff.color : 'rgba(255,255,255,0.1)',
-                color: isActive ? diff.color : 'rgba(255,255,255,0.4)',
+                borderColor: isActive ? diff.color : 'rgba(255,255,255,0.4)',
+                color: isActive ? diff.color : 'rgba(255,255,255,0.7)',
                 boxShadow: isActive ? `0 0 20px ${diff.bgColor}` : 'none'
               }}
             >

@@ -21,6 +21,7 @@ import {
   LevelingStep,
   TooltipState,
   DifficultyLevel,
+  MetaTier,
   PATCHES, 
   DEFAULT_LEVELING, 
   UNITS_PER_PAGE 
@@ -32,6 +33,7 @@ import {
   HexGrid,
   LevelingTempo,
   MainCarryTray,
+  TierPicker,
   UnitDetails,
   UnitSelector
 } from './planner';
@@ -303,42 +305,54 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   };
 
   return (
-    <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500" onMouseMove={handleMouseMove}>
-      <CustomTooltip {...tooltip} />
-
-      <div className="flex items-center justify-between px-6 py-4 bg-white/2 border-b border-white/5">
-        <div className="flex items-center gap-4">
+      <>
+        <div className="flex items-center gap-4 py-4">
           <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-all group uppercase text-[10px] font-black tracking-widest">
             <ArrowLeft className="w-4 h-4" />
             Back to Comps
           </Link>
+        </div>
+      <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500" onMouseMove={handleMouseMove}>
+        <CustomTooltip {...tooltip} />
+      <div className="flex items-center gap-4 justify-between px-6 py-4 bg-white/2 border-b border-white/5">
           <span className="text-[11px] font-black text-orange-500 tracking-[0.2em]">
             {isEditMode ? 'EDITING' : 'NEW COMP'}
           </span>
-        </div>
-
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <DifficultyPicker 
-              value={currentTeam.difficulty} 
-              onChange={(level) => updateTeam({ difficulty: level })} 
-              setTooltip={setTooltip}
-            />
+            <div className="flex items-center gap-2">
+              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
+              <TierPicker 
+                value={currentTeam.tier} 
+                onChange={(tier) => updateTeam({ tier })} 
+                setTooltip={setTooltip}
+              />
+              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
+              <DifficultyPicker 
+                value={currentTeam.difficulty} 
+                onChange={(level) => updateTeam({ difficulty: level })} 
+                setTooltip={setTooltip}
+              />
+              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
             {activePreset && (
-              <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest shadow-lg ${activePreset.tagColor}`}>
-                {activePreset.name}
-              </div>
+              <>
+                <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest shadow-lg ${activePreset.tagColor}`}>
+                  {activePreset.name}
+                </div>
+                <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
+              </>
             )}
           </div>
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/4 border border-white/5 rounded-xl">
-            <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">Version</span>
-            <select value={currentTeam.patch} onChange={(e) => updateTeam({ patch: e.target.value })} className="bg-transparent text-[10px] font-black text-orange-400 focus:outline-none cursor-pointer">
+          <div className="flex items-center gap-3 px-4 py-1.5 bg-white/4 border border-white/5 rounded-xl">
+            <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Patch:</span>
+            <select value={currentTeam.patch} onChange={(e) => updateTeam({ patch: e.target.value })} className="bg-transparent text-[10px] font-black text-orange-400 focus:bg-zinc-900 focus:outline-none cursor-pointer">
               {PATCHES.map(p => <option key={p} value={p} className="bg-zinc-900">{p}</option>)}
             </select>
           </div>
+          <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2 content-end"></div>
           <button onClick={() => { navigator.clipboard.writeText(`http://localhost:3000/tft/comps/${currentTeam.id}`); toast.success("Operation link copied"); }} className="p-2.5 hover:bg-white/5 rounded-xl border border-white/5 text-white/40 hover:text-white transition-all"><Share2 className="w-4 h-4" /></button>
           <button onClick={deleteTeam} className="p-2.5 hover:bg-red-500/10 rounded-xl border border-white/5 text-white/20 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>
         </div>
+        
       </div>
 
         <div className="grid lg:grid-cols-[1fr_400px] min-h-0">
@@ -357,7 +371,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                 </div>
               )}
             <div className="w-full md:w-80 group relative">
-              <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest py-2">Teamcomp Description</h3>
+              <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest py-2">Teamcomp Description</h3>
               {isEditingDesc ? (
                 <textarea autoFocus value={currentTeam.description} onChange={(e) => updateTeam({ description: e.target.value })} onBlur={() => setIsEditingDesc(false)} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-24 focus:outline-none focus:border-orange-500/50 text-xs resize-none" />
               ) : (
@@ -385,7 +399,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
               
               <div className="w-full space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Phase Strategy Notes</span>
+                  <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Phase Strategy Notes</span>
                 </div>
                   <textarea 
                     key={activePhase}
@@ -412,19 +426,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
             setDraggedItemId={setDraggedItemId}
             setTooltip={setTooltip}
           />
-
-            <LevelingTempo
-              steps={currentTeam.levelingSteps}
-              activePresetId={currentTeam.activePresetId}
-              onStepChange={updateLevelingStep}
-              onApplyPreset={(presetId, steps) => updateTeam({ 
-                levelingSteps: steps,
-                activePresetId: presetId
-              })}
-            />
-
-
-
           <HexGrid
             units={currentPhaseData.units}
             mainCarryIds={currentTeam.mainCarryIds}
@@ -438,6 +439,17 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
             }}
             setTooltip={setTooltip}
           />
+
+          <LevelingTempo
+              steps={currentTeam.levelingSteps}
+              activePresetId={currentTeam.activePresetId}
+              onStepChange={updateLevelingStep}
+              onApplyPreset={(presetId, steps) => updateTeam({ 
+                levelingSteps: steps,
+                activePresetId: presetId
+              })}
+            />
+
         </div>
 
         <div className="flex flex-col bg-white/2 backdrop-blur-xl h-full border-l border-white/5">
@@ -488,5 +500,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
         </div>
       </div>
     </div>
+    </>
   );
 };

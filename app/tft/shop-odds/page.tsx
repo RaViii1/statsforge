@@ -11,7 +11,7 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react';
-import NavbarLoL from '@/components/navbar';
+import NavbarTft from '@/components/navbartft';
 
 const SHOP_ODDS = [
   { level: 2, odds: [100, 0, 0, 0, 0] },
@@ -53,7 +53,7 @@ export default function ShopOddsPage() {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
       </div>
-      <NavbarLoL></NavbarLoL>
+      <NavbarTft />
 
       <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <Link href="/tft" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors group">
@@ -68,7 +68,7 @@ export default function ShopOddsPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Shop Odds & Pool Sizes</h1>
-              <p className="text-zinc-400">Set 16 • Last updated: recently</p>
+              <p className="text-zinc-400">Set 16 • Last updated: 20.01.2026</p>
             </div>
           </div>
           <p className="text-zinc-400 mt-4 max-w-3xl">
@@ -188,7 +188,7 @@ export default function ShopOddsPage() {
               <div>
                 <p className="text-orange-400 font-bold text-sm mb-1">Pro Tip</p>
                 <p className="text-zinc-300 text-sm">
-                  A Champion Duplicator can create a champion, even if the pool is empty.
+                 Champion duplicator takes units out of pull, but if the pool is empty it creates champion copy just for you.
                 </p>
               </div>
             </div>

@@ -2,7 +2,9 @@
 export interface TFTItem {
   id: string;
   name: string;
-  path: string;
+  path?: string;
+  stats?: string;
+  components?: string[];
   description: string;
 }
 

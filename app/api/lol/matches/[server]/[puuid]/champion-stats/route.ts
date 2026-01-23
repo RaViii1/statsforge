@@ -5,7 +5,7 @@ import { MatchParticipant } from '@/app/types/lolInterfaces';
 const QUEUES_RANKED_SOLO = 420;
 const QUEUES_RANKED_FLEX = 440;
 const BATCH_SIZE = 30; 
-const endDate = new Date('2025-08-27T12:00:00Z'); // UTC time for noon Aug 27, 2025
+const endDate = new Date('2026-01-08T20:00:00Z'); 
 const endTimeEpoch = Math.floor(endDate.getTime() / 1000);
 
 const REGIONAL_ROUTING: Record<string, string> = {

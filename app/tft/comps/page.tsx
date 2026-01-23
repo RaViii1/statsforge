@@ -14,19 +14,19 @@ import {
   Coins,
   ChevronsUp,
   ArrowRight,
-  Info,
-  Sparkles
+  Sparkles,
+  TrendingUp,
+  ArrowLeft
 } from 'lucide-react';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
-import { TeamComp, DifficultyLevel, UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
+import { TeamComp, DifficultyLevel, UnitPosition, TooltipState, META_TIER_CONFIG, MetaTier, META_TIERS } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
 import { CurrentSetNumber, getChampionCost, getCostBorderColor, SET_16_CHAMPIONS } from '@/lib/tft/champions';
 import { HexGrid } from '@/components/tft/planner'; 
 import { getItemDescription } from '@/lib/tft/itemstft';
-import { calculateActiveTraits } from '@/lib/tft/trait-utils';
 import { getDifficultyConfig, DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
+import NavbarTft from '@/components/navbartft';
 
 
 const getPresetStyle = (presetId: string | undefined) => {
@@ -40,6 +40,25 @@ const getPresetStyle = (presetId: string | undefined) => {
 const getPresetName = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
   return preset?.name || 'Custom';
+};
+
+const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
+  if (!tier) return null;
+  
+  const config = META_TIER_CONFIG[tier];
+  
+  return (
+    <div className="inline-flex items-center gap-2">
+      <div className={`w-0.5 h-6 bg-gradient-to-b ${config.gradient} rounded-full`}></div>
+      <span className={`text-sm font-bold ${config.color}`}>
+        {tier}
+      </span>
+      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+        TIER
+      </span>
+      <div className={`w-0.5 h-6 bg-gradient-to-b ${config.gradient} rounded-full`}></div>
+    </div>
+  );
 };
 
 interface TeamCompCardProps {
@@ -87,6 +106,7 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
 
   return (
     <>
+    
       {tooltip.visible && (
         <div 
           className="fixed z-100 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl pointer-events-none"
@@ -96,7 +116,6 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
           <p className="text-xs text-zinc-400 max-w-[200px]">{tooltip.description}</p>
         </div>
       )}
-      
       <div 
         
         className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all cursor-pointer"
@@ -104,8 +123,12 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
         <div className="p-5">
           <div className="flex items-center gap-6">
             <div className="shrink-0 min-w-[180px]">
-              <h3 className="text-lg font-bold text-white mb-2">{comp.name}</h3>
+              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <MetaTierBadge tier={comp.tier} />
+                <span className='max-w-60 truncate'>{comp.name}</span>
+              </h3>
               <div className="flex items-center gap-2 flex-wrap">
+                
                 <span className="px-2.5 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-xs font-bold rounded">
                   {comp.patch}
                 </span>
@@ -124,7 +147,6 @@ const TeamCompCard = ({ comp, expanded, onToggle }: TeamCompCardProps) => {
                   </span>
               </div>
             </div>
-
             {carries.length > 0 && (
               <div className="shrink-0 flex items-center gap-1 border border-r-orange-500/40 pr-4">
                 {carries.map(({ unit, cost }, i) => (
@@ -371,6 +393,7 @@ export default function TeamCompsPage() {
   });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<DifficultyLevel | 'all'>('all');
+  const [tierFilter, setTierFilter] = useState<MetaTier | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredComps = useMemo(() => {
@@ -378,6 +401,10 @@ export default function TeamCompsPage() {
     
     if (filter !== 'all') {
       comps = comps.filter(c => c.difficulty === filter);
+    }
+
+    if (tierFilter !== 'all') {
+      comps = comps.filter(c => c.tier === tierFilter);
     }
     
     if (searchQuery.trim()) {
@@ -404,7 +431,7 @@ export default function TeamCompsPage() {
     }
     
     return comps;
-  }, [teamComps, filter, searchQuery]);
+  }, [teamComps, filter, tierFilter, searchQuery]);
 
   const totalWithUnits = teamComps.filter(c => c.phases.final.units.length > 0).length;
 
@@ -415,12 +442,18 @@ export default function TeamCompsPage() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      <Navbar />
+      <NavbarTft />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12">
+          <div className="flex items-center gap-4 py-4">
+          <Link href="/tft" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-all group uppercase text-[10px] font-black tracking-widest">
+            <ArrowLeft className="w-4 h-4" />
+            Back tft hub
+          </Link>
+        </div>
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-white mb-2">Team Compositions</h1>
-          <p className="text-zinc-400">Your saved TFT team compositions</p>
+          <p className="text-zinc-400">Current popular team compositions</p>
         </div>
 
         <div className="mb-6">
@@ -436,39 +469,67 @@ export default function TeamCompsPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="flex flex-col gap-4 mb-8">
           <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 mr-4">
+              <TrendingUp className="w-4 h-4 text-zinc-500" />
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Tier</span>
+            </div>
             <button 
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'all' ? 'bg-orange-950/50 border border-orange-900/30 text-orange-500' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+              onClick={() => setTierFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tierFilter === 'all' ? 'bg-orange-950/50 border border-orange-900/30 text-orange-500' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
             >
-              All ({totalWithUnits})
+              All
             </button>
-            {DIFFICULTY_LEVELS.map((config) => {
-              const count = teamComps.filter(c => c.difficulty === config.id && c.phases.final.units.length > 0).length;
-                return (
-                  <button
-                    key={config.id}
-                    onClick={() => setFilter(config.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${filter === config.id ? '' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border-transparent'}`}
-                    style={filter === config.id ? { 
-                      backgroundColor: config.bgColor, 
-                      color: config.color,
-                      borderColor: config.borderColor
-                    } : {}}
-                  >
-                    {config.label} ({count})
-                  </button>
-                );
+            {META_TIERS.map((tier) => {
+              const config = META_TIER_CONFIG[tier];
+              const count = teamComps.filter(c => c.tier === tier && c.phases.final.units.length > 0).length;
+              return (
+                <button
+                  key={tier}
+                  onClick={() => setTierFilter(tier)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${tierFilter === tier ? `${config.bgColor} ${config.color}` : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border-transparent'}`}
+                >
+                  {tier} ({count})
+                </button>
+              );
             })}
           </div>
 
-          <Link href="/tft/planner">
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-bold transition-all">
-              <Plus className="w-4 h-4" />
-              Create New
-            </button>
-          </Link>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <button 
+                onClick={() => setFilter('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === 'all' ? 'bg-orange-950/50 border border-orange-900/30 text-orange-500' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+              >
+                All ({totalWithUnits})
+              </button>
+              {DIFFICULTY_LEVELS.map((config) => {
+                const count = teamComps.filter(c => c.difficulty === config.id && c.phases.final.units.length > 0).length;
+                  return (
+                    <button
+                      key={config.id}
+                      onClick={() => setFilter(config.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${filter === config.id ? '' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border-transparent'}`}
+                      style={filter === config.id ? { 
+                        backgroundColor: config.bgColor, 
+                        color: config.color,
+                        borderColor: config.borderColor
+                      } : {}}
+                    >
+                      {config.label} ({count})
+                    </button>
+                  );
+              })}
+            </div>
+
+            <Link href="/tft/planner">
+              <button className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm font-bold transition-all">
+                <Plus className="w-4 h-4" />
+                Create New
+              </button>
+            </Link>
+          </div>
         </div>
 
         {filteredComps.length > 0 ? (

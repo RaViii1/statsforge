@@ -242,7 +242,7 @@ export default function LolPage() {
                   {showDropdown && recentSearches.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
                       <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-zinc-500" />
+                        <Clock className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-medium text-zinc-400">Recent Searches</span>
                       </div>
                       <div className="max-h-80 overflow-y-auto">

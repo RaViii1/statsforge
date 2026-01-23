@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Menu } from "lucide-react";
 import { Anvil } from "lucide-react";
 
-export default function NavbarLoL() {
+export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 

@@ -11,6 +11,7 @@ import {
 import { getChampionIdByName, getChampionNameById } from "@/lib/champion-data";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
 import { getRuneIcon, getRuneTreeIcon } from "@/lib/runes";
+import { RankedIcon } from "./RankedIcon";
 
 interface LiveGameTabProps {
   summonerData: SummonerData;
@@ -52,6 +53,7 @@ export function LiveGameTab({
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
+  
   const RunesDisplay = ({ participant }: { participant: any }) => {
     if (!participant.perks || !participant.perks.perkIds) return null;
 
@@ -86,6 +88,7 @@ export function LiveGameTab({
               className="w-4 h-4 object-contain opacity-80"
             />
           ))}
+
         </div>
       </div>
     );
@@ -205,8 +208,7 @@ export function LiveGameTab({
                     .filter((p: any) => !teamId || p.teamId === teamId)
                     .map((participant: any, idx: number) => {
                       const championName = getChampionNameById(participant.championId);
-                      const isCurrentPlayer = participant.puuid === summonerData?.puuid;
-                      
+                      const isCurrentPlayer = participant.puuid === summonerData?.puuid;                      
                       return (
                         <div 
                           key={idx}
@@ -252,11 +254,32 @@ export function LiveGameTab({
                                 {isCurrentPlayer && (
                                   <span className="px-1.5 py-0.5 bg-orange-500 text-[9px] font-black uppercase text-white rounded">YOU</span>
                                 )}
-                                <RunesDisplay participant={participant} />
+                               {isArenaGame ? null : <RunesDisplay participant={participant} />}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <p className="text-xs text-orange-500/80">{championName}</p>
                                 <span className="text-[10px] text-zinc-600">#{participant.riotId?.split('#')[1] || 'RIOT'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <RankedIcon 
+                                  rankedData={liveGameData.playerRanks?.[participant.puuid] || liveGameData.playerRanks?.[participant.summonerId]} 
+                                />
+                                {(() => {
+                                  const playerRank = liveGameData.playerRanks?.[participant.puuid] || liveGameData.playerRanks?.[participant.summonerId];
+                                  if (playerRank) {
+                                    return (
+                                      <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">
+                                          {playerRank.tier} {playerRank.rank}
+                                        </span>
+                                        <span className="text-[9px] text-orange-500/70 font-mono">
+                                          {playerRank.leaguePoints} LP
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  return <span className="text-[10px] text-zinc-600 italic">Unranked</span>;
+                                })()}
                               </div>
                             </div>
                           </div>

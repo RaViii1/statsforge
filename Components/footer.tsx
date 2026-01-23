@@ -115,7 +115,7 @@ export default function Footer() {
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-2">
             <Link href="#" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">Terms of Service</Link>
             <Link href="#" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">Privacy Policy</Link>
-            <Link href="#" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">Cookie Settings</Link>
+            <Link href="/cookies" className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors">Cookie Settings</Link>
           </div>
         </div>
 

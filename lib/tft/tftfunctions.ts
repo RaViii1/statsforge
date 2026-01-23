@@ -115,6 +115,12 @@ export const getTFTUnitIcon = (characterId: string, tft_set_number: number) => {
   // console.log(`https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`);
   return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`;
 };
+
+export const getTFTUnitSplash = (characterId: string, tft_set_number: number) => {
+  const id = characterId.toLowerCase();
+  const setNumber = `tft_set${tft_set_number}`;
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/skins/base/images/${id}_splash_tile_0.${setNumber}.png`;
+};
 export const getTFTUnitIconOutdated = (characterId: string, tft_set_number: number) => {
   
   const baseName = characterId.replace(/^TFT\d+_/i, '').toLowerCase(); // 'Anivia'
@@ -125,9 +131,14 @@ export const getTFTUnitIconOutdated = (characterId: string, tft_set_number: numb
   
 };
 
+export const getTFTTraitIcon = (trait: string) => {
+  const traitKey = trait.toLowerCase().replace(/\s+/g, '');
+  return `https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_16_${traitKey}.png`;
+};
+
 const ITEM_MAPPING: Record<string, string> = itemstft.reduce((acc, item) => {
-  acc[item.id] = item.path;
-  acc[item.name] = item.path;
+  acc[item.id] = item.path || 'tft_item_emptybag.tft_set13.png';
+  acc[item.name] = item.path || 'tft_item_emptybag.tft_set13.png';
   return acc;
 }, {} as Record<string, string>);
 

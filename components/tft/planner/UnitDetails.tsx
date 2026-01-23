@@ -77,7 +77,7 @@ export const UnitDetails = ({
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] flex items-center gap-2"><Backpack className="w-4 h-4" /> Loadout Analysis</p>
+          <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2"><Backpack className="w-4 h-4" /> Loadout Analysis</p>
           <span className="text-[9px] font-black text-white/20">{unit.items.length} / 3</span>
         </div>
         <div className="flex gap-4">
@@ -98,8 +98,8 @@ export const UnitDetails = ({
 
         <div className="pt-8 space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-            <input placeholder="Search Item List..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="w-full pl-11 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-white placeholder:text-white/10 focus:outline-none focus:border-orange-500/20 transition-all shadow-inner" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-500" />
+            <input placeholder="Search Item List..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="w-full pl-11 pr-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-white placeholder:text-white/50 focus:outline-none focus:border-orange-500/20 transition-all shadow-inner" />
           </div>
           <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar p-1">
             {itemstft.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase())).map(it => (

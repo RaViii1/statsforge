@@ -36,7 +36,7 @@ export const HexGrid = ({
             <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">{trait.name}</span>
           </div>
         ))}
-        {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}
+        {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}
       </div>
 
       <div className="relative w-full max-w-4xl py-12 px-10 rounded-[4rem] bg-black/40 border border-white/5 shadow-inner overflow-hidden">

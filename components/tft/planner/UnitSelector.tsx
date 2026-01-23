@@ -60,7 +60,7 @@ export const UnitSelector = ({
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
           <input 
-            placeholder="Search Personnel..." 
+            placeholder="Search for units..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
             className="w-full pl-11 pr-5 py-3 bg-black/40 border border-white/5 rounded-xl text-[10px] font-black uppercase text-white placeholder:text-white/10 focus:outline-none focus:border-orange-500/20 transition-all shadow-inner" 
