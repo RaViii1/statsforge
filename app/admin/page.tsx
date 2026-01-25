@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { createClient } from "@/lib/supabase/server";
 import { Layers, Users, Shield, Box, Plus, TrendingUp, ChevronRight } from 'lucide-react'
+import AdminTabs, { UserList } from "./AdminsTab";
 
 const adminLinks = [
   {
@@ -36,14 +38,19 @@ const adminLinks = [
   }
 ]
 
-export default function AdminDashboard() {
-  return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-        <p className="text-zinc-400">Manage TFT game data and configurations</p>
-      </div>
+export default async function AdminDashboard() {
+  const supabase = await createClient();
 
+  // Fetch actual stats
+  const { count: userCount } = await supabase.from("profiles").select("*", { count: "exact", head: true });
+  const { count: compCount } = await supabase.from("tft_team_comps").select("*", { count: "exact", head: true });
+  const { data: activeSet } = await supabase.from("tft_sets").select("set_number").eq("is_active", true).single();
+  
+  // Fetch users for the tab
+  const { data: users } = await supabase.from("profiles").select("*").order("updated_at", { ascending: false });
+
+  const overview = (
+    <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {adminLinks.map((link) => (
           <Link
@@ -76,24 +83,42 @@ export default function AdminDashboard() {
           </div>
           <h2 className="text-xl font-bold text-white">System Status</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-            <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Database</div>
-            <div className="text-lg font-bold text-green-500 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              Connected
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Database</div>
+            <div className="text-lg font-bold text-emerald-500 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              Live
             </div>
           </div>
-          <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-            <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Active Set</div>
-            <div className="text-lg font-bold text-white">Set 13</div>
+          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Active Set</div>
+            <div className="text-lg font-bold text-white">Set {activeSet?.set_number || 'N/A'}</div>
           </div>
-          <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-            <div className="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Total Comps</div>
-            <div className="text-lg font-bold text-white">1,234</div>
+          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Total Comps</div>
+            <div className="text-lg font-bold text-white">{compCount?.toLocaleString() || 0}</div>
+          </div>
+          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Registered</div>
+            <div className="text-lg font-bold text-white">{userCount?.toLocaleString() || 0}</div>
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+        <p className="text-zinc-400">Manage TFT game data and configurations</p>
+      </div>
+
+      <AdminTabs 
+        overviewContent={overview} 
+        usersContent={<UserList users={users || []} />} 
+      />
     </div>
   )
 }

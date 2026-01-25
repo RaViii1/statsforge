@@ -1,10 +1,29 @@
 import { TFTItem } from "./itemstft";
 
+export interface TFTSet {
+  id: number;
+  name: string;
+  set_number: number;
+  is_active: boolean;
+  patch_start?: string;
+  patch_end?: string;
+  created_at?: string;
+}
+
+export interface TFTTrait {
+  id: string;
+  name: string;
+  description: string;
+  icon_path: string;
+  set_id: number;
+}
+
+
 export interface TFTChampion {
   id: string;
   name: string;
   cost: number;
-  set?: number;
+  set_id?: number;
   ability?: {
     name: string,
     description?: {
@@ -19,8 +38,8 @@ export interface TFTChampion {
     damageReduction?: string,
     special?: string,
   };
-  bestItems?: TFTItem[];
-  image?: string;
+  tft_champion_best_items?: TFTItem[];
+  image_path?: string;
   stats?: {
     stars: [
       { hp: number, dmg: number, ap: number, armor: number, mr: number, crit: number },
@@ -44,7 +63,7 @@ export const getChampionCost = (characterId: string): number => {
 };
 
 export const getChampionBestItems = (characterId: string): TFTItem[] => {
-  return SET_16_CHAMPIONS.find(c => c.id === characterId)?.bestItems || [];
+  return SET_16_CHAMPIONS.find(c => c.id === characterId)?.tft_champion_best_items || [];
 };
 
 export const getChampionStats = (characterId: string): TFTChampion['stats'] | undefined => {
@@ -90,16 +109,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Anivia',
     name: 'Anivia',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Freljord', 'Invoker'],
     ability: {name: 'Glacial Storm', description:{active:"Fire an ice shard at target that deals 325/455/650 (Ability power) magic damage. If they are Chilled, the damage Critically Strikes."}},
-    bestItems: [
-      { id: 'TFT_Item_RabadonsDeathcap', stats: '+50 AP', description: '', name: 'Rabadons Deathcap' },
-      { id: 'TFT_Item_ArchangelsStaff', stats: '+20 AP, +15 Mana', description: '', name: 'Archangels Staff' },
-      { id: 'TFT_Item_JeweledGauntlet', stats: '+35 AP, +15% Crit', description: '', name: 'Jeweled Gauntlet' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_RabadonsDeathcap', stats: { ap: 50 }, description: '', name: 'Rabadons Deathcap' },
+      { id: 'TFT_Item_ArchangelsStaff', stats: { ap: 20, mana: 15 }, description: '', name: 'Archangels Staff' },
+      { id: 'TFT_Item_JeweledGauntlet', stats: { ap: 35, crit: 15 }, description: '', name: 'Jeweled Gauntlet' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 500, dmg: 40, ap: 40, armor: 20, mr: 20, crit: 25 },
@@ -114,16 +133,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Blitzcrank',
     name: 'Blitzcrank',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Zaun', 'Juggernaut'],
     ability: {name: 'Rocket Grab'},
-    bestItems: [
-      { id: 'TFT_Item_WarmogsArmor', stats: '+150 HP, +150 HP', description: '', name: 'Warmogs Armor' },
-      { id: 'TFT_Item_GargoyleStoneplate', stats: '+20 Armor, +20 MR', description: '', name: 'Gargoyle Stoneplate' },
-      { id: 'TFT_Item_DragonsClaw', stats: '+300 HP, x2 MR', description: '', name: 'Dragons Claw' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_WarmogsArmor', stats: { hp: 150 }, description: '', name: 'Warmogs Armor' },
+      { id: 'TFT_Item_GargoyleStoneplate', stats: { armor: 20, mr: 20 }, description: '', name: 'Gargoyle Stoneplate' },
+      { id: 'TFT_Item_DragonsClaw', stats: { hp: 300, mr: 2 }, description: '', name: 'Dragons Claw' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 650, dmg: 50, ap: 0, armor: 35, mr: 35, crit: 25 },
@@ -138,16 +157,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Briar',
     name: 'Briar',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Noxus', 'Slayer', 'Juggernaut'],
     ability: {name: 'Blood Frenzy'},
-    bestItems: [
-      { id: 'TFT_Item_Bloodthirster', stats: '+20 AD, +20% Omnivamp', description: '', name: 'Bloodthirster' },
-      { id: 'TFT_Item_TitansResolve', stats: '+20 AD, +20 Armor', description: '', name: 'Titans Resolve' },
-      { id: 'TFT_Item_Deathblade', stats: '+55 AD', description: '', name: 'Deathblade' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_Bloodthirster', stats: { ad: 20, crit: 20 }, description: '', name: 'Bloodthirster' },
+      { id: 'TFT_Item_TitansResolve', stats: { ad: 20, armor: 20 }, description: '', name: 'Titans Resolve' },
+      { id: 'TFT_Item_Deathblade', stats: { ad: 55 }, description: '', name: 'Deathblade' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 600, dmg: 55, ap: 0, armor: 30, mr: 30, crit: 25 },
@@ -162,16 +181,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Caitlyn',
     name: 'Caitlyn',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Piltover', 'Longshot'],
     ability: {name: 'Ace in the Hole'},
-    bestItems: [
-      { id: 'TFT_Item_InfinityEdge', stats: '+35 AD, +35% Crit', description: '', name: 'Infinity Edge' },
-      { id: 'TFT_Item_LastWhisper', stats: '+25 AD, +25% AS', description: '', name: 'Last Whisper' },
-      { id: 'TFT_Item_GiantSlayer', stats: '+25 AD, +10% AS', description: '', name: 'Giant Slayer' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_InfinityEdge', stats: { ad: 35, crit: 35 }, description: '', name: 'Infinity Edge' },
+      { id: 'TFT_Item_LastWhisper', stats: { ad: 25, as: 25 }, description: '', name: 'Last Whisper' },
+      { id: 'TFT_Item_GiantSlayer', stats: { ad: 25, as: 10 }, description: '', name: 'Giant Slayer' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 500, dmg: 55, ap: 0, armor: 15, mr: 15, crit: 25 },
@@ -186,16 +205,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Illaoi',
     name: 'Illaoi',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Bilgewater', 'Bruiser'],
     ability: {name: 'Tentacle Smash'},
-    bestItems: [
-      { id: 'TFT_Item_WarmogsArmor', stats: '+150 HP, +150 HP', description: '', name: 'Warmogs Armor' },
-      { id: 'TFT_Item_BrambleVest', stats: '+55 Armor', description: '', name: 'Bramble Vest' },
-      { id: 'TFT_Item_DragonsClaw', stats: '+300 HP, x2 MR', description: '', name: 'Dragons Claw' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_WarmogsArmor', stats: { hp: 150 }, description: '', name: 'Warmogs Armor' },
+      { id: 'TFT_Item_BrambleVest', stats: { armor: 55 }, description: '', name: 'Bramble Vest' },
+      { id: 'TFT_Item_DragonsClaw', stats: { hp: 300, mr: 2 }, description: '', name: 'Dragons Claw' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 700, dmg: 60, ap: 0, armor: 40, mr: 25, crit: 25 },
@@ -210,16 +229,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_JarvanIV',
     name: 'Jarvan IV',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Demacia', 'Defender'],
     ability: {name: 'Cataclysm'},
-    bestItems: [
-      { id: 'TFT_Item_GargoyleStoneplate', stats: '+20 Armor, +20 MR', description: '', name: 'Gargoyle Stoneplate' },
-      { id: 'TFT_Item_WarmogsArmor', stats: '+150 HP, +150 HP', description: '', name: 'Warmogs Armor' },
-      { id: 'TFT_Item_BrambleVest', stats: '+55 Armor', description: '', name: 'Bramble Vest' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_GargoyleStoneplate', stats: { armor: 20, mr: 20 }, description: '', name: 'Gargoyle Stoneplate' },
+      { id: 'TFT_Item_WarmogsArmor', stats: { hp: 150 }, description: '', name: 'Warmogs Armor' },
+      { id: 'TFT_Item_BrambleVest', stats: { armor: 55 }, description: '', name: 'Bramble Vest' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 650, dmg: 50, ap: 0, armor: 40, mr: 40, crit: 25 },
@@ -234,16 +253,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Jhin',
     name: 'Jhin',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Ionia', 'Gunslinger'],
     ability: {name: 'Curtain Call', description:{passive:"For the next 4 attacks, Jhin gains infinite range and replace attacks with a cannon shot. Cannon shots deal physical damage. The 4th shot deals 1.44% more damage.", active:"125/190/280 + 15/22/34 (AD & AP)" }, damage:"125/190/280 + 15/22/34 (AD & AP)" },
-    bestItems: [
-      { id: 'TFT_Item_InfinityEdge', stats: '+35 AD, +35% Crit', description: '', name: 'Infinity Edge' },
-      { id: 'TFT_Item_Deathblade', stats: '+55 AD', description: '', name: 'Deathblade' },
-      { id: 'TFT_Item_LastWhisper', stats: '+25 AD, +25% AS', description: '', name: 'Last Whisper' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_InfinityEdge', stats: { ad: 35, crit: 35 }, description: '', name: 'Infinity Edge' },
+      { id: 'TFT_Item_Deathblade', stats: { ad: 55 }, description: '', name: 'Deathblade' },
+      { id: 'TFT_Item_LastWhisper', stats: { ad: 25, as: 25 }, description: '', name: 'Last Whisper' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 500, dmg: 70, ap: 0, armor: 15, mr: 15, crit: 25 },
@@ -258,16 +277,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_KogMaw',
     name: "Kog'Maw",
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Void', 'Arcanist', 'Longshot'],
     ability: {name: 'Living Artillery'},
-    bestItems: [
-      { id: 'TFT_Item_GuinsoosRageblade', stats: '+10 AD, +10% AS', description: '', name: 'Guinsoos Rageblade' },
-      { id: 'TFT_Item_GiantSlayer', stats: '+25 AD, +10% AS', description: '', name: 'Giant Slayer' },
-      { id: 'TFT_Item_RabadonsDeathcap', stats: '+50 AP', description: '', name: 'Rabadons Deathcap' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_GuinsoosRageblade', stats: { ad: 10, as: 10 }, description: '', name: 'Guinsoos Rageblade' },
+      { id: 'TFT_Item_GiantSlayer', stats: { ad: 25, as: 10 }, description: '', name: 'Giant Slayer' },
+      { id: 'TFT_Item_RabadonsDeathcap', stats: { ap: 50 }, description: '', name: 'Rabadons Deathcap' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 450, dmg: 45, ap: 0, armor: 15, mr: 15, crit: 25 },
@@ -282,16 +301,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Lulu',
     name: 'Lulu',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Yordle', 'Arcanist'],
     ability: {name: 'Wild Growth'},
-    bestItems: [
-      { id: 'TFT_Item_SpearOfShojin', stats: '+20 AD, +15 Mana', description: '', name: 'Spear of Shojin' },
-      { id: 'TFT_Item_Morellonomicon', stats: '+25 AP, +150 HP', description: '', name: 'Morellonomicon' },
-      { id: 'TFT_Item_ArchangelsStaff', stats: '+20 AP, +15 Mana', description: '', name: 'Archangels Staff' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_SpearOfShojin', stats: { ad: 20, mana: 15 }, description: '', name: 'Spear of Shojin' },
+      { id: 'TFT_Item_Morellonomicon', stats: { ap: 25, hp: 150 }, description: '', name: 'Morellonomicon' },
+      { id: 'TFT_Item_ArchangelsStaff', stats: { ap: 20, mana: 15 }, description: '', name: 'Archangels Staff' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 500, dmg: 35, ap: 0, armor: 15, mr: 20, crit: 25 },
@@ -306,16 +325,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Qiyana',
     name: 'Qiyana',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Ixtal', 'Slayer'],
     ability: {name: 'Elemental Wrath'},
-    bestItems: [
-      { id: 'TFT_Item_Deathblade', stats: '+55 AD', description: '', name: 'Deathblade' },
-      { id: 'TFT_Item_Bloodthirster', stats: '+20 AD, +20% Omnivamp', description: '', name: 'Bloodthirster' },
-      { id: 'TFT_Item_InfinityEdge', stats: '+35 AD, +35% Crit', description: '', name: 'Infinity Edge' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_Deathblade', stats: { ad: 55 }, description: '', name: 'Deathblade' },
+      { id: 'TFT_Item_Bloodthirster', stats: { ad: 20, crit: 20 }, description: '', name: 'Bloodthirster' },
+      { id: 'TFT_Item_InfinityEdge', stats: { ad: 35, crit: 35 }, description: '', name: 'Infinity Edge' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 550, dmg: 55, ap: 0, armor: 25, mr: 25, crit: 25 },
@@ -330,16 +349,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Rumble',
     name: 'Rumble',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Yordle', 'Defender'],
     ability: {name: 'Flamespitter'},
-    bestItems: [
-      { id: 'TFT_Item_WarmogsArmor', stats: '+150 HP, +150 HP', description: '', name: 'Warmogs Armor' },
-      { id: 'TFT_Item_GargoyleStoneplate', stats: '+20 Armor, +20 MR', description: '', name: 'Gargoyle Stoneplate' },
-      { id: 'TFT_Item_DragonsClaw', stats: '+300 HP, x2 MR', description: '', name: 'Dragons Claw' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_WarmogsArmor', stats: { hp: 150 }, description: '', name: 'Warmogs Armor' },
+      { id: 'TFT_Item_GargoyleStoneplate', stats: { armor: 20, mr: 20 }, description: '', name: 'Gargoyle Stoneplate' },
+      { id: 'TFT_Item_DragonsClaw', stats: { hp: 300, mr: 2 }, description: '', name: 'Dragons Claw' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 700, dmg: 45, ap: 0, armor: 45, mr: 45, crit: 25 },
@@ -354,16 +373,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Shen',
     name: 'Shen',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Ionia', 'Bruiser'],
     ability: {name: 'Spirit Blade'},
-    bestItems: [
-      { id: 'TFT_Item_GargoyleStoneplate', stats: '+20 Armor, +20 MR', description: '', name: 'Gargoyle Stoneplate' },
-      { id: 'TFT_Item_WarmogsArmor', stats: '+150 HP, +150 HP', description: '', name: 'Warmogs Armor' },
-      { id: 'TFT_Item_BrambleVest', stats: '+55 Armor', description: '', name: 'Bramble Vest' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_GargoyleStoneplate', stats: { armor: 20, mr: 20 }, description: '', name: 'Gargoyle Stoneplate' },
+      { id: 'TFT_Item_WarmogsArmor', stats: { hp: 150 }, description: '', name: 'Warmogs Armor' },
+      { id: 'TFT_Item_BrambleVest', stats: { armor: 55 }, description: '', name: 'Bramble Vest' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 700, dmg: 55, ap: 0, armor: 40, mr: 40, crit: 25 },
@@ -378,16 +397,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Sona',
     name: 'Sona',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Demacia', 'Invoker'],
     ability: {name: 'Crescendo'},
-    bestItems: [
-      { id: 'TFT_Item_SpearOfShojin', stats: '+20 AD, +15 Mana', description: '', name: 'Spear of Shojin' },
-      { id: 'TFT_Item_ArchangelsStaff', stats: '+20 AP, +15 Mana', description: '', name: 'Archangels Staff' },
-      { id: 'TFT_Item_Morellonomicon', stats: '+25 AP, +150 HP', description: '', name: 'Morellonomicon' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_SpearOfShojin', stats: { ad: 20, mana: 15 }, description: '', name: 'Spear of Shojin' },
+      { id: 'TFT_Item_ArchangelsStaff', stats: { ap: 20, mana: 15 }, description: '', name: 'Archangels Staff' },
+      { id: 'TFT_Item_Morellonomicon', stats: { ap: 25, hp: 150 } , description: '', name: 'Morellonomicon' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 500, dmg: 35, ap: 0, armor: 15, mr: 20, crit: 25 },
@@ -402,16 +421,16 @@ export const SET_16_CHAMPIONS: TFTChampion[] = [
   {
     id: 'TFT16_Viego',
     name: 'Viego',
-    set: 16,
+    set_id: 16,
     cost: 1,
     traits: ['Shadow Isles', 'Quickstriker'],
     ability: {name: 'Spectral Maw'},
-    bestItems: [
-      { id: 'TFT_Item_Bloodthirster', stats: '+20 AD, +20% Omnivamp', description: '', name: 'Bloodthirster' },
-      { id: 'TFT_Item_Quicksilver', stats: '+20 AD, +20% AS', description: '', name: 'Quicksilver' },
-      { id: 'TFT_Item_InfinityEdge', stats: '+35 AD, +35% Crit', description: '', name: 'Infinity Edge' }
+    tft_champion_best_items: [
+      { id: 'TFT_Item_Bloodthirster', stats: { ad: 20, crit: 20 }, description: '', name: 'Bloodthirster' },
+      { id: 'TFT_Item_Quicksilver', stats: { ad: 20, as: 20 }, description: '', name: 'Quicksilver' },
+      { id: 'TFT_Item_InfinityEdge', stats: { ad: 35, crit: 35 }, description: '', name: 'Infinity Edge' }
     ],
-    image: '',
+    image_path: '',
     stats: {
       stars: [
         { hp: 550, dmg: 60, ap: 0, armor: 25, mr: 25, crit: 25 },

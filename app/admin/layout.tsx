@@ -14,6 +14,17 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+  
+    if (profile && profile.role !== 'admin') {
+      redirect('/')
+    }
+
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <Navbar />

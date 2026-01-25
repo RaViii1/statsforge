@@ -2,45 +2,71 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 
 export async function login(formData: FormData) {
+  const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
 
   const data = {
-    email: formData.get('email') as string,
+    email: (formData.get('email') as string)?.trim(),
     password: formData.get('password') as string,
   }
 
-  const { error } = await supabase.auth.signInWithPassword(data)
+  console.log('Attempting login for:', data.email)
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
+    console.error('Login error:', error.message)
     return redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
+  console.log('Login successful for:', authData.user?.email)
   revalidatePath('/', 'layout')
   redirect('/')
 }
 
 export async function signup(formData: FormData) {
+  const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
 
   const data = {
-    email: formData.get('email') as string,
+    email: (formData.get('email') as string)?.trim(),
     password: formData.get('password') as string,
+    username: formData.get('username') as string,
   }
 
-  const { error } = await supabase.auth.signUp(data)
+  console.log('Attempting signup for:', data.email)
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          username: data.username,
+          display_name: data.username,
+          full_name: data.username,
+        },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+      },
+    })
 
-  if (error) {
-    return redirect('/register?error=' + encodeURIComponent(error.message))
-  }
+    if (error) {
+      console.error('Signup error:', error.message)
+      return redirect('/register?error=' + encodeURIComponent(error.message))
+    }
 
+    // If identities is empty, it means the user already exists
+    if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+      return redirect('/login?error=' + encodeURIComponent('An account with this email already exists. Please sign in instead.'))
+    }
+
+
+  console.log('Signup successful, user:', authData.user?.id)
   revalidatePath('/', 'layout')
-  redirect('/login?message=Check your email to confirm your account')
+  return redirect('/register?success=true&email=' + encodeURIComponent(data.email))
 }
 
 export async function signOut() {
+  const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')

@@ -2,9 +2,10 @@
 
 import { Search, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTChampion, SET_16_CHAMPIONS, ALL_TRAITS, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
+import { TFTChampion, SET_16_CHAMPIONS, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
 import { getTFTUnitIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
 
 interface UnitSelectorProps {
   searchQuery: string;
@@ -37,20 +38,46 @@ export const UnitSelector = ({
 }: UnitSelectorProps) => {
   const paginatedChampions = filteredChampions.slice(unitPage * unitsPerPage, (unitPage + 1) * unitsPerPage);
   const totalPages = Math.ceil(filteredChampions.length / unitsPerPage);
+    
+  const [allTraits, setAllTraits] = useState<string[]>([]);
+    const [loading, setLoading] = useState(true);
+  
+    useEffect(() => {
+      async function fetchData() {
+        try {
+          const [traitsRes] = await Promise.all([
+  
+            fetch("/api/tft/traits")
+          ]);
+  
+          if (traitsRes.ok) {
+            const traitsData = await traitsRes.json();
+            setAllTraits(traitsData.map((t: any) => t.name));
+          }
+        } catch (error) {
+          console.error("Error fetching TFT data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+  
+      fetchData();
+    }, []);
+  
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-6 border-b border-white/5 space-y-4">
-        <div className="p-6 space-y-3 bg-black/20 border-t border-white/5">
+        <div className="p-6 space-y-3 bg-black/20 border-t border-white/5 flex flex-col gap-3 sm:flex sm:items-center sm:justify-between sm:space-y-0 rounded-xl">
         <button 
           onClick={onSave} 
-          className="w-full py-4 bg-orange-500 hover:bg-orange-400 text-white rounded-xl shadow-xl shadow-orange-500/20 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+          className="w-full sm:max-w-64 py-4 bg-orange-500 hover:bg-orange-400 text-white rounded-xl shadow-xl shadow-orange-500/20 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
         >
           <Save className="w-3.5 h-3.5" /> Save teamcomp
         </button>
         <button 
           onClick={onClearBoard} 
-          className="w-full py-3 bg-white/5 hover:bg-red-500/10 text-white/10 hover:text-red-500 rounded-xl border border-white/5 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+          className="w-full sm:max-w-64 py-4 bg-white/5 hover:bg-red-500/20 text-white/20 hover:text-red-500 rounded-xl border border-white/10 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
         >
           <Trash2 className="w-3.5 h-3.5" /> Clear Board
         </button>
@@ -73,7 +100,7 @@ export const UnitSelector = ({
             {selectedTraits.length > 0 && <button onClick={() => setSelectedTraits([])} className="text-[8px] font-black text-orange-400 uppercase">Reset</button>}
           </div>
           <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto no-scrollbar">
-            {ALL_TRAITS.map(t => (
+            {allTraits.map(t => (
               <button 
                 key={t} 
                 onClick={() => setSelectedTraits(selectedTraits.includes(t) ? selectedTraits.filter(x => x !== t) : [...selectedTraits, t])} 
@@ -91,7 +118,7 @@ export const UnitSelector = ({
           <p className="text-[8px] font-black text-orange-500 uppercase tracking-[0.3em]">Operational Roster</p>
           <div className="flex items-center gap-2">
             <button onClick={() => setUnitPage(Math.max(0, unitPage - 1))} disabled={unitPage === 0} className="p-1 text-orange-500 hover:bg-white/5 rounded-md disabled:opacity-10"><ChevronLeft className="w-4 h-4" /></button>
-            <span className="text-[10px] font-black text-orange-500/50">{unitPage + 1}</span>
+            <span className="text-[14px] font-black text-orange-500/50">{unitPage + 1}</span>
             <button onClick={() => setUnitPage(Math.min(totalPages - 1, unitPage + 1))} disabled={unitPage >= totalPages - 1} className="p-1 text-orange-500 hover:bg-white/5 rounded-md disabled:opacity-10"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>

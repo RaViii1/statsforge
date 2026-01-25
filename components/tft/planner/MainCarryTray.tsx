@@ -2,9 +2,10 @@
 
 import { Crown, X, Plus } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber } from '@/lib/tft/champions';
+import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { getItemDescription } from '@/lib/tft/itemstft';
+import { useEffect, useState } from 'react';
 
 interface MainCarryTrayProps {
   mainCarryIds: string[];
@@ -33,6 +34,35 @@ export const MainCarryTray = ({
   setDraggedItemId,
   setTooltip
 }: MainCarryTrayProps) => {
+
+  const [allUnits, setAllUnits] = useState<TFTChampion[]>([]);
+    const [loading, setLoading] = useState(true);
+  
+    useEffect(() => {
+      async function fetchData() {
+        try {
+          const [unitsData] = await Promise.all([
+  
+            fetch("/api/tft/champions")
+          ]);
+
+        if (unitsData.ok) {
+          const unitsDataJson = await unitsData.json();
+          setAllUnits(unitsDataJson);
+        }
+
+      } catch (error) {
+        console.error("Error fetching TFT data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  
+      fetchData();
+    }, []);
+
+
+
   return (
     <div 
       className="p-6 bg-white/2 rounded-3xl border border-white/5 relative group/tray"
@@ -65,7 +95,7 @@ export const MainCarryTray = ({
       <div className="grid grid-cols-3 gap-4">
         {[0, 1, 2].map(i => {
           const carryCharacterId = mainCarryIds[i];
-          const champ = carryCharacterId ? SET_16_CHAMPIONS.find(c => c.id === carryCharacterId) : null;
+          const champ = carryCharacterId ? allUnits.find(c => c.id === carryCharacterId) : null;
           const unitOnBoard = carryCharacterId ? units.find(u => u.characterId === carryCharacterId) : null;
           
           return (
@@ -86,9 +116,17 @@ export const MainCarryTray = ({
                 <>
                   <div className="relative shrink-0">
                     <div className="w-16 h-16 rounded-xl border-2 border-orange-500/40 overflow-hidden">
-                      <img src={getTFTUnitIcon(champ.id, CurrentSetNumber)} alt={champ.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={champ.image_path || '/images/nochampionimage.jpg'} 
+                        alt={champ.name} 
+                        onError={(e) => {
+                          e.currentTarget.src = '/images/nochampionimage.jpg';
+                        }}
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); onToggleCarry(champ.id); }} className="absolute -top-2 -right-2 p-1.5 bg-zinc-900 border border-white/10 rounded-lg hover:bg-black/30 text-white/20 hover:text-orange-500 hover:border-orange-500 transition-all"><X className="w-3 h-3" /></button>
+
+                    <button onClick={(e) => { e.stopPropagation(); onToggleCarry(champ.id); }} className="absolute -top-2 -right-2 p-1.5 bg-zinc-900 border border-white/10 rounded-lg hover:bg-red-900/40 text-white/20 hover:text-red-500 hover:border-red-500 transition-all"><X className="w-3 h-3" /></button>
                   </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <p className="text-[10px] font-black text-white uppercase truncate tracking-widest">{champ.name}</p>

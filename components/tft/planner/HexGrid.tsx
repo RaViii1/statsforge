@@ -86,10 +86,24 @@ export const HexGrid = ({
                       <circle cx="50" cy="57.7" r="2" fill="rgba(63, 63, 70, 0.6)" className="group-hover/hex:fill-white/30" />
                     )}
                     {unit && (
-                      <>
-                        <defs><clipPath id={`clip-${row}-${col}`}><path d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" /></clipPath></defs>
-                        <image href={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} width="94" height="108" x="3" y="3.7" clipPath={`url(#clip-${row}-${col})`} preserveAspectRatio="xMidYMid slice" className="opacity-95" />
-                      </>
+                <>
+                  <defs>
+                    <clipPath id={`clip-${row}-${col}`}>
+                      <path d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" />
+                    </clipPath>
+                  </defs>
+                  <image 
+                    href={getTFTUnitIcon(unit.characterId, CurrentSetNumber) || '/images/nochampionimage.jpg'} 
+                    width="94" 
+                    height="108" 
+                    x="3" 
+                    y="3.7" 
+                    clipPath={`url(#clip-${row}-${col})`} 
+                    preserveAspectRatio="xMidYMid slice" 
+                    className="opacity-95" 
+                  />
+                </>
+
                     )}
                   </svg>
                   

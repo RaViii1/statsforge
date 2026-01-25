@@ -88,16 +88,6 @@ export default function CS2Page() {
     }
   };
 
-    const TestApi = async () => {
-    try {
-      const response = await fetch("/api/cs2/games/76561198116016085");
-      const data = await response.json();
-      console.log(data);
-    } catch (error) {
-      console.error("Error fetching API:", error);
-    }
-  };
-
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,10 +230,6 @@ export default function CS2Page() {
           </form>
         </div>
 
-        <button className="border border-orange-500 p-4" onClick={TestApi}>
-          Test Button
-        </button>
-
         <div className="grid md:grid-cols-3 gap-6 mb-16">
           <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 hover:bg-zinc-900/80 transition-all group">
             <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-950/70 transition-colors">
@@ -276,47 +262,6 @@ export default function CS2Page() {
           </div>
         </div>
 
-        <div className="relative rounded-2xl overflow-hidden border border-zinc-800">
-          <img
-            src="https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/730/ss_34a4e0dd339ecb42bf3b7ea2f09d2f11bada43c1.1920x1080.jpg"
-            alt="Counter-Strike 2"
-            className="w-full h-96 object-cover opacity-20"
-          />
-          <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/80 to-transparent"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center px-4">
-              <h2 className="text-3xl font-bold text-white mb-3">Ready to Dominate the Competition?</h2>
-              <p className="text-zinc-400 mb-6">Analyze your gameplay and climb the ranks</p>
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <div className="px-4 py-2 bg-orange-600/20 border border-orange-600/50 rounded-lg">
-                  <span className="text-orange-400 font-semibold">Premier Mode</span>
-                </div>
-                <div className="px-4 py-2 bg-yellow-600/20 border border-yellow-600/50 rounded-lg">
-                  <span className="text-yellow-400 font-semibold">Competitive</span>
-                </div>
-                <div className="px-4 py-2 bg-blue-600/20 border border-blue-600/50 rounded-lg">
-                  <span className="text-blue-400 font-semibold">Wingman</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">Popular Maps</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {["Dust II", "Mirage", "Inferno", "Nuke", "Ancient", "Anubis", "Overpass", "Vertigo"].map((map) => (
-              <Link
-                key={map}
-                href={`/cs2/maps/${map.toLowerCase().replace(' ', '-')}`}
-                className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg hover:border-orange-600 hover:bg-zinc-900 transition-all text-center group"
-              >
-                <div className="text-white font-semibold mb-1 group-hover:text-orange-500 transition-colors">{map}</div>
-                <div className="text-xs text-zinc-500">View Stats</div>
-              </Link>
-            ))}
-          </div>
-        </div>
       </main>
 
 

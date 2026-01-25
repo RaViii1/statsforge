@@ -1,22 +1,69 @@
 import Link from 'next/link'
 import { signup } from '../auth/actions';
-import { Anvil, Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react'
-import Navbar from '@/components/navbar';
+import { Anvil, Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, Sparkles, User, CheckCircle2 } from 'lucide-react'
 
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; success?: string; email?: string }>
 }) {
   const params = await searchParams;
   const error = params?.error;
+  const success = params?.success === 'true';
+  const email = params?.email;
+  
+  if (success) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[25%] -right-[10%] w-[50%] h-[50%] bg-emerald-600/10 rounded-full blur-[120px]"></div>
+          <div className="absolute -bottom-[25%] -left-[10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px]"></div>
+        </div>
+          
+        <div className="w-full max-w-md space-y-8 relative z-10 text-center">
+          <div className="flex flex-col items-center">
+            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 border border-emerald-500/30 animate-pulse">
+              <Mail className="w-10 h-10 text-emerald-500" />
+            </div>
+            <h2 className="text-3xl font-bold text-white tracking-tight">Check your email</h2>
+            <p className="text-zinc-400 mt-4 leading-relaxed">
+              We've sent a confirmation link to <span className="text-white font-semibold">{email}</span>.
+              Please click the link in the email to activate your account.
+            </p>
+          </div>
+
+          <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-3xl shadow-2xl space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 text-left p-4 bg-zinc-800/50 rounded-2xl border border-zinc-700/50">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                <p className="text-sm text-zinc-300">Account created successfully</p>
+              </div>
+              <div className="flex items-center gap-3 text-left p-4 bg-zinc-800/50 rounded-2xl border border-zinc-700/50 opacity-50">
+                <div className="w-5 h-5 rounded-full border-2 border-zinc-600 border-t-emerald-500 animate-spin shrink-0" />
+                <p className="text-sm text-zinc-300">Waiting for email verification...</p>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Link 
+                href="/login" 
+                className="text-orange-500 hover:text-orange-400 font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                Back to Login <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+          
+          <p className="text-zinc-500 text-xs">
+            Didn't receive the email? Check your spam folder or try again in a few minutes.
+          </p>
+        </div>
+      </div>
+    )
+  }
   
   return (
-    <>
-        <Navbar />
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[25%] -right-[10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px]"></div>
         <div className="absolute -bottom-[25%] -left-[10%] w-[50%] h-[50%] bg-amber-600/10 rounded-full blur-[120px]"></div>
@@ -37,6 +84,25 @@ export default async function RegisterPage({
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-3xl shadow-2xl">
           <form action={signup} className="space-y-6">
             <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="username" className="text-sm font-semibold text-zinc-300 ml-1">
+                  Username
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-zinc-500 group-focus-within:text-orange-500 transition-colors" />
+                  </div>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    required
+                    className="block w-full pl-11 pr-4 py-3.5 bg-zinc-950 border border-zinc-800 rounded-2xl text-white placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all"
+                    placeholder="Your summoner name"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-semibold text-zinc-300 ml-1">
                   Email Address
@@ -117,6 +183,5 @@ export default async function RegisterPage({
         </div>
       </div>
     </div>
-    </>
   )
 }

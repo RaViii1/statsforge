@@ -11,7 +11,7 @@ import {
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-import { SET_16_CHAMPIONS, ALL_TRAITS } from '@/lib/tft/champions';
+import { SET_16_CHAMPIONS, ALL_TRAITS, TFTChampion } from '@/lib/tft/champions';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { 
   TeamComp, 
@@ -42,6 +42,8 @@ import {
 interface TftTeamPlannerProps {
   editId?: string | null;
 }
+
+
 
 const createEmptyTeam = (): TeamComp => ({
   id: Math.random().toString(36).substr(2, 9),
@@ -76,6 +78,40 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const [unitPage, setUnitPage] = useState(0);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
   const [showSaveToast, setShowSaveToast] = useState(false);
+
+  const [champions, setChampions] = useState<TFTChampion[]>([]);
+  const [allTraits, setAllTraits] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [champsRes, traitsRes] = await Promise.all([
+          fetch("/api/tft/champions"),
+          fetch("/api/tft/traits")
+        ]);
+
+        if (champsRes.ok) {
+          const champsData = await champsRes.json();
+          setChampions(champsData);
+        }
+
+        if (traitsRes.ok) {
+          const traitsData = await traitsRes.json();
+          setAllTraits(traitsData.map((t: any) => t.name));
+        }
+      } catch (error) {
+        console.error("Error fetching TFT data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+    
+  }, []);
+// console.log("Fetching TFT data... champioms", champions);
+// console.log("Fetching TFT data... Traits", allTraits);
 
   useEffect(() => {
     if (editId) {
@@ -159,7 +195,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     currentPhaseData.units.forEach(u => {
       if (seenUnits.has(u.characterId)) return;
       seenUnits.add(u.characterId);
-      const champ = SET_16_CHAMPIONS.find(c => c.id === u.characterId);
+      const champ = champions.find(c => c.id === u.characterId);
       champ?.traits.forEach(t => {
         traitCounts[t] = (traitCounts[t] || 0) + 1;
       });
@@ -171,7 +207,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   }, [currentPhaseData?.units]);
 
   const filteredChampions = useMemo(() => {
-    return SET_16_CHAMPIONS.filter(c => {
+    return champions.filter(c => {
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTraits = selectedTraits.length === 0 || selectedTraits.every(t => c.traits.includes(t));
       return matchesSearch && matchesTraits;
@@ -192,7 +228,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
   const addUnit = (characterId: string, row: number, col: number) => {
     if (!currentPhaseData) return;
-    const champ = SET_16_CHAMPIONS.find(c => c.id === characterId);
+    const champ = champions.find(c => c.id === characterId);
     if (!champ) return;
 
     const newUnit: UnitPosition = {

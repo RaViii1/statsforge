@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { X, Menu } from "lucide-react";
 import { Anvil } from "lucide-react";
 
+import UserMenu from "./UserMenu";
+
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
@@ -22,8 +24,8 @@ export default function Navbar() {
               <span className="font-bold text-white text-xl">StatsForge</span>
             </Link>
 
-            {/* Links - Right (Desktop) */}
-            <div className="hidden md:flex items-end gap-1 shrink-0">
+            {/* Links - Center (Desktop) */}
+            <div className="hidden md:flex items-center gap-1 shrink-0">
               <a
                 href="#features"
                 className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
@@ -36,18 +38,11 @@ export default function Navbar() {
               >
                 Games
               </a>
-              <Link
-                href="/login"
-                className="px-4 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-orange-900/30"
-              >
-                Get Started
-              </Link>
+            </div>
+
+            {/* Auth - Right (Desktop) */}
+            <div className="hidden md:flex items-center gap-4 shrink-0">
+              <UserMenu />
             </div>
 
             {/* Mobile Menu Button */}

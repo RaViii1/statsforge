@@ -137,8 +137,8 @@ export const getTFTTraitIcon = (trait: string) => {
 };
 
 const ITEM_MAPPING: Record<string, string> = itemstft.reduce((acc, item) => {
-  acc[item.id] = item.path || 'tft_item_emptybag.tft_set13.png';
-  acc[item.name] = item.path || 'tft_item_emptybag.tft_set13.png';
+  acc[item.id] = item.image_path || '/images/noitem.png';
+  acc[item.name] = item.image_path || '/images/noitem.png';
   return acc;
 }, {} as Record<string, string>);
 

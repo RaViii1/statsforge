@@ -1,25 +1,16 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Swords, Shield, Zap, Heart, Target, Sparkles, Coins } from "lucide-react";
-import Navbar from "@/components/navbar";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import Footer from "@/components/footer";
-import { SET_16_CHAMPIONS, CurrentSetNumber, getCostBorderColor, getChampionStats, getChampionAbility, getChampionBestItems } from "@/lib/tft/champions";
+import { CurrentSetNumber, getCostBorderColor } from "@/lib/tft/champions";
 import { getTFTUnitIcon, getTFTItemIcon, getTFTTraitIcon, getTFTUnitSplash } from "@/lib/tft/tftfunctions";
-import { itemstft } from "@/lib/tft/itemstft";
 import { TRAIT_DESCRIPTIONS } from "@/lib/tft/tftTraits";
 import SvgIcon from "@/components/SvgIcon";
-
-
-const COST_ICON_BG: Record<number, string> = {
-  1: "bg-zinc-500",
-  2: "bg-emerald-500",
-  3: "bg-blue-500",
-  4: "bg-purple-500",
-  5: "bg-yellow-500",
-  7: "bg-orange-500",
-};
+import { TFTChampion } from "@/lib/tft/champions";
+import Navbar from "@/components/navbar";
+import NavbarTft from "@/components/navbartft";
 
 type SvgIconType = 'ap' | 'dmg' | 'health' | 'armor' | 'mr' | 'crit' | 'attackspeed' | 'mana' | 'dps' | 'gold';
 
@@ -35,30 +26,34 @@ const STAT_ICON_MAP: Record<string, { type: SvgIconType; color: string }> = {
 } as const;
 
 interface StatTextProps {
-  text?: string;
+  text?: any;
   className?: string;
 }
 
 export function StatText({ text, className = "" }: StatTextProps) {
-  if (!text) {
-    return null;
+  if (!text) return null;
+  
+  let segments: string[] = [];
+  if (typeof text === 'string') {
+    segments = text.split(',').map(segment => segment.trim());
+  } else if (typeof text === 'object') {
+    // If it's an object (like the JSONB from DB), convert to segments
+    segments = Object.entries(text as any)
+      .filter(([_, value]) => value !== null && value !== undefined)
+      .map(([key, value]) => `${value} ${key.toUpperCase()}`);
   }
-  
-  const segments = text.split(',').map(segment => segment.trim());
-  
+
+  if (segments.length === 0) return null;
+
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {segments.map((segment, index) => {
         const statEntry = Object.entries(STAT_ICON_MAP).find(([keyword]) => 
-          segment.includes(keyword)
+          segment.toUpperCase().includes(keyword.toUpperCase())
         );
-
-        if (!statEntry) {
-          return <span key={index} className="text-xs text-zinc-400">{segment}</span>;
-        }
+        if (!statEntry) return <span key={index} className="text-xs text-zinc-400">{segment}</span>;
         const [keyword, { type, color }] = statEntry;
-        const value = segment.replace(keyword, '').trim();
-
+        const value = segment.toUpperCase().replace(keyword.toUpperCase(), '').trim();
         return (
           <div key={index} className="flex items-center gap-1">
             <span className={`text-xs font-bold ${color}`}>{value}</span>
@@ -70,43 +65,59 @@ export function StatText({ text, className = "" }: StatTextProps) {
   );
 }
 
-
-
 export default function UnitDetailPage({ params }: { params: Promise<{ set: string; name: string }> }) {
   const resolvedParams = use(params);
   const setNumber = parseInt(resolvedParams.set);
   const unitName = decodeURIComponent(resolvedParams.name);
 
-  const champion = useMemo(() => {
-    return SET_16_CHAMPIONS.find(c => c.name.toLowerCase() === unitName.toLowerCase());
-  }, [unitName]);
+  const [champion, setChampion] = useState<TFTChampion | null>(null);
+  const [allChampions, setAllChampions] = useState<TFTChampion[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const unitId = champion?.id || "";
-  const rawStats = getChampionStats(unitId);
-  const stats = rawStats ? {
-    hp: `${rawStats.stars[0].hp}/${rawStats.stars[1].hp}/${rawStats.stars[2].hp}`,
-    dmg: `${rawStats.stars[0].dmg}/${rawStats.stars[1].dmg}/${rawStats.stars[2].dmg}`,
-    crit: `${rawStats.stars[0].crit}/${rawStats.stars[1].crit}/${rawStats.stars[2].crit}`,
-    ap: `${rawStats.stars[0].ap}/${rawStats.stars[1].ap}/${rawStats.stars[2].ap}`,
-    armor: rawStats.stars[0].armor,
-    mr: rawStats.stars[0].mr,
-    speed: rawStats.speed,
-    mana: rawStats.mana,
-    range: rawStats.range,
-    
-  } : { hp: "600/1080/1944", dmg: "50/75/113", ap: "40/60/90", crit: 25, armor: 30, mr: 30, speed: 0.65, mana: 60, range: 1 };
-  const ability = getChampionAbility(unitId) || { name: "Unknown Ability", description: {active:"This unit's ability details are not yet available."} };
-  const bestItems = getChampionBestItems(unitId) || [];
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [champRes, allChampsRes] = await Promise.all([
+          fetch(`/api/tft/champions?name=${unitName}&set=${setNumber}`),
+          fetch(`/api/tft/champions?set=${setNumber}`)
+        ]);
+
+        if (champRes.ok) {
+          const data = await champRes.json();
+          setChampion(data);
+        }
+
+        if (allChampsRes.ok) {
+          const data = await allChampsRes.json();
+          setAllChampions(data);
+        }
+      } catch (error) {
+        console.error("Error fetching champion details:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [setNumber, unitName]);
 
   const traitChampions = useMemo(() => {
-    const result: Record<string, typeof SET_16_CHAMPIONS> = {};
+    const result: Record<string, TFTChampion[]> = {};
     if (champion) {
       champion.traits.forEach(trait => {
-        result[trait] = SET_16_CHAMPIONS.filter(c => c.traits.includes(trait));
+        result[trait] = allChampions.filter(c => c.traits.includes(trait));
       });
     }
     return result;
-  }, [champion]);
+  }, [champion, allChampions]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading Unit Details...</p>
+      </div>
+    );
+  }
 
   if (!champion) {
     return (
@@ -120,6 +131,13 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
       </div>
     );
   }
+
+  const stats = champion.stats?.stars?.[0] || { hp: 0, dmg: 0, ap: 0, armor: 0, mr: 0, crit: 0 };
+  const speed = champion.stats?.speed || 0;
+  const mana = champion.stats?.mana || 0;
+  const range = champion.stats?.range || 1;
+  const ability = champion.ability || { name: "Unknown Ability", description: { active: "Details unavailable." } };
+  const bestItems = champion.tft_champion_best_items || [];
 
   const RangeIndicator = ({ range }: { range: number }) => (
     <div className="flex gap-0.5">
@@ -138,8 +156,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
       </div>
-
-      <Navbar />
+      <NavbarTft/>
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <Link
@@ -155,12 +172,12 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
             <div className={`relative rounded-3xl overflow-hidden border-2 ${getCostBorderColor(champion.cost)} bg-zinc-900/50 backdrop-blur-xl`}>
               <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-transparent to-transparent z-10"></div>
               <img
-                src={getTFTUnitSplash(champion.id, CurrentSetNumber)}
+                src={champion.image_path || "images/nochampionimage.png"}
                 alt={champion.name}
                 className="w-full aspect-square object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = `https://raw.communitydragon.org/latest/game/assets/ux/tft/championsplashes/${champion.id.toLowerCase()}.tft_set16.png`;
+                  target.src = `images/nochampionimage.png`;
                 }}
               />
               <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
@@ -175,111 +192,94 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                 <div className="flex items-end justify-between">
                   <h1 className="text-4xl font-black text-white italic uppercase tracking-tight">{champion.name}</h1>
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg`}>
-                    <span className="text-white font-black text-xl">{champion.cost} </span>
-                    <SvgIcon type="gold" size={24} className={`ml-1 text-amber-400 rounded-full flex items-center justify-center`} />
+                    <span className="text-white font-black text-xl">{champion.cost}</span>
+                    <SvgIcon type="gold" size={24} className={`ml-1 text-amber-400`} />
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-5">
-
-                <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider">Recommended Items</h3>
-              </div>
+              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">Recommended Items</h3>
               <div className="space-y-3">
-                {bestItems.map((item, idx) => {
-                  const itemData = itemstft.find(i => i.id === item.id);
-                  return (
-                    <div key={item.id} className="flex items-center gap-4 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-2xl border border-zinc-700/50 transition-all group">
-                      <div className="relative">
-                        <div className="w-14 h-14 rounded-xl border-2 border-zinc-600 overflow-hidden bg-zinc-800 shrink-0 group-hover:border-orange-500/50 transition-colors">
-                          <img
-                            src={getTFTItemIcon(item.id)}
-                            alt={itemData?.name || item.id}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="absolute -top-1 -left-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">
-                          {idx + 1}
-                        </div>
+                {bestItems.map((item, idx) => (
+                  <div key={item.id} className="flex items-center gap-4 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-2xl border border-zinc-700/50 transition-all group">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-xl border-2 border-zinc-600 overflow-hidden bg-zinc-800 shrink-0 group-hover:border-orange-500/50 transition-colors">
+                        <img src={item.image_path || "images/noitemimage.png"} alt={item.name} className="w-full h-full object-cover" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-orange-400 font-bold truncate pb-1">{itemData?.name || "Item"}</p>
-                        <StatText text={item.stats} />
+                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">
+                        {idx + 1}
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-orange-400 font-bold truncate pb-1">{item.name}</p>
+                      <StatText text={item.stats} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-5">
-
-                <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider">Ability</h3>
-              </div>
+              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">Ability</h3>
               <div className="flex items-start gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-600 flex items-center justify-center shrink-0 overflow-hidden">
                   <img
-                    src={`https://raw.communitydragon.org/latest/game/assets/characters/${champion.id.toLowerCase()}/hud/${champion.id.toLowerCase()}_square.tft_set${CurrentSetNumber}.png`}
+                    src={`https://raw.communitydragon.org/latest/game/assets/characters/${champion.id.toLowerCase()}/hud/${champion.id.toLowerCase()}_square.tft_set${setNumber}.png`}
                     alt={ability.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 </div>
                 <div className="flex-1">
                   <h4 className="text-xl font-black text-white italic">{ability.name}</h4>
                   {ability.description?.passive && (
-                    <h4 className="text-orange-500 font-black text-xs mt-2">Passive:</h4>
-                  )}
-                  {ability.description?.passive && (
-                    <p className="text-sm text-zinc-400 leading-relaxed mt-2">{ability.description?.passive}</p>
-                  )}
-                  {ability.description?.active && (
-                    <h4 className="text-orange-500 font-black text-xs mt-2">Active:</h4>
-                  )}
-                  {ability.description?.active && (
-                    <p className="text-sm text-zinc-400 leading-relaxed mt-2">{ability.description?.active}</p>
-                  )}
-                  
-                </div>
-              </div>
-              {(ability.heal || ability.damage) && (
-                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-zinc-800">
-                  {ability.heal && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Max Health</p>
-                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
+                    <div className="mt-2">
+                      <h4 className="text-orange-500 font-black text-xs">Passive:</h4>
+                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">{ability.description.passive}</p>
                     </div>
                   )}
+                  {ability.description?.active && (
+                    <div className="mt-2">
+                      <h4 className="text-orange-500 font-black text-xs">Active:</h4>
+                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">{ability.description.active}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {(ability.heal || ability.damage || ability.shield || ability.stun || ability.special) && (
+                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-zinc-800">
                   {ability.damage && (
                     <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Damage</p>
-                      <p className="text-lg text-orange-400 font-normal">{ability.damage}</p>
+                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Damage</p>
+                      <p className="text-lg text-orange-400 font-black">{ability.damage}</p>
+                    </div>
+                  )}
+                  {ability.heal && (
+                    <div className="bg-zinc-800/50 rounded-2xl p-4">
+                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Healing</p>
+                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
                     </div>
                   )}
                   {ability.shield && (
                     <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Max Health</p>
-                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
+                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Shield</p>
+                      <p className="text-lg text-blue-400 font-black">{ability.shield}</p>
                     </div>
                   )}
                   {ability.stun && (
                     <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Max Health</p>
-                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
+                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Stun Duration</p>
+                      <p className="text-lg text-yellow-400 font-black">{ability.stun}</p>
                     </div>
                   )}
                   {ability.special && (
                     <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Max Health</p>
-                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
+                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Special Effect</p>
+                      <p className="text-lg text-purple-400 font-black">{ability.special}</p>
                     </div>
                   )}
                 </div>
@@ -287,104 +287,63 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
             </div>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-5">
-                <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider">{champion.name} Stats</h3>
-              </div>
+              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">{champion.name} Stats (1-Star)</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Health</span>
-                  </div>
-                  <div className="flex flex-row gap-2">
-                  <SvgIcon type="health" size={14} className="text-emerald-500" />
-                  <p className="text-sm text-emerald-400 font-black">{stats.hp}</p>
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Health</span>
+                  <div className="flex items-center gap-2">
+                    <SvgIcon type="health" size={14} className="text-emerald-500" />
+                    <p className="text-sm text-emerald-400 font-black">{stats.hp}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Damage</span>
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Damage</span>
+                  <div className="flex items-center gap-2">
+                    <SvgIcon type="dmg" size={14} className="text-orange-500" />
+                    <p className="text-sm text-orange-400 font-black">{stats.dmg}</p>
                   </div>
-                  <div className="flex flex-row gap-2">
-                  <SvgIcon type="dmg" size={14} className="text-orange-500" />
-                  <p className="text-sm text-orange-400 font-black">{stats.dmg}</p>
-                  </div>
-                </div>
-                {stats.ap !== undefined && stats.ap !== null && (
-                  <div className="rounded-2xl p-4 border border-zinc-700/30">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs text-zinc-500 font-bold uppercase">Ability power</span>
-                    </div>
-                    <div className="flex flex-row gap-2">
-                      <SvgIcon type="ap" size={16} className="text-cyan-200" />
-                      <p className="text-sm text-cyan-200 font-black">{stats.ap}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Critcal strike</span>
-                  </div>
-                  <div className="flex flex-row gap-2">
-                    <SvgIcon type="crit" size={14} className="text-red-400" />
-                  <p className="text-sm text-red-400 font-black">{stats.crit}</p>
-                </div>
                 </div>
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Armor</span>
-                  </div>
-                  <div className="flex flex-row gap-2">
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Armor</span>
+                  <div className="flex items-center gap-2">
                     <SvgIcon type="armor" size={14} className="text-orange-500" />
                     <p className="text-sm text-orange-500 font-black">{stats.armor}</p>
-                </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">MR</span>
-                  </div>
-                  <div className="flex flex-row gap-2">
-                   <SvgIcon type="mr" size={14} className="text-purple-500" />
-                  <p className="text-sm text-purple-400 font-black">{stats.mr}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Speed</span>
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">MR</span>
+                  <div className="flex items-center gap-2">
+                    <SvgIcon type="mr" size={14} className="text-purple-500" />
+                    <p className="text-sm text-purple-400 font-black">{stats.mr}</p>
                   </div>
-                  <div className="flex flex-row gap-2">
+                </div>
+                <div className="rounded-2xl p-4 border border-zinc-700/30">
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Speed</span>
+                  <div className="flex items-center gap-2">
                     <SvgIcon type="attackspeed" size={14} className="text-[#F4C452]" />
-                  <p className="text-sm text-[#F4C452] font-black">{stats.speed}</p>
+                    <p className="text-sm text-[#F4C452] font-black">{speed}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Mana</span>
-                  </div>
-                 <div className="flex flex-row gap-2">
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Mana</span>
+                  <div className="flex items-center gap-2">
                     <SvgIcon type="mana" size={14} className="text-[#26c2f4]" />
-                  <p className="text-sm text-[#26c2f4] font-black">{stats.mana}</p>
+                    <p className="text-sm text-[#26c2f4] font-black">{mana}</p>
                   </div>
                 </div>
                 <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs text-zinc-500 font-bold uppercase">Range</span>
-                  </div>
-                  <RangeIndicator range={stats.range} />
+                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Range</span>
+                  <RangeIndicator range={range} />
                 </div>
               </div>
             </div>
 
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider">{champion.name} Synergies</h3>
-              </div>
+              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-6">{champion.name} Synergies</h3>
               <div className="space-y-8">
                 {champion.traits.map((trait) => {
                   const traitDesc = TRAIT_DESCRIPTIONS[trait];
                   const championsWithTrait = traitChampions[trait] || [];
-                  
                   return (
                     <div key={trait} className="space-y-4">
                       <div className="flex items-start gap-4">
@@ -394,30 +353,16 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                         <div className="flex-1">
                           <h4 className="text-lg font-black text-white italic">{trait}</h4>
                           <p className="text-sm text-zinc-400 mt-1 leading-relaxed">{traitDesc?.description || "Trait description unavailable."}</p>
-                          {traitDesc?.breakpoints && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {traitDesc.breakpoints.map((bp, i) => (
-                                <span key={i} className="px-3 py-1.5 bg-zinc-800/80 border border-zinc-700 rounded-xl text-xs font-bold">
-                                  <span className="text-orange-500 mr-1.5">{bp.count}</span>
-                                  <span className="text-zinc-300">{bp.effect}</span>
-                                </span>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 pl-16">
                         {championsWithTrait.map((c) => (
                           <Link
                             key={c.id}
-                            href={`/tft/units/${CurrentSetNumber}/${c.name}`}
+                            href={`/tft/units/${setNumber}/${c.name.toLowerCase().replace(/\s+/g, '-')}`}
                             className={`relative w-12 h-12 rounded-xl border-2 ${getCostBorderColor(c.cost)} overflow-hidden hover:scale-110 hover:z-10 transition-all duration-200 ${c.id === champion.id ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-zinc-950' : ''}`}
                           >
-                            <img
-                              src={getTFTUnitIcon(c.id, CurrentSetNumber)}
-                              alt={c.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={getTFTUnitIcon(c.id, setNumber)} alt={c.name} className="w-full h-full object-cover" />
                           </Link>
                         ))}
                       </div>
@@ -429,7 +374,6 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

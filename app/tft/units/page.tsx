@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, ChevronLeft, Users, Filter, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, ChevronLeft, Users, Filter, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Footer from "@/components/footer";
-import { SET_16_CHAMPIONS, ALL_TRAITS, getCostBorderColor, CurrentSetNumber } from "@/lib/tft/champions";
+import { getCostBorderColor, getCostColor, CurrentSetNumber } from "@/lib/tft/champions";
 import { getTFTUnitSplash } from "@/lib/tft/tftfunctions";
+import { TFTChampion } from "@/lib/tft/champions";
 import NavbarTft from "@/components/navbartft";
 
 const COST_FILTERS = [
   { value: 0, label: "All", color: "bg-zinc-700" },
-  { value: 1, label: "1", color: "bg-zinc-400" },
-  { value: 2, label: "2", color: "bg-emerald-500" },
-  { value: 3, label: "3", color: "bg-blue-500" },
-  { value: 4, label: "4", color: "bg-purple-500" },
-  { value: 5, label: "5", color: "bg-yellow-500" },
-  { value: 6, label: "6", color: "bg-orange-500" },
-  { value: 7, label: "7", color: "bg-orange-500" },
+  { value: 1, label: "1", color: "#94a3b8" },
+  { value: 2, label: "2", color: "#10b981" },
+  { value: 3, label: "3", color: "#3b82f6" },
+  { value: 4, label: "4", color: "#a855f7" },
+  { value: 5, label: "5", color: "#eab308" },
+  { value: 6, label: "6", color: "#ef4444" },
+  { value: 7, label: "7", color: "#f97316" },
 ];
 
 const COST_BG_COLORS: Record<number, string> = {
@@ -25,7 +26,7 @@ const COST_BG_COLORS: Record<number, string> = {
   3: "from-blue-600/20 to-blue-900/40",
   4: "from-purple-600/20 to-purple-900/40",
   5: "from-yellow-600/20 to-yellow-900/40",
-  6: "from-orange-600/20 to-orange-900/40",
+  6: "from-red-600/20 to-red-900/40",
   7: "from-orange-600/20 to-orange-900/40",
 };
 
@@ -39,23 +40,52 @@ const COST_ICON_BG: Record<number, string> = {
   7: "bg-orange-500",
 };
 
-
 export default function TFTUnitsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCost, setSelectedCost] = useState(0);
   const [selectedTrait, setSelectedTrait] = useState("");
+  const [champions, setChampions] = useState<TFTChampion[]>([]);
+  const [allTraits, setAllTraits] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [champsRes, traitsRes] = await Promise.all([
+          fetch("/api/tft/champions"),
+          fetch("/api/tft/traits")
+        ]);
+
+        if (champsRes.ok) {
+          const champsData = await champsRes.json();
+          setChampions(champsData);
+        }
+
+        if (traitsRes.ok) {
+          const traitsData = await traitsRes.json();
+          setAllTraits(traitsData.map((t: any) => t.name));
+        }
+      } catch (error) {
+        console.error("Error fetching TFT data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   const filteredChampions = useMemo(() => {
-    return SET_16_CHAMPIONS.filter((champion) => {
+    return champions.filter((champion) => {
       const matchesSearch = champion.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCost = selectedCost === 0 || champion.cost === selectedCost;
       const matchesTrait = !selectedTrait || champion.traits.includes(selectedTrait);
       return matchesSearch && matchesCost && matchesTrait;
     });
-  }, [searchQuery, selectedCost, selectedTrait]);
+  }, [searchQuery, selectedCost, selectedTrait, champions]);
 
   const groupedBySection = useMemo(() => {
-    const grouped: Record<number, typeof SET_16_CHAMPIONS> = {};
+    const grouped: Record<number, typeof champions> = {};
     filteredChampions.forEach((champ) => {
       if (!grouped[champ.cost]) grouped[champ.cost] = [];
       grouped[champ.cost].push(champ);
@@ -71,15 +101,22 @@ export default function TFTUnitsPage() {
 
   const hasActiveFilters = searchQuery || selectedCost !== 0 || selectedTrait;
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
+        <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
+        <p className="text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading Units...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
       </div>
-
       <NavbarTft />
-
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="mb-12">
           <Link
@@ -131,9 +168,10 @@ export default function TFTUnitsPage() {
                     onClick={() => setSelectedCost(cost.value)}
                     className={`w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center transition-all ${
                       selectedCost === cost.value
-                        ? `${cost.color} text-white shadow-lg scale-110`
+                        ? `${typeof cost.color === 'string' && cost.color.startsWith('#') ? '' : cost.color} text-white shadow-lg scale-110`
                         : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
                     }`}
+                    style={typeof cost.color === 'string' && cost.color.startsWith('#') && selectedCost === cost.value ? { backgroundColor: cost.color } : {}}
                   >
                     {cost.label}
                   </button>
@@ -152,7 +190,7 @@ export default function TFTUnitsPage() {
               className="px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white focus:outline-none focus:border-orange-600/50 focus:bg-zinc-800 transition-all cursor-pointer"
             >
               <option value="">All Traits</option>
-              {ALL_TRAITS.map((trait) => (
+              {allTraits.map((trait) => (
                 <option key={trait} value={trait}>
                   {trait}
                 </option>
@@ -172,7 +210,7 @@ export default function TFTUnitsPage() {
 
           <div className="mt-4 text-sm text-zinc-500">
             Showing <span className="text-orange-500 font-bold">{filteredChampions.length}</span> of{" "}
-            <span className="font-bold">{SET_16_CHAMPIONS.length}</span> champions
+            <span className="font-bold">{champions.length}</span> champions
           </div>
         </div>
 
@@ -186,46 +224,50 @@ export default function TFTUnitsPage() {
           </div>
         ) : (
           <div className="space-y-12">
-            {[1, 2, 3, 4, 5, 7].map((cost) => {
-              const champions = groupedBySection[cost];
-              if (!champions || champions.length === 0) return null;
+            {[1, 2, 3, 4, 5, 6, 7].map((cost) => {
+              const champs = groupedBySection[cost];
+              if (!champs || champs.length === 0) return null;
 
               return (
                 <div key={cost}>
                   <div className="flex items-center gap-4 mb-6">
-                    <div className={`w-10 h-10 ${COST_ICON_BG[cost]} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: getCostColor(cost) }}
+                    >
                       <span className="text-white font-black">{cost}</span>
                     </div>
                     <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">
                       {cost}-Cost Champions
                     </h2>
                     <div className="flex-1 h-px bg-zinc-800"></div>
-                    <span className="text-zinc-500 text-sm font-bold">{champions.length} units</span>
+                    <span className="text-zinc-500 text-sm font-bold">{champs.length} units</span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {champions.map((champion) => (
-                      <Link href={`/tft/units/${CurrentSetNumber}/${champion.name}`}
+                    {champs.map((champion) => (
+                      <Link href={`/tft/units/${CurrentSetNumber}/${champion.name.toLowerCase().replace(/\s+/g, '-')}`}
                         key={champion.id}>
                       <div
-                        key={champion.id}
-                        className={`group relative bg-linear-to-br ${COST_BG_COLORS[champion.cost]} border-2 ${getCostBorderColor(champion.cost)} rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer`}
+                        className={`group relative bg-linear-to-br ${COST_BG_COLORS[champion.cost] || "from-zinc-600/20 to-zinc-800/40"} border-2 ${getCostBorderColor(champion.cost)} rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer h-full`}
                       >
                         <div className="absolute top-3 right-3 z-10">
-                          <div className={`w-8 h-8 ${COST_ICON_BG[champion.cost]} rounded-lg flex items-center justify-center shadow-lg border border-white/20`}>
+                          <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg border border-white/20"
+                            style={{ backgroundColor: getCostColor(champion.cost) }}
+                          >
                             <span className="text-white font-black text-xs">{champion.cost}</span>
                           </div>
                         </div>
 
                         <div className="aspect-square relative overflow-hidden">
                           <img
-                            src={getTFTUnitSplash(champion.id, CurrentSetNumber)}
-                             
+                            src={champion.image_path || "/images/nochampionimage.jpg"}
                             alt={champion.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://raw.communitydragon.org/latest/game/assets/ux/tft/championsplashes/${champion.id.toLowerCase()}.tft_set16.png`;
+                              target.src = "/images/nochampionimage.jpg";
                             }}
                           />
                           <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
