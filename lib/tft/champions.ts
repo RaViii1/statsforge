@@ -13,9 +13,19 @@ export interface TFTSet {
 export interface TFTTrait {
   id: string;
   name: string;
+  tiers?: TFTTraitTier[];
   description: string;
   icon_path: string;
   set_id: number;
+}
+
+export interface TFTTraitTier {
+  id?: number;
+  trait_id: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'prismatic';
+  units_required: number;
+  description: string;
+  stats?: any;
 }
 
 

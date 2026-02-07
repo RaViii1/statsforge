@@ -23,6 +23,7 @@ export interface TFTItem {
   is_component?: boolean;
   is_artifact?: boolean;
   is_radiant?: boolean;
+  is_seasonal?: boolean;
   created_at?: string;
   
 }

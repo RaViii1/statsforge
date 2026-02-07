@@ -30,7 +30,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { getChampionSplashByName } from "@/lib/lol/lolfunctions";
-import { MatchTimeline } from "./MatchTimeline";
+import { MatchTimeline } from "../MatchTimeline";
 
 interface MatchAnalyticsProps {
   server: string;
@@ -76,6 +76,13 @@ interface ParticipantData {
   quadraKills: number;
   tripleKills: number;
   doubleKills: number;
+  multikills: number;
+  timeCCingOthers: number;
+  totalHealsOnTeammates: number;
+  totalDamageShieldedOnTeammates: number;
+  riftHeraldTakedowns: number;
+  inhibitorTakedowns: number;
+  longestTimeSpentLiving : number;
 }
 
 interface MatchData {

@@ -141,20 +141,9 @@ export default function Home() {
     <div className="min-h-screen bg-[#09090b] text-zinc-300 selection:bg-orange-500/30 overflow-x-hidden font-sans">
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-
         <div className="absolute top-[-20%] left-[20%] w-full h-[80%] bg-orange-600/3 rounded-full blur-[160px]" />
         <div className="absolute bottom-[-10%] right-[10%] w-[60%] h-[60%] bg-orange-500/2 rounded-full blur-[140px]" />
-
-        <div 
-          className="absolute inset-0 opacity-[0.03]" 
-          style={{ 
-            backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`,
-            backgroundSize: '40px 40px'
-          }}
-        />
-
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%)] bg-size-[100%_4px] pointer-events-none opacity-20" />
       </div>
 
       <Navbar />
@@ -162,6 +151,9 @@ export default function Home() {
       <main className="relative z-10">
         <section className="relative pt-24 pb-20 lg:pt-40 lg:pb-32 overflow-hidden border-b border-zinc-900/50">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+          
+          {/* Background Image */}
+          <div className="absolute inset-0 bg-cover bg-center opacity-[0.30]" style={{ backgroundImage: 'url(/images/herosection.jpg)' }} />
           
           <div className="container mx-auto px-6 relative">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -190,7 +182,7 @@ export default function Home() {
                 <div className="flex flex-wrap items-center gap-6">
                   <Link href="/register" className="group relative px-10 py-5 rounded-xl bg-orange-500 text-white font-black uppercase tracking-widest overflow-hidden transition-all hover:scale-105 shadow-lg shadow-orange-500/20">
                     <span className="relative z-10 flex items-center gap-2">
-                      Initialize Link <ChevronRight className="w-4 h-4" />
+                      Login Now<ChevronRight className="w-4 h-4" />
                     </span>
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                   </Link>

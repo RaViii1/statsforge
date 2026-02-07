@@ -203,8 +203,8 @@ export default function LolPage() {
             Search any League of Legends player, view match history, champion mastery, and ranked statistics across all regions
           </p>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
+           {/* Search Bar */}
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12" style={{ position: 'relative', zIndex: 9999 }}>
             <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
               <div className="flex gap-2">
                 {/* Server Selector */}
@@ -222,7 +222,7 @@ export default function LolPage() {
                 </select>
 
                 {/* Search Input with Dropdown */}
-                <div className="relative flex-1" ref={dropdownRef}>
+                <div className="relative flex-1" ref={dropdownRef} style={{ position: 'relative', zIndex: 9999 }}>
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-10" />
                   <input
                     type="text"
@@ -240,8 +240,8 @@ export default function LolPage() {
 
                   {/* Recent Searches Dropdown */}
                   {showDropdown && recentSearches.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
-                      <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem', backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '0.75rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)', zIndex: 9999, overflow: 'hidden' }}>
+                      <div className="p-3 border-b border-zinc-800 flex items-center gap-2 bg-zinc-900">
                         <Clock className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-medium text-zinc-400">Recent Searches</span>
                       </div>
@@ -307,15 +307,44 @@ export default function LolPage() {
             </div>
           </form>
 
-          {/* Quick Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link
-              href="/lol/champions"
-              className="px-6 py-3 bg-zinc-900 border border-zinc-800 text-white rounded-lg font-semibold hover:bg-zinc-800 hover:border-orange-600 transition-all flex items-center gap-2"
+           {/* Quick Links */}
+          <div className="flex flex-wrap items-center justify-center gap-4 relative z-1 text-left">
+              <Link 
+              href="/lol/multisearch"
+              className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
             >
-              <Target className="w-5 h-5 text-orange-500" />
-              Champion Statistics
-            </Link>
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Multi Search</h3>
+                <p className="text-zinc-400 text-sm mb-6">Search and compare multiple League of Legends players at once.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  Launch Tool <Search className="w-4 h-4" />
+                </div>
+              </div>
+          </Link>
+              <Link 
+              href="/lol/champions"
+              className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Tier Lists</h3>
+                <p className="text-zinc-400 text-sm mb-6">Search and compare champion tier lists for all regions and patches.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  Tier Lists <Search className="w-4 h-4" />
+                </div>
+              </div>
+          </Link>
           </div>
         </div>
 

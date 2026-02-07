@@ -20,6 +20,8 @@ interface UnitSelectorProps {
   onClearBoard: () => void;
   onSave: () => void;
   setDraggedChampionId: (id: string | null) => void;
+  canEdit?: boolean;
+  allTraits: string[];
 }
 
 export const UnitSelector = ({
@@ -34,55 +36,17 @@ export const UnitSelector = ({
   onAddUnit,
   onClearBoard,
   onSave,
-  setDraggedChampionId
+  setDraggedChampionId,
+  canEdit = true,
+  allTraits
 }: UnitSelectorProps) => {
   const paginatedChampions = filteredChampions.slice(unitPage * unitsPerPage, (unitPage + 1) * unitsPerPage);
   const totalPages = Math.ceil(filteredChampions.length / unitsPerPage);
-    
-  const [allTraits, setAllTraits] = useState<string[]>([]);
-    const [loading, setLoading] = useState(true);
-  
-    useEffect(() => {
-      async function fetchData() {
-        try {
-          const [traitsRes] = await Promise.all([
-  
-            fetch("/api/tft/traits")
-          ]);
-  
-          if (traitsRes.ok) {
-            const traitsData = await traitsRes.json();
-            setAllTraits(traitsData.map((t: any) => t.name));
-          }
-        } catch (error) {
-          console.error("Error fetching TFT data:", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-  
-      fetchData();
-    }, []);
   
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-6 border-b border-white/5 space-y-4">
-        <div className="p-6 space-y-3 bg-black/20 border-t border-white/5 flex flex-col gap-3 sm:flex sm:items-center sm:justify-between sm:space-y-0 rounded-xl">
-        <button 
-          onClick={onSave} 
-          className="w-full sm:max-w-64 py-4 bg-orange-500 hover:bg-orange-400 text-white rounded-xl shadow-xl shadow-orange-500/20 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
-        >
-          <Save className="w-3.5 h-3.5" /> Save teamcomp
-        </button>
-        <button 
-          onClick={onClearBoard} 
-          className="w-full sm:max-w-64 py-4 bg-white/5 hover:bg-red-500/20 text-white/20 hover:text-red-500 rounded-xl border border-white/10 transition-all text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
-        >
-          <Trash2 className="w-3.5 h-3.5" /> Clear Board
-        </button>
-
-      </div>
 
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
@@ -124,19 +88,25 @@ export const UnitSelector = ({
         </div>
 
         <div className="space-y-1.5">
-          {paginatedChampions.map(c => (
-            <div 
-              key={c.id} 
-              draggable 
-              onDragStart={() => setDraggedChampionId(c.id)}
-              onClick={() => onAddUnit(c.id)}
-              className="flex items-center gap-3 p-1.5 bg-white/1 border border-white/5 rounded-xl hover:bg-white/4 hover:border-white/10 transition-all group cursor-grab active:cursor-grabbing"
-            >
-              <div className="relative shrink-0">
-                <div className="w-9 h-9 rounded-lg border overflow-hidden" style={{ borderColor: getCostColor(c.cost) }}>
-                  <img src={getTFTUnitIcon(c.id, CurrentSetNumber)} alt={c.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100" />
+            {paginatedChampions.map(c => (
+              <div 
+                key={c.id} 
+                draggable={canEdit}
+                onDragStart={() => canEdit && setDraggedChampionId(c.id)}
+                onClick={() => canEdit && onAddUnit(c.id)}
+                className={`flex items-center gap-3 p-1.5 bg-white/1 border border-white/5 rounded-xl transition-all group ${canEdit ? 'hover:bg-white/4 hover:border-white/10 cursor-grab active:cursor-grabbing' : 'opacity-50 cursor-not-allowed'}`}
+              >
+
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 rounded-lg border overflow-hidden" style={{ borderColor: getCostColor(c.cost) }}>
+                    <img 
+                      src={c.image_path || '/images/nochampionimage.jpg'} 
+                      alt={c.name} 
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100" 
+                      onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
+                      />
+                  </div>
                 </div>
-              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-black text-orange-500 group-hover:text-white truncate uppercase tracking-widest">{c.name}</p>
                 <div className="flex gap-1 mt-0.5">

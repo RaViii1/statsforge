@@ -173,8 +173,8 @@ export default function TFTPage() {
             Search any TFT player, view match history, synergies, and ranked progression
           </p>
 
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
-            <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12" style={{ position: 'relative', zIndex: 9999 }}>
+            <div className={`transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
               <div className="flex gap-2">
                 <select
                   value={selectedServer}
@@ -189,30 +189,32 @@ export default function TFTPage() {
                   ))}
                 </select>
 
-                <div className="relative flex-1" ref={dropdownRef}>
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-10" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter Riot ID (e.g., Faker#KR1)"
-                    onFocus={() => {
-                      setSearchFocused(true);
-                      setShowDropdown(true);
-                    }}
-                    onBlur={() => setSearchFocused(false)}
-                    disabled={isSearching}
-                    className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                  />
+                <div className="relative flex-1" ref={dropdownRef} style={{ position: 'relative', zIndex: 9999 }}>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-20" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Enter Riot ID (e.g., Faker#KR1)"
+                      onFocus={() => {
+                        setSearchFocused(true);
+                        setShowDropdown(true);
+                      }}
+                      onBlur={() => setSearchFocused(false)}
+                      disabled={isSearching}
+                      className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg relative z-10"
+                    />
+                  </div>
 
                   {showDropdown && recentSearches.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-1000 overflow-hidden">
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem', backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '0.75rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)', zIndex: 9999, overflow: 'hidden' }}>
                       <div className="p-3 border-b border-zinc-800 flex items-center gap-2 bg-zinc-900">
                         <Clock className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-medium text-zinc-400">Recent Searches</span>
                       </div>
                       
-                      <div className="max-h-80 overflow-y-auto bg-zinc-900">
+                      <div className="max-h-80 overflow-y-auto">
                         {recentSearches.map((search, index) => (
                           <div
                             key={index}
@@ -268,10 +270,10 @@ export default function TFTPage() {
         </div>
 
       
-        <div className={`grid md:grid-cols-3 gap-6 max-w-5xl mx-auto ${showDropdown ? 'pointer-events-none' : ''}`}>
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto relative" style={{ zIndex: 1 }}>
           <Link 
             href="/tft/planner"
-            className="group relative overflow-hidden p-8 bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center"></div>
@@ -290,7 +292,7 @@ export default function TFTPage() {
 
           <Link 
             href="/tft/comps"
-            className="group relative overflow-hidden p-8 bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] hover:border-yellow-500/50 transition-all"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-yellow-500/50 transition-all"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 via-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
@@ -309,7 +311,7 @@ export default function TFTPage() {
 
           <Link 
             href="/tft/shop-odds"
-            className="group relative overflow-hidden p-8 bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
@@ -328,7 +330,7 @@ export default function TFTPage() {
 
           <Link 
             href="/tft/units"
-            className="group relative overflow-hidden p-8 bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all md:col-span-3"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all md:col-span-3"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
@@ -347,7 +349,7 @@ export default function TFTPage() {
         </div>
 
         
-        <div className={`grid md:grid-cols-3 gap-12 mt-20 pt-20 border-t border-zinc-900 ${showDropdown ? 'pointer-events-none' : ''}`}>
+        <div className="grid md:grid-cols-3 gap-12 mt-20 pt-20 border-t border-zinc-900">
           <div className="text-center">
             <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-500 hover:bg-orange-950 transition-all">
               <Trophy className="w-6 h-6" />

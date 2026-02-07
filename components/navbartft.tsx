@@ -4,20 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Anvil, Search, Loader2, X, Menu, Clock } from 'lucide-react';
-
-const SERVERS = [
-  { value: "na1", label: "NA" },
-  { value: "euw1", label: "EUW" },
-  { value: "eun1", label: "EUNE" },
-  { value: "kr", label: "KR" },
-  { value: "br1", label: "BR" },
-  { value: "la1", label: "LAN" },
-  { value: "la2", label: "LAS" },
-  { value: "oc1", label: "OCE" },
-  { value: "ru", label: "RU" },
-  { value: "tr1", label: "TR" },
-  { value: "jp1", label: "JP" },
-];
+import UserMenu from "./UserMenu";
+import { SERVERS } from "@/lib/utils";
 
 interface RecentSearch {
   gameName: string;
@@ -258,18 +246,12 @@ export default function NavbarTft() {
 
             {/* Links - Right (Desktop) */}
             <div className="hidden md:flex items-center gap-1 shrink-0">
-              <a href="/lol/multisearch" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
-                Multi Search
-              </a>
               <a href="/#games" className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium">
                 Games
               </a>
-              <Link href="/login" className="px-4 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors">
-                Sign In
-              </Link>
-              <Link href="/register" className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-orange-900/30">
-                Get Started
-              </Link>
+            <div className="hidden md:flex items-center gap-4 shrink-0">
+              <UserMenu />
+            </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -374,13 +356,7 @@ export default function NavbarTft() {
 
               {/* Mobile Links */}
               <div className="pt-4 border-t border-zinc-800/50 space-y-2">
-                <a 
-                  href="/lol/multisearch" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
-                >
-                  MultiSearch
-                </a>
+                <UserMenu />
                 <a 
                   href="/#games"
                   onClick={() => setMobileMenuOpen(false)}
@@ -388,20 +364,6 @@ export default function NavbarTft() {
                 >
                   Games
                 </a>
-                <Link 
-                  href="/login" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold text-center transition-all shadow-lg shadow-orange-900/30"
-                >
-                  Get Started
-                </Link>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from "@/lib/supabase/server";
-import { Layers, Users, Shield, Box, Plus, TrendingUp, ChevronRight } from 'lucide-react'
+import { Layers, Users, Shield, Box, TrendingUp, ChevronRight, Users2, Database, BarChart3 } from 'lucide-react'
 import AdminTabs, { UserList } from "./AdminsTab";
 
 const adminLinks = [
@@ -22,7 +22,7 @@ const adminLinks = [
   },
   {
     title: 'Traits',
-    description: 'Configure synergies and trait tier bonuses',
+    description: 'Configure synergies and trait bonuses',
     href: '/admin/traits',
     icon: Shield,
     color: 'text-purple-500',
@@ -51,57 +51,109 @@ export default async function AdminDashboard() {
 
   const overview = (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {adminLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="group p-6 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-orange-500/50 transition-all"
-          >
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 ${link.bgColor} rounded-xl flex items-center justify-center shrink-0`}>
-                <link.icon className={`w-6 h-6 ${link.color}`} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-white group-hover:text-orange-500 transition-colors">
-                    {link.title}
-                  </h3>
-                  <ChevronRight className="w-5 h-5 text-zinc-600 group-hover:text-orange-500 transition-all group-hover:translate-x-1" />
-                </div>
-                <p className="text-zinc-400 mt-1">{link.description}</p>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
 
-      <div className="p-8 bg-linear-to-br from-orange-600/20 to-amber-600/10 border border-orange-500/20 rounded-2xl">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-            <TrendingUp className="w-6 h-6 text-white" />
-          </div>
-          <h2 className="text-xl font-bold text-white">System Status</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Database</div>
-            <div className="text-lg font-bold text-emerald-500 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Live
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        
+        
+        <div className="p-8 bg-gradient-to-br from-orange-50/5 to-orange-50/2 via-zinc-900/90 border border-orange-400/20 rounded-2xl shadow-xl shadow-orange-500/5">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-emerald-400/20 border-2 border-emerald-500/40 rounded-xl flex items-center justify-center shadow-md">
+              <Database className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">System Status</h3>
+              <p className="text-zinc-500 text-sm">Core infrastructure & database health</p>
             </div>
           </div>
-          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Active Set</div>
-            <div className="text-lg font-bold text-white">Set {activeSet?.set_number || 'N/A'}</div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 bg-zinc-950/50 border border-zinc-800/50 rounded-xl group hover:border-orange-400/60 hover:shadow-md transition-all duration-200">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Database
+              </div>
+              <div className="text-2xl font-bold text-emerald-400">Live</div>
+            </div>
+            
+            <div className="p-6 bg-zinc-950/50 border border-zinc-800/50 rounded-xl group hover:border-orange-400/60 hover:shadow-md transition-all duration-200">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">Registered Users</div>
+              <div className="text-2xl font-bold text-white">{userCount?.toLocaleString() || 0}</div>
+            </div>
           </div>
-          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Total Comps</div>
-            <div className="text-lg font-bold text-white">{compCount?.toLocaleString() || 0}</div>
+        </div>
+
+        {/* TFT Analytics - Unchanged */}
+        <div className="p-8 bg-gradient-to-br from-orange-50/5 to-orange-50/2 via-zinc-900/90 border border-orange-400/20 rounded-2xl shadow-xl shadow-orange-500/5">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-orange-400/20 border-2 border-orange-500/40 rounded-xl flex items-center justify-center shadow-md">
+              <TrendingUp className="w-6 h-6 text-orange-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">TFT Analytics</h3>
+              <p className="text-zinc-500 text-sm">Active set & team composition stats</p>
+            </div>
           </div>
-          <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl">
-            <div className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-black mb-1">Registered</div>
-            <div className="text-lg font-bold text-white">{userCount?.toLocaleString() || 0}</div>
+          
+          <div className="space-y-6">
+            {/* Active Set */}
+            <div className="p-6 bg-zinc-950/50 border border-zinc-800/50 rounded-xl group hover:border-orange-400/60 hover:shadow-md transition-all duration-200">
+              <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">Active Set</div>
+              <div className="text-2xl font-bold text-white flex items-center gap-2">
+                Set {activeSet?.set_number || 'N/A'}
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              </div>
+            </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400/90 to-orange-500/90 bg-clip-text text-transparent">
+                 TFT Quick Actions
+                </h2>
+                <p className="text-zinc-400">Manage your TFT game data and configurations</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {adminLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="group p-6 bg-linear-to-r from-zinc-900/80 to-orange-500/10 border border-orange-400/20 rounded-2xl hover:border-orange-400/60 hover:bg-zinc-900/80 transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/10"
+                  >
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 ${link.bgColor} rounded-xl flex items-center justify-center shrink-0 border border-zinc-700/50 shadow-sm`}>
+                      <link.icon className={`w-6 h-6 ${link.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-white group-hover:text-orange-400 transition-colors duration-200">
+                          {link.title}
+                        </h3>
+                        <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-orange-400 transition-all duration-200 group-hover:translate-x-1" />
+                      </div>
+                      <p className="text-zinc-400 text-sm leading-relaxed">{link.description}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Teamcomps */}
+            <div className="space-y-4 border-t border-amber-600/30 py-4 mt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-bold text-white ">Team Compositions</h4>
+                <Link 
+                  href="/tft/comps" 
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-orange-500/90 to-orange-600/90 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl border border-orange-500/30"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  View All
+                </Link>
+              </div>
+              
+              <div className="p-6 bg-gradient-to-r from-zinc-950/70 to-zinc-900/70 border border-orange-400/20 rounded-xl shadow-inner">
+                <div className="text-xs text-zinc-400 uppercase tracking-wider font-semibold mb-4">Total Compositions</div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+                  {compCount?.toLocaleString() || 0}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -109,10 +161,11 @@ export default async function AdminDashboard() {
   );
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
-        <p className="text-zinc-400">Manage TFT game data and configurations</p>
+    <div className="space-y-8 p-6 max-w-7xl mx-auto">
+      <div className="space-y-4 pb-12 border-b border-zinc-800">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400/90 to-orange-500/90 bg-clip-text text-transparent">
+          Admin Dashboard
+        </h1>
       </div>
 
       <AdminTabs 

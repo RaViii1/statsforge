@@ -16,6 +16,7 @@ import { getArenaAugmentName, getArenaAugmentIcon } from "@/lib/arena-augments";
 import { getItemImage, getItemDescription } from "@/lib/items";
 import { MatchRunesTab } from "@/components/lol/MatchRunesTab";
 import { RankedIcon } from "@/components/lol/RankedIcon";
+import SvgIcon from "../SvgIcon";
 
 interface MatchDetailsTabProps {
   match: Match;
@@ -684,8 +685,8 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                         <div className="flex flex-row pt-2">
                         <span className="text-xs text-zinc-400 font-medium mr-1">{participantCSDisplay.totalCS} CS</span>
                           <p className="flex items-center text-[10px]" title="Gold earned">
-                              <span className="text-xs text-zinc-400 font-medium mr-1">{participant.goldEarned} </span>
-                              <CoinsIcon className="w-4 h-4 text-yellow-400" />
+                              <span className="border-l pl-1 text-xs text-zinc-400 font-medium mr-1">{participant.goldEarned} </span>
+                              <SvgIcon size={12} type="gold" className="text-amber-400" />
                           </p>
                         </div>
                       </div>

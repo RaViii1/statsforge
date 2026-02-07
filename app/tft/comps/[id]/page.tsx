@@ -20,11 +20,11 @@ import {
   Layers,
   Share2
 } from 'lucide-react';
-import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
+import { getTFTUnitIcon, getTFTItemIcon, copyToClipboard } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, MetaTier } from '@/lib/tft/teamplanner-types';
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import { CurrentSetNumber, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
+import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Footer from '@/components/footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
@@ -95,11 +95,15 @@ interface TooltipState {
 const ReadOnlyHexGrid = ({ 
   units, 
   mainCarryIds,
+  champions,
+  items,
   setTooltip,
   phase
 }: { 
   units: UnitPosition[]; 
   mainCarryIds: string[];
+  champions: any[];
+  items: any[];
   setTooltip: React.Dispatch<React.SetStateAction<TooltipState>>;
   phase: PhaseKey;
 }) => {
@@ -121,6 +125,7 @@ const ReadOnlyHexGrid = ({
             const isOffset = row % 2 !== 0;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
             const cost = unit ? getChampionCost(unit.characterId) : 1;
+            const champ = unit ? champions.find(c => c.id === unit.characterId) : null;
             
             return (
               <div 
@@ -141,7 +146,7 @@ const ReadOnlyHexGrid = ({
                       stroke={unit ? (isCarry ? '#f97316' : getCostColor(cost)) : 'rgba(100, 100, 102, 0.6)'} 
                       strokeWidth={unit ? (isCarry ? '4' : '2') : '2'}
                       className="transition-colors duration-300"
-                    />z
+                    />
                     {unit && (
                       <>
                         <defs>
@@ -150,7 +155,7 @@ const ReadOnlyHexGrid = ({
                           </clipPath>
                         </defs>
                         <image 
-                          href={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} 
+                          href={champ?.image_path} 
                           width="94" 
                           height="108" 
                           x="3" 
@@ -174,22 +179,28 @@ const ReadOnlyHexGrid = ({
                       </div>
                       {unit.items.length > 0 && (
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex -space-x-1 z-30">
-                          {unit.items.map((item, i) => (
-                            <div 
-                              key={i} 
-                              className="w-5 h-5 rounded-md border border-zinc-700 overflow-hidden bg-zinc-900 cursor-help hover:scale-150 hover:z-10 transition-all duration-300 shadow-xl"
-                              onMouseEnter={(e) => setTooltip({ 
-                                visible: true, 
-                                title: item, 
-                                description: getItemDescription(item) || 'No description', 
-                                x: e.clientX, 
-                                y: e.clientY 
-                              })}
-                              onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
-                            >
-                              <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
+                          {unit.items.map((item, i) => {
+                            const itemObj = items.find(it => it.name === item);
+                            return (
+                              <div 
+                                key={i} 
+                                className="w-5 h-5 rounded-md border border-zinc-700 overflow-hidden bg-zinc-900 cursor-help hover:scale-150 hover:z-10 transition-all duration-300 shadow-xl"
+                                onMouseEnter={(e) => setTooltip({ 
+                                  visible: true, 
+                                  title: item, 
+                                  description: itemObj?.description || 'No description', 
+                                  x: e.clientX, 
+                                  y: e.clientY 
+                                })}
+                                onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                              >
+                                <img src={itemObj?.image_path || '/images/noitem.png'} 
+                                alt={item} 
+                                className="w-full h-full object-cover" 
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </>
@@ -204,25 +215,94 @@ const ReadOnlyHexGrid = ({
   );
 };
 
+
+import { createClient } from '@/lib/supabase/client';
+
 export default function CompDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const [comp, setComp] = useState<TeamComp | null>(null);
+  const [champions, setChampions] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
 
   useEffect(() => {
-    const saved = localStorage.getItem('tft_planned_teams_v3');
-    if (saved) {
+    const fetchCompData = async () => {
       try {
-        const comps: TeamComp[] = JSON.parse(saved);
-        const foundComp = comps.find(c => c.id === resolvedParams.id);
-        if (foundComp) {
-          setComp(foundComp);
-        }
+        const [compRes, champsRes, itemsRes] = await Promise.all([
+          fetch(`/api/tft/team-comps/${resolvedParams.id}`),
+          fetch('/api/tft/champions'),
+          fetch('/api/tft/items')
+        ]);
+
+        if (!compRes.ok) throw new Error('Failed to fetch comp');
+        
+        const { comp, phases, steps, units } = await compRes.json();
+        
+        if (champsRes.ok) setChampions(await champsRes.json());
+        if (itemsRes.ok) setItems(await itemsRes.json());
+
+        const teamPhases: Record<PhaseKey, any> = {
+          early: { units: [], notes: '' },
+          mid: { units: [], notes: '' },
+          final: { units: [], notes: '' }
+        };
+
+        phases.forEach((p: any) => {
+          const phaseKey = p.phase as PhaseKey;
+            const phaseUnits = units
+              .filter((u: any) => u.phase_id === p.id)
+              .map((u: any) => ({
+                id: u.id,
+                characterId: u.champion_id,
+                name: u.name,
+                row: u.row,
+                col: u.col,
+                stars: u.stars,
+                items: u.items || []
+              }));
+
+          teamPhases[phaseKey] = {
+            units: phaseUnits,
+            notes: p.notes || ''
+          };
+        });
+
+        setComp({
+          id: comp.id,
+          name: comp.name,
+          description: comp.description || '',
+          patch: comp.patch || '16.1',
+          tier: comp.tier,
+          difficulty: comp.difficulty,
+          mainCarryIds: comp.main_carry_ids || [],
+          synergiesList: comp.synergies_list || [],
+          activePresetId: comp.active_preset_id,
+          user_id: comp.user_id,
+          phases: teamPhases,
+          levelingSteps: steps.map((s: any) => ({
+            level: s.level,
+            stage: s.stage,
+            gold: s.gold,
+            description: s.description
+          }))
+        });
       } catch (e) {
         console.error("Failed to load comp", e);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+    fetchCompData();
   }, [resolvedParams.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   if (!comp) {
     return (
@@ -232,7 +312,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
             <Activity className="w-10 h-10 text-zinc-700" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2 tracking-tighter uppercase">Comp Missing</h2>
-          <p className="text-zinc-500 mb-8 max-w-xs mx-auto text-sm">The requested tactical data could not be retrieved from local storage.</p>
+            <p className="text-zinc-500 mb-8 max-w-xs mx-auto text-sm">The requested tactical data could not be retrieved from the cloud database.</p>
           <Link href="/tft/comps" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black hover:bg-zinc-200 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-xl">
             <ChevronLeft className="w-4 h-4" />
             Back to Hub
@@ -326,192 +406,209 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
         {/* Tactical Overview Grid */}
         <div className="grid lg:grid-cols-12 gap-8 mb-16">
           {/* Main Carries */}
-          {carries.length > 0 && (
-            <div className="lg:col-span-5 bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
-              <h3 className="text-[10px] font-black text-orange-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-3">
-                <Crown className="w-4 h-4" />
-                Main Carry Units
-              </h3>
-              <div className="grid gap-4">
-                {carries.map(({ unit, cost }, i) => (
-                  <div 
-                    key={i} 
-                    className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-orange-500/30 transition-all group"
-                  >
-                    <div 
-                      className={`w-16 h-16 rounded-xl border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} shadow-lg transform group-hover:scale-105 transition-transform`}
-                    >
-                      <img src={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} alt={unit.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-black text-white uppercase tracking-tight text-lg italic">{unit.name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Gold</span>
-                      </div>
-                    </div>
-                    {unit.items.length > 0 && (
-                      <div className="flex gap-1.5">
-                        {unit.items.map((item, idx) => (
-                          <div 
-                            key={idx} 
-                            className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden cursor-help hover:scale-125 transition-all shadow-xl"
-                            onMouseEnter={(e) => setTooltip({ 
-                              visible: true, 
-                              title: item, 
-                              description: getItemDescription(item) || 'No description', 
-                              x: e.clientX, 
-                              y: e.clientY 
-                            })}
-                            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
-                          >
-                            <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Levelling & Priority Items */}
-          <div className={`${carries.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-8`}>
-            {/* Priority Items */}
-            {priorityItems.length > 0 && (
-              <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
-                <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
-                  <Sparkles className="w-4 h-4" />
-                  Itemization Priority
+            {carries.length > 0 && (
+              <div className="lg:col-span-5 bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                <h3 className="text-[10px] font-black text-orange-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-3">
+                  <Crown className="w-4 h-4" />
+                  Main Carry Units
                 </h3>
-                <div className="flex items-center gap-4 flex-wrap">
-                  {priorityItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4">
+                <div className="grid gap-4">
+                    {carries.map(({ unit, cost }, i) => {
+                      const champ = champions.find(c => c.id === unit.characterId);
+
+                      return (
                       <div 
-                        className="relative w-14 h-14 rounded-2xl bg-zinc-800 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
-                        onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: getItemDescription(item) || '', x: e.clientX, y: e.clientY })}
-                        onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                        key={i} 
+                        className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-orange-500/30 transition-all group"
                       >
-                        <img src={getTFTItemIcon(item)} alt={item} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      {idx < priorityItems.length - 1 && (
-                        <ArrowRight className="w-4 h-4 text-white/10" />
-                      )}
-                    </div>
-                  ))}
-                  <div className="ml-auto bg-white/5 border border-white/5 rounded-2xl px-5 py-3 flex items-center gap-3">
-                    <Info className="w-4 h-4 text-amber-500" />
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Sequence: Standard Optimization</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-              <div className="border-t border-zinc-800/50 pt-5">
-                <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">
-                  Levelling Guide
-                </h4>
-                <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
-                  {comp.levelingSteps.map((step, i) => (
-                    <div key={i} className="flex items-center">
-                      <div className="flex flex-col items-center min-w-[70px]">
-                        <div className="flex items-center gap-1">
-                          <ChevronsUp className={`w-4 h-4 text-yellow-600`} />
-                          <span className={`text-2xl font-black text-white border-l border-orange-500/40  pl-2`}>
-                            {step.level}
-                          </span>
-                        
-                          <div className="flex flex-col items-start ml-0.5">
-                            <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
-                            <div className="flex items-center gap-0.5">
-                              <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>
-                                {step.gold}
-                              </span>
-                              <Coins className="w-3 h-3 text-yellow-500" />
+                          <div 
+                            className={`w-16 h-16 rounded-xl border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} shadow-lg transform group-hover:scale-105 transition-transform`}
+                          >
+                            <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={champ?.name || unit.name} className="w-full h-full object-cover" />
+                          </div>
+                            <div className="flex-1">
+                              <p className="font-black text-white uppercase tracking-tight text-lg italic">{champ?.name || unit.name}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Gold</span>
+                              </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="h-4 flex items-center justify-center">
-                          {step.description && (
-                            <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
-                          )}
-                        </div>
-                      </div>
-                      {i < comp.levelingSteps.length - 1 && (
-                        <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-        {/* Detailed Phase Analysis */}
-        <div className="space-y-24 mt-24">
-          {(['early', 'mid', 'final'] as PhaseKey[]).map((phase, idx) => {
-            const config = PHASE_CONFIG[phase];
-            const units = comp.phases[phase].units;
-            const hasNotes = comp.phases[phase].notes && comp.phases[phase].notes.length > 0;
-            
-            return (
-              <div key={phase} className="relative">
-                {/* Connector Line */}
-                {idx < 2 && (
-                  <div className="absolute left-10 top-full h-24 w-px bg-linear-to-b from-white/10 to-transparent" />
-                )}
-
-                <div className="grid lg:grid-cols-12 gap-12 items-start">
-                  <div className="lg:col-span-4 space-y-8">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-zinc-900 border border-white/10 ${config.color} shadow-xl`}>
-                          {config.icon}
-                        </div>
-                        <div>
-                          <h2 className="text-sm font-black text-white uppercase tracking-[0.4em]">{config.label}</h2>
-                          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{units.length} units Deployed</p>
-                        </div>
-                      </div>
-                      <p className="text-zinc-500 text-xs font-medium leading-relaxed max-w-sm">
-                        {config.desc}
-                      </p>
-                    </div>
-
-                    {/* Aesthetic Notes Display */}
-                    <div className="relative group">
-                      <div className="absolute -inset-2 bg-linear-to-r from-zinc-800 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                      
-                      <div className="relative space-y-4">
-                        <div className="flex items-center gap-3 px-4 py-1.5 bg-black/40 border border-white/5 rounded-full w-fit">
-                          <Terminal className={`w-3 h-3 ${config.color}`} />
-                          <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest italic">Game Plan</span>
-                        </div>
-
-                        {hasNotes ? (
-                          <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-                            <p className="text-zinc-300 text-sm font-medium leading-relaxed italic whitespace-pre-wrap">
-                              {comp.phases[phase].notes}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="bg-white/2 border border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center text-center">
-                            <Info className="w-5 h-5 text-zinc-800 mb-2" />
-                            <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">No phase plan logged</p>
+                        {unit.items.length > 0 && (
+                          <div className="flex gap-1.5">
+                            {unit.items.map((item, idx) => {
+                              const itemObj = items.find(it => it.name === item);
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden cursor-help hover:scale-125 transition-all shadow-xl"
+                                  onMouseEnter={(e) => setTooltip({ 
+                                    visible: true, 
+                                    title: item, 
+                                    description: itemObj?.description || 'No description', 
+                                    x: e.clientX, 
+                                    y: e.clientY 
+                                  })}
+                                  onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                                >
+                                  <img 
+                                    src={itemObj?.image_path || '/images/noitem.png'} 
+                                    alt={item} 
+                                    className="w-full h-full object-cover"
+                                   />
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Levelling & Priority Items */}
+            <div className={`${carries.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-8`}>
+              {/* Priority Items */}
+              {priorityItems.length > 0 && (
+                <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
+                  <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
+                    <Sparkles className="w-4 h-4" />
+                    Itemization Priority
+                  </h3>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {priorityItems.map((item, idx) => {
+                      const itemObj = items.find(it => it.name === item);
+                      return (
+                        <div key={idx} className="flex items-center gap-4">
+                          <div 
+                            className="relative w-14 h-14 rounded-2xl bg-zinc-800 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
+                            onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY })}
+                            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                          >
+                            <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          {idx < priorityItems.length - 1 && (
+                            <ArrowRight className="w-4 h-4 text-white/10" />
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="ml-auto bg-white/5 border border-white/5 rounded-2xl px-5 py-3 flex items-center gap-3">
+                      <Info className="w-4 h-4 text-amber-500" />
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest italic">Sequence: Standard Optimization</span>
                     </div>
                   </div>
-                  
-                  <div className="lg:col-span-8 flex justify-center">
-                    {units.length > 0 ? (
-                      <ReadOnlyHexGrid 
-                        units={units} 
-                        mainCarryIds={comp.mainCarryIds}
-                        setTooltip={setTooltip}
-                        phase={phase}
-                      />
-                    ) : (
+                </div>
+              )}
+            </div>
+          </div>
+                <div className="border-t border-zinc-800/50 pt-5">
+                  <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">
+                    Levelling Guide
+                  </h4>
+                  <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+                    {comp.levelingSteps.map((step, i) => (
+                      <div key={i} className="flex items-center">
+                        <div className="flex flex-col items-center min-w-[70px]">
+                          <div className="flex items-center gap-1">
+                            <ChevronsUp className={`w-4 h-4 text-yellow-600`} />
+                            <span className={`text-2xl font-black text-white border-l border-orange-500/40  pl-2`}>
+                              {step.level}
+                            </span>
+                          
+                            <div className="flex flex-col items-start ml-0.5">
+                              <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
+                              <div className="flex items-center gap-0.5">
+                                <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>
+                                  {step.gold}
+                                </span>
+                                <Coins className="w-3 h-3 text-yellow-500" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="h-4 flex items-center justify-center">
+                            {step.description && (
+                              <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
+                            )}
+                          </div>
+                        </div>
+                        {i < comp.levelingSteps.length - 1 && (
+                          <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+          {/* Detailed Phase Analysis */}
+          <div className="space-y-24 mt-24">
+            {(['early', 'mid', 'final'] as PhaseKey[]).map((phase, idx) => {
+              const config = PHASE_CONFIG[phase];
+              const units = comp.phases[phase].units;
+              const hasNotes = comp.phases[phase].notes && comp.phases[phase].notes.length > 0;
+              
+              return (
+                <div key={phase} className="relative">
+                  {/* Connector Line */}
+                  {idx < 2 && (
+                    <div className="absolute left-10 top-full h-24 w-px bg-linear-to-b from-white/10 to-transparent" />
+                  )}
+  
+                  <div className="grid lg:grid-cols-12 gap-12 items-start">
+                    <div className="lg:col-span-4 space-y-8">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-zinc-900 border border-white/10 ${config.color} shadow-xl`}>
+                            {config.icon}
+                          </div>
+                          <div>
+                            <h2 className="text-sm font-black text-white uppercase tracking-[0.4em]">{config.label}</h2>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{units.length} units Deployed</p>
+                          </div>
+                        </div>
+                        <p className="text-zinc-500 text-xs font-medium leading-relaxed max-w-sm">
+                          {config.desc}
+                        </p>
+                      </div>
+  
+                      {/* Aesthetic Notes Display */}
+                      <div className="relative group">
+                        <div className="absolute -inset-2 bg-linear-to-r from-zinc-800 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                        
+                        <div className="relative space-y-4">
+                          <div className="flex items-center gap-3 px-4 py-1.5 bg-black/40 border border-white/5 rounded-full w-fit">
+                            <Terminal className={`w-3 h-3 ${config.color}`} />
+                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-widest italic">Game Plan</span>
+                          </div>
+  
+                          {hasNotes ? (
+                            <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+                              <p className="text-zinc-300 text-sm font-medium leading-relaxed italic whitespace-pre-wrap">
+                                {comp.phases[phase].notes}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="bg-white/2 border border-dashed border-white/5 rounded-2xl p-6 flex flex-col items-center text-center">
+                              <Info className="w-5 h-5 text-zinc-800 mb-2" />
+                              <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">No phase plan logged</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="lg:col-span-8 flex justify-center">
+                      {units.length > 0 ? (
+                        <ReadOnlyHexGrid 
+                          units={units} 
+                          mainCarryIds={comp.mainCarryIds}
+                          champions={champions}
+                          items={items}
+                          setTooltip={setTooltip}
+                          phase={phase}
+                        />
+                      ) : (
+
                       <div className="w-[680px] h-[390px] flex items-center justify-center bg-white/2 border-2 border-dashed border-white/5 rounded-[2.5rem]">
                         <div className="text-center space-y-4">
                           <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-white/10 flex items-center justify-center mx-auto shadow-2xl">
@@ -531,12 +628,23 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
           })}
         </div>
       </main>
-      <div className='flex flex-row items-center justify-center mb-16'><button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Operation link copied"); }} className="flex items-center gap-3 px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-[0_0_30px_rgba(234,88,12,0.3)] hover:scale-105 active:scale-95 group"><Share2 className="w-4 h-4" /> Share Teamcomp</button>
+      <div className='flex flex-row items-center justify-center mb-16'>
+        <button 
+            onClick={async () => { 
+              const success = await copyToClipboard(window.location.href);
+              if (success) toast.success("Copied link to clipboard"); 
+              else toast.error("Failed to copy link");
+            }} 
+            className="flex items-center gap-3 px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all shadow-[0_0_30px_rgba(234,88,12,0.3)] hover:scale-105 active:scale-95 group"
+          >
+            <Share2 className="w-4 h-4" /> 
+            Share Teamcomp
+          </button>
 </div>
      
 
       <Footer />
-
+ 
       {tooltip.visible && (
         <div 
           className="fixed z-[100] pointer-events-none bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl max-w-[280px] transform-gpu transition-transform animate-in fade-in zoom-in duration-200"
@@ -550,7 +658,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
 
       <style jsx global>{`
         @keyframes subtle-pulse {
-          0%, 100% { opacity: 0.3; }
+          0%, 100% { opacity: 0.3; }    
           50% { opacity: 0.6; }
         }
         .animate-subtle-pulse {

@@ -18,21 +18,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const body = await request.json() as TFTItem;
-
-  const { id, name, set_id, image_path, description, stats, is_component, is_artifact, is_radiant } = body;
-
-  const dbData = {
-    id: id || name.toLowerCase().replace(/\s+/g, "-"),
-    name,
-    set_id,
-    image_path,
-    description,
-    stats,
-    is_component,
-    is_artifact,
-    is_radiant
-  };
+    const body = await request.json() as TFTItem;
+  
+    const { id, name, set_id, image_path, description, stats, is_component, is_artifact, is_radiant, is_seasonal } = body;
+  
+    const dbData = {
+      id: id || `TFT_Item_${name.toLowerCase().replace(/\s+/g, "_")}`,
+      name,
+      set_id: set_id === 0 ? null : set_id,
+      image_path,
+      description,
+      stats,
+      is_component,
+      is_artifact,
+      is_radiant,
+      is_seasonal
+    };
 
   const { error } = await supabase
     .from("tft_items")

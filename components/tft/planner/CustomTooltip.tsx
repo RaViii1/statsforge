@@ -22,11 +22,6 @@ export const CustomTooltip = ({
         </div>
         <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">{description}</p>
         <div className="mt-3 pt-2 border-t border-zinc-900 flex items-center justify-between">
-          <span className="text-[9px] font-black text-orange-500/50 uppercase tracking-[0.2em]">Tactical Intel</span>
-          <div className="flex gap-1">
-            <div className="w-1 h-1 rounded-full bg-zinc-800" />
-            <div className="w-1 h-1 rounded-full bg-zinc-800" />
-          </div>
         </div>
         <span className="text-[9px] font-black text-orange-500/50 uppercase tracking-[0.2em]">Item components</span>
       </div>

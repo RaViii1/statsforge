@@ -68,49 +68,75 @@ export async function GET(
         teamId: p.teamId,
         win: p.win,
         
+        
         // Combat metrics
-        kills: p.kills,
-        assists: p.assists,
-        deaths: p.deaths,
-        kda: kda,
-        damagePerMinute: p.totalDamageDealtToChampions / gameDuration,
-        totalDamageDealtToChampions: p.totalDamageDealtToChampions,
-        teamDamagePercentage: p.challenges?.teamDamagePercentage || 0,
-        killParticipation: p.challenges?.killParticipation || 0,
-        
-        // Multikills
-        pentaKills: p.pentaKills || 0,
-        quadraKills: p.quadraKills || 0,
-        tripleKills: p.tripleKills || 0,
-        doubleKills: p.doubleKills || 0,
-        
-        // Objective metrics
-        baronKills: p.challenges?.baronTakedowns || 0,
-        dragonKills: p.challenges?.dragonTakedowns || 0,
-        turretTakedowns: p.challenges?.turretTakedowns || 0,
-        objectivesStolen: p.objectivesStolen || 0,
-        
-        // Economy metrics
-        goldEarned: p.goldEarned,
-        goldPerMinute: p.goldEarned / gameDuration,
-        totalMinionsKilled: p.totalMinionsKilled,
-        neutralMinionsKilled: p.neutralMinionsKilled,
-        
-        // Survivability metrics
-        totalDamageTaken: p.totalDamageTaken,
-        totalHeal: p.totalHeal || 0,
-        damageSelfMitigated: p.damageSelfMitigated,
-        timeSpentDead: p.totalTimeSpentDead,
-        
-        // Vision metrics
-        visionScore: p.visionScore,
-        visionScorePerMinute: p.visionScore / gameDuration,
-        wardsPlaced: p.wardsPlaced,
-        wardsKilled: p.wardsKilled,
-        
-        // Other
-        level: p.champLevel,
-        timePlayed: matchData.info.gameDuration,
+          kills: p.kills,
+          assists: p.assists,
+          deaths: p.deaths,
+          kda: kda,
+          damagePerMinute: p.totalDamageDealtToChampions / gameDuration,
+          totalDamageDealtToChampions: p.totalDamageDealtToChampions,
+          teamDamagePercentage: p.challenges?.teamDamagePercentage || 0,
+          killParticipation: p.challenges?.killParticipation || 0,
+          soloKills: p.challenges?.soloKills || 0,
+          
+          // Multikills
+          pentaKills: p.pentaKills || 0,
+          quadraKills: p.quadraKills || 0,
+          tripleKills: p.tripleKills || 0,
+          doubleKills: p.doubleKills || 0,
+          
+          // Objective metrics
+          baronKills: p.challenges?.baronTakedowns || 0,
+          dragonKills: p.challenges?.dragonTakedowns || 0,
+          riftHeraldTakedowns: p.challenges?.riftHeraldTakedowns || 0,
+          turretTakedowns: p.challenges?.turretTakedowns || 0,
+          inhibitorTakedowns: p.challenges?.inhibitorTakedowns || 0,
+          objectivesStolen: p.objectivesStolen || 0,
+          
+          // Economy metrics
+          goldEarned: p.goldEarned,
+          goldPerMinute: p.goldEarned / gameDuration,
+          totalMinionsKilled: p.totalMinionsKilled,
+          neutralMinionsKilled: p.neutralMinionsKilled,
+          
+          // Survivability metrics
+          totalDamageTaken: p.totalDamageTaken,
+          totalHeal: p.totalHeal || 0,
+          totalHealsOnTeammates: p.totalHealsOnTeammates || 0,
+          totalDamageShieldedOnTeammates: p.totalDamageShieldedOnTeammates || 0,
+          damageSelfMitigated: p.damageSelfMitigated,
+          timeSpentDead: p.totalTimeSpentDead,
+          longestTimeSpentLiving: p.longestTimeSpentLiving || 0,
+          
+          // CC metrics
+          timeCCingOthers: p.timeCCingOthers || 0,
+          
+          // Vision metrics
+          visionScore: p.visionScore,
+          visionScorePerMinute: p.visionScore / gameDuration,
+          wardsPlaced: p.wardsPlaced,
+          wardsKilled: p.wardsKilled,
+          controlWardsPlaced: p.challenges?.controlWardsPlaced || 0,
+          
+            // Structure damage
+            turretDamageDealt: p.damageDealtToTurrets || 0,
+            damageDealtToObjectives: p.damageDealtToObjectives || 0,
+            
+            // Counter-jungling
+            enemyJungleMonsterKills: p.challenges?.enemyJungleMonsterKills || 0,
+            
+            // Early game
+            laneMinionsFirst10Minutes: p.challenges?.laneMinionsFirst10Minutes || 0,
+            jungleCsBefore10Minutes: p.challenges?.jungleCsBefore10Minutes || 0,
+            
+            // Role detection
+            lane: p.lane || '',
+            individualPosition: p.individualPosition || '',
+            
+            // Other
+            level: p.champLevel,
+            timePlayed: matchData.info.gameDuration,
       };
     });
 

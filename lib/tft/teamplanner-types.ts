@@ -91,6 +91,7 @@ export const META_TIER_CONFIG: Record<MetaTier, {
 export interface TeamComp {
   id: string;
   name: string;
+  set_id: number;
   description: string;
   phases: Record<PhaseKey, TeamPhase>;
   mainCarryIds: string[];
@@ -100,6 +101,7 @@ export interface TeamComp {
   difficulty?: DifficultyLevel;
   activePresetId?: string;
   synergiesList?: string[];
+  user_id: string;
 }
 
 export interface TooltipState {
@@ -110,7 +112,21 @@ export interface TooltipState {
   y: number;
 }
 
-export const PATCHES = ['16.1', '16.1c', '16.2', '16.3', '16.4', '16.5', '16.6', '16.7'];
+export const generatePatchesForSet = (setNumber: number): string[] => {
+  // Generate patches for a set: 16.1, 16.1c, 16.2, 16.3, etc.
+  const patches: string[] = [];
+  
+  // Most TFT sets have around 6-8 patches
+  for (let i = 1; i <= 8; i++) {
+    patches.push(`${setNumber}.${i}`);
+    // Add common variants like 16.1c
+    if (i === 1) {
+      patches.push(`${setNumber}.${i}c`);
+    }
+  }
+  
+  return patches;
+};
 
 export const DEFAULT_LEVELING: LevelingStep[] = [
   { level: 3, stage: '2-1', gold: '0' },

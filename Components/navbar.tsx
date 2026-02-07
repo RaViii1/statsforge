@@ -40,7 +40,6 @@ export default function Navbar() {
               </a>
             </div>
 
-            {/* Auth - Right (Desktop) */}
             <div className="hidden md:flex items-center gap-4 shrink-0">
               <UserMenu />
             </div>
@@ -61,6 +60,7 @@ export default function Navbar() {
           <div className="md:hidden border-t border-zinc-800/50 bg-zinc-950">
             <div className="px-4 py-4 space-y-4">
               {/* Mobile Links */}
+              <UserMenu />
               <a
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
@@ -75,20 +75,9 @@ export default function Navbar() {
               >
                 Games
               </a>
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold text-center transition-all shadow-lg shadow-orange-900/30"
-              >
-                Get Started
-              </Link>
+           
+              
+            
             </div>
           </div>
         )}

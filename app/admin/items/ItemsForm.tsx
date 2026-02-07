@@ -20,12 +20,13 @@ export default function ItemForm({ sets }: ItemFormProps) {
 
   const [formData, setFormData] = useState<Partial<TFTItem>>({
     name: "",
-    set_id: 0 ,
+    set_id: 0,
     image_path: "",
     description: "",
     is_component: false,
     is_artifact: false,
     is_radiant: false,
+    is_seasonal: false,
     stats: {
       hp: 0,
       ap: 0,
@@ -49,6 +50,11 @@ export default function ItemForm({ sets }: ItemFormProps) {
       setIsEditing(true);
       setFormData({
         ...item,
+        is_seasonal: !!item.is_seasonal,
+        is_component: !!item.is_component,
+        is_artifact: !!item.is_artifact,
+        is_radiant: !!item.is_radiant,
+        set_id: item.set_id || 0,
         stats: item.stats || { hp: 0, ap: 0, ad: 0, armor: 0, mr: 0, as: 0, mana: 0, crit: 0, crit_dmg: 0, healing: 0, shield: 0, lifesteal: 0, dmgAmp: 0 }
       });
     };
@@ -66,7 +72,7 @@ export default function ItemForm({ sets }: ItemFormProps) {
 
     setLoading(true);
     try {
-      const id = formData.id || formData.name.toLowerCase().replace(/\s+/g, "-");
+      const id = formData.id || `TFT_Item_${formData.name?.toLowerCase().replace(/\s+/g, "_")}`;
       
       const res = await fetch("/api/admin/items", {
         method: "POST",
@@ -78,16 +84,17 @@ export default function ItemForm({ sets }: ItemFormProps) {
 
       toast.success("Item saved successfully!");
       setIsEditing(false);
-      setFormData({
-        name: "",
-        set_id: 0,
-        image_path: "",
-        description: "",
-        is_component: false,
-        is_artifact: false,
-        is_radiant: false,
-        stats: { hp: 0, ap: 0, ad: 0, armor: 0, mr: 0, as: 0, mana: 0, crit: 0, crit_dmg: 0, healing: 0, shield: 0, lifesteal: 0, dmgAmp: 0 }
-      });
+        setFormData({
+          name: "",
+          set_id: 0,
+          image_path: "",
+          description: "",
+          is_component: false,
+          is_artifact: false,
+          is_radiant: false,
+          is_seasonal: false,
+          stats: { hp: 0, ap: 0, ad: 0, armor: 0, mr: 0, as: 0, mana: 0, crit: 0, crit_dmg: 0, healing: 0, shield: 0, lifesteal: 0, dmgAmp: 0 }
+        });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message);
@@ -113,6 +120,22 @@ export default function ItemForm({ sets }: ItemFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
+        <button 
+          type="submit" 
+          disabled={loading}
+          className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-green-900/20 active:scale-[0.98] flex items-center justify-center gap-3 group"
+        >
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              {isEditing ? 'Update Item' : 'Save Item'}
+              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+            </>
+          )}
+        </button>
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Name</label>
@@ -124,20 +147,22 @@ export default function ItemForm({ sets }: ItemFormProps) {
               placeholder="e.g. Infinity Edge" 
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Set</label>
-            <select 
-              value={formData.set_id}
-              onChange={e => setFormData(prev => ({ ...prev, set_id: parseInt(e.target.value) }))}
-              required 
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-green-500/50 outline-none"
-            >
-              {sets.map(s => (
-                <option key={s.id} value={s.id}>{s.name} (Set {s.set_number})</option>
-              ))}
-            </select>
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Set</label>
+                <select 
+                  value={formData.set_id || ""}
+                  onChange={e => setFormData(prev => ({ ...prev, set_id: e.target.value ? parseInt(e.target.value) : 0 }))}
+                  disabled={!formData.is_seasonal}
+                  required={formData.is_seasonal}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-green-500/50 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Not Set</option>
+                  {sets.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} (Set {s.set_number})</option>
+                  ))}
+                </select>
+              </div>
           </div>
-        </div>
 
         <div className="space-y-1.5">
           <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Image URL</label>
@@ -159,35 +184,48 @@ export default function ItemForm({ sets }: ItemFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
-            <input 
-              type="checkbox"
-              checked={formData.is_component}
-              onChange={e => setFormData(prev => ({ ...prev, is_component: e.target.checked }))}
-              className="w-4 h-4 rounded border-zinc-800 text-green-500 focus:ring-green-500/50 bg-zinc-900"
-            />
-            <span className="text-[10px] font-black uppercase text-zinc-400">Component</span>
-          </label>
-          <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
-            <input 
-              type="checkbox"
-              checked={formData.is_artifact}
-              onChange={e => setFormData(prev => ({ ...prev, is_artifact: e.target.checked }))}
-              className="w-4 h-4 rounded border-zinc-800 text-purple-500 focus:ring-purple-500/50 bg-zinc-900"
-            />
-            <span className="text-[10px] font-black uppercase text-zinc-400">Artifact</span>
-          </label>
-          <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
-            <input 
-              type="checkbox"
-              checked={formData.is_radiant}
-              onChange={e => setFormData(prev => ({ ...prev, is_radiant: e.target.checked }))}
-              className="w-4 h-4 rounded border-zinc-800 text-orange-500 focus:ring-orange-500/50 bg-zinc-900"
-            />
-            <span className="text-[10px] font-black uppercase text-zinc-400">Radiant</span>
-          </label>
-        </div>
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+            <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
+              <input 
+                type="checkbox"
+                checked={formData.is_seasonal}
+                onChange={e => setFormData(prev => ({ 
+                  ...prev, 
+                  is_seasonal: e.target.checked,
+                  set_id: e.target.checked ? prev.set_id : 0
+                }))}
+                className="w-4 h-4 rounded border-zinc-800 text-blue-500 focus:ring-blue-500/50 bg-zinc-900"
+              />
+              <span className="text-[10px] font-black uppercase text-zinc-400">Seasonal Item</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
+              <input 
+                type="checkbox"
+                checked={formData.is_component}
+                onChange={e => setFormData(prev => ({ ...prev, is_component: e.target.checked }))}
+                className="w-4 h-4 rounded border-zinc-800 text-green-500 focus:ring-green-500/50 bg-zinc-900"
+              />
+              <span className="text-[10px] font-black uppercase text-zinc-400">Component</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
+              <input 
+                type="checkbox"
+                checked={formData.is_artifact}
+                onChange={e => setFormData(prev => ({ ...prev, is_artifact: e.target.checked }))}
+                className="w-4 h-4 rounded border-zinc-800 text-purple-500 focus:ring-purple-500/50 bg-zinc-900"
+              />
+              <span className="text-[10px] font-black uppercase text-zinc-400">Artifact</span>
+            </label>
+            <label className="flex items-center gap-2 p-3 bg-zinc-950/50 border border-zinc-800 rounded-xl cursor-pointer hover:bg-zinc-800 transition-colors">
+              <input 
+                type="checkbox"
+                checked={formData.is_radiant}
+                onChange={e => setFormData(prev => ({ ...prev, is_radiant: e.target.checked }))}
+                className="w-4 h-4 rounded border-zinc-800 text-orange-500 focus:ring-orange-500/50 bg-zinc-900"
+              />
+              <span className="text-[10px] font-black uppercase text-zinc-400">Radiant</span>
+            </label>
+          </div>
 
         <div className="pt-6 border-t border-zinc-800 space-y-4">
           <label className="text-sm font-bold text-white flex items-center gap-2">
@@ -228,20 +266,7 @@ export default function ItemForm({ sets }: ItemFormProps) {
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-green-900/20 active:scale-[0.98] flex items-center justify-center gap-3 group"
-        >
-          {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <>
-              {isEditing ? 'Update Item' : 'Save Item'}
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-            </>
-          )}
-        </button>
+
       </form>
     </div>
   );
