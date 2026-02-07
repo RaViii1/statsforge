@@ -224,7 +224,7 @@ export default function TFTPage() {
                               setShowDropdown(false);
                               performSearch(search.gameName, search.tagLine, search.server);
                             }}
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer bg-zinc-900"
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div className="w-8 h-8 bg-orange-950/30 border border-orange-900/50 rounded-lg flex items-center justify-center shrink-0">
