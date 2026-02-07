@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { isValidPlatform } from '@/lib/lol/platforms';
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ server: string; puuid: string }> }
 ) {
-  const { server, puuid } = await context.params;
+    const { server, puuid } = await context.params;
+    const platform = server.toLowerCase();
 
-  const API_KEY = process.env.RIOT_API_KEY as string;
+    if (!isValidPlatform(platform)) {
+      return NextResponse.json({ error: 'Invalid region' }, { status: 400 });
+    }
+
+    const API_KEY = process.env.RIOT_API_KEY as string;
+
   if (!API_KEY) {
     return NextResponse.json({ error: 'RIOT_API_KEY is missing' }, { status: 500 });
   }
@@ -27,10 +34,52 @@ export async function GET(
 
       console.log(`[Spectator] SUCCESS: Live game found for puuid: ${puuid} on ${server}`);
 
-      return NextResponse.json({
-        inGame: true,
-        gameData: response.data,
-      });
+      const gameData = response.data;
+      const participants = gameData.participants || [];
+
+        // Fetch ranked data for all participants in parallel
+        const rankedDataPromises = participants.map(async (p: any) => {
+          try {
+            if (!p.puuid) {
+              throw new Error('PUUID missing for participant');
+            }
+
+            const rankedRes = await axios.get(
+              `https://${platformHost}/lol/league/v4/entries/by-puuid/${p.puuid}`,
+              {
+                headers: { 'X-Riot-Token': API_KEY },
+              }
+            );
+          
+            // Find Solo/Duo rank (RANKED_SOLO_5x5) or Flex rank if Solo is not available
+            const soloRank = rankedRes.data.find((entry: any) => entry.queueType === 'RANKED_SOLO_5x5');
+            const flexRank = rankedRes.data.find((entry: any) => entry.queueType === 'RANKED_FLEX_SR');
+            
+            return { 
+              puuid: p.puuid, 
+              summonerId: p.summonerId,
+              rank: soloRank || flexRank || null 
+            };
+          } catch (error) {
+            console.error(`[Spectator] Failed to fetch rank for participant ${p.summonerId || p.puuid}:`, error);
+            return { puuid: p.puuid, summonerId: p.summonerId, rank: null };
+          }
+        });
+  
+        const rankedResults = await Promise.all(rankedDataPromises);
+        const rankedMap = rankedResults.reduce((acc, curr) => {
+          if (curr.puuid) acc[curr.puuid] = curr.rank;
+          if (curr.summonerId) acc[curr.summonerId] = curr.rank;
+          return acc;
+        }, {} as any);
+  
+        return NextResponse.json({
+          inGame: true,
+          gameData: {
+            ...gameData,
+            playerRanks: rankedMap
+          },
+        });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;

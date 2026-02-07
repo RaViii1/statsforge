@@ -1,12 +1,13 @@
 "use client";
 
-import { Search, Loader2, TrendingUp, Users, Target, Clock, X, Trophy } from "lucide-react";
+import { Search, Loader2, Clock, X, Trophy, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
+import NavbarTft from "@/components/navbartft";
+import { CurrentSetNumber } from "@/lib/tft/champions";
 
 const SERVERS = [
   { value: "na1", label: "NA" },
@@ -108,6 +109,7 @@ export default function TFTPage() {
     } catch (error) {
       console.error("Search error:", error);
       toast.error("An error occurred while searching");
+    } finally {
       setIsSearching(false);
     }
   };
@@ -152,7 +154,7 @@ export default function TFTPage() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      <Navbar />
+      <NavbarTft />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-16">
@@ -171,8 +173,8 @@ export default function TFTPage() {
             Search any TFT player, view match history, synergies, and ranked progression
           </p>
 
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
-            <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12" style={{ position: 'relative', zIndex: 9999 }}>
+            <div className={`transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : 'scale-100'}`}>
               <div className="flex gap-2">
                 <select
                   value={selectedServer}
@@ -187,28 +189,31 @@ export default function TFTPage() {
                   ))}
                 </select>
 
-                <div className="relative flex-1" ref={dropdownRef}>
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-10" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter Riot ID (e.g., Faker#KR1)"
-                    onFocus={() => {
-                      setSearchFocused(true);
-                      setShowDropdown(true);
-                    }}
-                    onBlur={() => setSearchFocused(false)}
-                    disabled={isSearching}
-                    className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:bg-zinc-900/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                  />
+                <div className="relative flex-1" ref={dropdownRef} style={{ position: 'relative', zIndex: 9999 }}>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 z-20" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Enter Riot ID (e.g., Faker#KR1)"
+                      onFocus={() => {
+                        setSearchFocused(true);
+                        setShowDropdown(true);
+                      }}
+                      onBlur={() => setSearchFocused(false)}
+                      disabled={isSearching}
+                      className="w-full pl-12 pr-4 py-5 bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg relative z-10"
+                    />
+                  </div>
 
                   {showDropdown && recentSearches.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 overflow-hidden">
-                      <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-zinc-500" />
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.5rem', backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '0.75rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)', zIndex: 9999, overflow: 'hidden' }}>
+                      <div className="p-3 border-b border-zinc-800 flex items-center gap-2 bg-zinc-900">
+                        <Clock className="w-4 h-4 text-orange-500" />
                         <span className="text-sm font-medium text-zinc-400">Recent Searches</span>
                       </div>
+                      
                       <div className="max-h-80 overflow-y-auto">
                         {recentSearches.map((search, index) => (
                           <div
@@ -222,7 +227,7 @@ export default function TFTPage() {
                             className="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
                           >
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-8 h-8 bg-orange-950/30 border border-orange-900/30 rounded-lg flex items-center justify-center shrink-0">
+                              <div className="w-8 h-8 bg-orange-950/30 border border-orange-900/50 rounded-lg flex items-center justify-center shrink-0">
                                 <span className="text-xs font-bold text-orange-500">
                                   {SERVERS.find(s => s.value === search.server)?.label || search.server.toUpperCase()}
                                 </span>
@@ -264,21 +269,113 @@ export default function TFTPage() {
           </form>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-            <Link href="/tft/comps" className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
-              <Trophy className="w-10 h-10 text-orange-500 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Meta Teamcomps</h3>
-               <p className="text-zinc-400">Check current popular team compositions.</p>
-            </Link>
-            <Link href="/tft/shop-odds" className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
-              <Trophy className="w-10 h-10 text-orange-500 mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Shop odds</h3>
-               <p className="text-zinc-400">TFT Shop Odds, Level Chances & Pool Sizes</p>
-            </Link>
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 transition-all">
-            <TrendingUp className="w-10 h-10 text-orange-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Meta Analysis</h3>
-            <p className="text-zinc-400">Discover which synergies and units are winning you games.</p>
+      
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto relative" style={{ zIndex: 1 }}>
+          <Link 
+            href="/tft/planner"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center"></div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Team Planner</h3>
+              <p className="text-zinc-400 text-sm mb-6">Build and save your perfect compositions with our interactive hex-grid tool.</p>
+              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                Launch Tool <Search className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/tft/comps"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-yellow-500/50 transition-all"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 via-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-yellow-950/80 border border-yellow-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-yellow-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <TrendingUp className="w-7 h-7 text-yellow-500 group-hover:text-white transition-colors" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Meta Comps</h3>
+              <p className="text-zinc-400 text-sm mb-6">Explore the highest win-rate compositions and trending strategies for Set {CurrentSetNumber}.</p>
+              <div className="flex items-center gap-2 text-yellow-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                View Meta <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/tft/shop-odds"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
+            
+            <div className="relative z-10">
+              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Shop Odds</h3>
+              <p className="text-zinc-400 text-sm mb-6">Know exactly when to roll with our detailed champion drop rate reference.</p>
+              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                Check Odds <Search className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link 
+            href="/tft/units"
+            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all md:col-span-3"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
+            
+            <div className="relative z-10 max-w-md">
+              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Units</h3>
+              <p className="text-zinc-400 text-sm mb-6">Explore all champions in the current set with detailed stats and traits.</p>
+              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                Check set {CurrentSetNumber} Units <Search className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        
+        <div className="grid md:grid-cols-3 gap-12 mt-20 pt-20 border-t border-zinc-900">
+          <div className="text-center">
+            <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-500 hover:bg-orange-950 transition-all">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <h4 className="text-lg font-bold text-white mb-3 italic uppercase tracking-tight hover:text-orange-400 transition-all">Ranked Tracking</h4>
+            <p className="text-zinc-500 text-sm leading-relaxed">
+              Real-time monitoring of your LP gains, placement history, and climb progression through the ranks.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-500 hover:bg-orange-950 transition-all">
+              <Trophy className="w-6 h-6" />
+            </div>
+            <h4 className="text-lg font-bold text-white mb-3 italic uppercase tracking-tight hover:text-orange-400 transition-all">Lobby Analysis</h4>
+            <p className="text-zinc-500 text-sm leading-relaxed">
+              Deep-dive into your recent lobbies. See what your opponents built and how they performed.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-6 text-orange-500 hover:bg-trending-950 transition-all">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <h4 className="text-lg font-bold text-white mb-3 italic uppercase tracking-tight hover:text-orange-400 transition-all">Trait Synergy</h4>
+            <p className="text-zinc-500 text-sm leading-relaxed">
+              Analyze your performance with specific traits and champions to identify your winning playstyles.
+            </p>
           </div>
         </div>
       </main>

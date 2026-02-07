@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import TftProfileHeader from "@/components/tft/TftProfileHeader";
 import TftMatchItem from "@/components/tft/TftMatchItem";
 import { TftRankedStatsSection } from "@/components/tft/TftRankedStatsSection";
 import { TftTeamPlanner } from "@/components/tft/TftTeamPlanner";
 import { AlertCircle, Gamepad2, Loader2, Anvil, Clock, Award, Target } from 'lucide-react';
+import NavbarTft from '@/components/navbartft';
 
 export default function TftProfilePage() {
   const params = useParams();
@@ -116,7 +116,7 @@ export default function TftProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#09090b] flex flex-col">
-        <Navbar />
+        <NavbarTft />
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="relative">
             <div className="w-24 h-24 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
@@ -134,7 +134,7 @@ export default function TftProfilePage() {
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-[#09090b] flex flex-col">
-        <Navbar />
+        <NavbarTft />
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <div className="bg-zinc-900/50 border border-zinc-800/50 p-12 rounded-[2.5rem] max-w-md w-full text-center backdrop-blur-xl">
             <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-red-500/20">
@@ -170,11 +170,11 @@ export default function TftProfilePage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white selection:bg-orange-500/30">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-orange-600/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-amber-600/5 rounded-full blur-[120px]"></div>
+        <div className="absolute top-0 right-0 w-160 h-160 bg-orange-600/5 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 left-0 w-160 h-160 bg-amber-600/5 rounded-full blur-[120px]"></div>
       </div>
 
-      <Navbar />
+      <NavbarTft />
       <main className="max-w-[1400px] mx-auto px-6 lg:px-8 pb-8 relative z-10">
         <TftProfileHeader profile={{...profile, ranked: rankedData}} avgPlacement={avgPlacement} server={server} />
 

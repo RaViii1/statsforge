@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { X, Menu } from "lucide-react";
 import { Anvil } from "lucide-react";
 
-export default function NavbarLoL() {
+import UserMenu from "./UserMenu";
+
+export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
@@ -22,8 +24,8 @@ export default function NavbarLoL() {
               <span className="font-bold text-white text-xl">StatsForge</span>
             </Link>
 
-            {/* Links - Right (Desktop) */}
-            <div className="hidden md:flex items-end gap-1 shrink-0">
+            {/* Links - Center (Desktop) */}
+            <div className="hidden md:flex items-center gap-1 shrink-0">
               <a
                 href="#features"
                 className="px-3 py-2 text-zinc-400 hover:text-orange-500 transition-colors text-sm font-medium"
@@ -36,18 +38,10 @@ export default function NavbarLoL() {
               >
                 Games
               </a>
-              <Link
-                href="/login"
-                className="px-4 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold transition-all shadow-lg shadow-orange-900/30"
-              >
-                Get Started
-              </Link>
+            </div>
+
+            <div className="hidden md:flex items-center gap-4 shrink-0">
+              <UserMenu />
             </div>
 
             {/* Mobile Menu Button */}
@@ -66,6 +60,7 @@ export default function NavbarLoL() {
           <div className="md:hidden border-t border-zinc-800/50 bg-zinc-950">
             <div className="px-4 py-4 space-y-4">
               {/* Mobile Links */}
+              <UserMenu />
               <a
                 href="#features"
                 onClick={() => setMobileMenuOpen(false)}
@@ -80,20 +75,9 @@ export default function NavbarLoL() {
               >
                 Games
               </a>
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 text-zinc-300 hover:text-white text-sm font-medium transition-colors"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-semibold text-center transition-all shadow-lg shadow-orange-900/30"
-              >
-                Get Started
-              </Link>
+           
+              
+            
             </div>
           </div>
         )}

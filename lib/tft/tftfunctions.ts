@@ -115,6 +115,12 @@ export const getTFTUnitIcon = (characterId: string, tft_set_number: number) => {
   // console.log(`https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`);
   return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/hud/${id}_square.${setNumber}.png`;
 };
+
+export const getTFTUnitSplash = (characterId: string, tft_set_number: number) => {
+  const id = characterId.toLowerCase();
+  const setNumber = `tft_set${tft_set_number}`;
+  return `https://raw.communitydragon.org/latest/game/assets/characters/${id}/skins/base/images/${id}_splash_tile_0.${setNumber}.png`;
+};
 export const getTFTUnitIconOutdated = (characterId: string, tft_set_number: number) => {
   
   const baseName = characterId.replace(/^TFT\d+_/i, '').toLowerCase(); // 'Anivia'
@@ -125,9 +131,14 @@ export const getTFTUnitIconOutdated = (characterId: string, tft_set_number: numb
   
 };
 
+export const getTFTTraitIcon = (trait: string) => {
+  const traitKey = trait.toLowerCase().replace(/\s+/g, '');
+  return `https://raw.communitydragon.org/latest/game/assets/ux/traiticons/trait_icon_16_${traitKey}.png`;
+};
+
 const ITEM_MAPPING: Record<string, string> = itemstft.reduce((acc, item) => {
-  acc[item.id] = item.path;
-  acc[item.name] = item.path;
+  acc[item.id] = item.image_path || '/images/noitem.png';
+  acc[item.name] = item.image_path || '/images/noitem.png';
   return acc;
 }, {} as Record<string, string>);
 
@@ -230,6 +241,42 @@ export const convertRoundToStage = (round: number): string => {
 export const getTFTCompanionIcon = (skinId: number) => {
   return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/companions/${skinId}.png`;
 
+};
+
+
+export const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } else {
+      // Fallback for non-secure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Ensure the textarea is not visible but part of the DOM
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+      } catch (err) {
+        console.error('Fallback copy failed', err);
+        document.body.removeChild(textArea);
+        return false;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to copy text: ', err);
+    return false;
+  }
 };
 
 export const getQueueDisplayName = (queueType: string) => {

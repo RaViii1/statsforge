@@ -2,30 +2,36 @@
 
 import { Plus, Star, Crown } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber } from '@/lib/tft/champions';
+import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { getItemDescription } from '@/lib/tft/itemstft';
 
 interface HexGridProps {
   units: UnitPosition[];
   mainCarryIds: string[];
+  champions: TFTChampion[];
+  items: any[];
   selectedHex: { row: number; col: number } | null;
   activeTraits: { name: string; count: number }[];
   onHexClick: (row: number, col: number, isActive: boolean) => void;
   onDrop: (row: number, col: number) => void;
   onUnitDragStart: (row: number, col: number, characterId: string) => void;
   setTooltip: React.Dispatch<React.SetStateAction<TooltipState>>;
+  canEdit?: boolean;
 }
 
 export const HexGrid = ({
   units,
   mainCarryIds,
+  champions,
+  items,
   selectedHex,
   activeTraits,
   onHexClick,
   onDrop,
   onUnitDragStart,
-  setTooltip
+  setTooltip,
+  canEdit = true
 }: HexGridProps) => {
   return (
     <div className="flex flex-col items-center gap-10">
@@ -36,7 +42,7 @@ export const HexGrid = ({
             <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">{trait.name}</span>
           </div>
         ))}
-        {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}
+        {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}
       </div>
 
       <div className="relative w-full max-w-4xl py-12 px-10 rounded-[4rem] bg-black/40 border border-white/5 shadow-inner overflow-hidden">
@@ -45,6 +51,8 @@ export const HexGrid = ({
         <div className="relative mx-auto" style={{ width: '780px', height: '440px' }}>
           {[0, 1, 2, 3].map(row => [0, 1, 2, 3, 4, 5, 6].map(col => {
             const unit = units.find(u => u.row === row && u.col === col);
+            const champ = unit ? champions.find(c => c.id === unit.characterId) : undefined;
+            const cost = champ?.cost || 1;
             const isOffset = row % 2 !== 0;
             const isActive = selectedHex?.row === row && selectedHex?.col === col;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
@@ -75,7 +83,7 @@ export const HexGrid = ({
                     <path 
                       d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" 
                       fill={unit ? '#000000' : 'rgba(24, 24, 27, 0.4)'} 
-                      stroke={unit ? (isCarry ? '#f97316' : getCostColor(getChampionCost(unit.characterId))) : 'rgba(63, 63, 70, 0.3)'} 
+                      stroke={unit ? (isCarry ? '#f97316' : getCostColor(cost)) : 'rgba(63, 63, 70, 0.3)'} 
                       strokeWidth={unit ? (isActive ? '10' : '5') : '2'}
                       strokeLinejoin="round"
                       strokeLinecap="round"
@@ -87,31 +95,55 @@ export const HexGrid = ({
                     )}
                     {unit && (
                       <>
-                        <defs><clipPath id={`clip-${row}-${col}`}><path d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" /></clipPath></defs>
-                        <image href={getTFTUnitIcon(unit.characterId, CurrentSetNumber)} width="94" height="108" x="3" y="3.7" clipPath={`url(#clip-${row}-${col})`} preserveAspectRatio="xMidYMid slice" className="opacity-95" />
+                        <defs>
+                          <clipPath id={`clip-${row}-${col}`}>
+                            <path d="M50 0 L100 28.867 L100 86.602 L50 115.47 L0 86.602 L0 28.867 Z" />
+                          </clipPath>
+                        </defs>
+                          <image 
+                            href={champ?.image_path || '/images/nochampionimage.jpg'} 
+                            width="94" 
+                            height="108" 
+                            x="3" 
+                            y="3.7" 
+                            clipPath={`url(#clip-${row}-${col})`} 
+                            preserveAspectRatio="xMidYMid slice" 
+                            className="opacity-95"
+                          />
+                        </>
+                      )}
+                    </svg>
+                    
+                    {unit && (
+                      <>
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-20">
+                          {isCarry && <Crown className="w-5 h-5 text-orange-400 fill-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />}
+                          <div className="flex -space-x-1 ml-1">
+                            {Array.from({ length: unit.stars }).map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500 drop-shadow-lg" />)}
+                          </div>
+                        </div>
+                        {unit.items.length > 0 && (
+                          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex -space-x-1 z-30">
+                            {unit.items.map((itemName, i) => {
+                              const itemObj = items.find(it => it.name === itemName);
+                              return (
+                                <div key={i} className="w-7 h-7 rounded-lg border-2 border-black overflow-hidden shadow-2xl transform hover:scale-110 transition-transform">
+                                  <img 
+                                    src={itemObj?.image_path || '/images/noitem.png'} 
+                                    alt={itemName} 
+                                    className="w-full h-full object-cover" 
+                                    onMouseEnter={(e) => setTooltip({ visible: true, title: itemName, description: itemObj?.description || 'No description available', x: e.clientX, y: e.clientY })} 
+                                    onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))} 
+                                     onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
+                                                                                  
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </>
                     )}
-                  </svg>
-                  
-                  {unit && (
-                    <>
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-0.5 z-20">
-                        {isCarry && <Crown className="w-5 h-5 text-orange-400 fill-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]" />}
-                        <div className="flex -space-x-1 ml-1">
-                          {Array.from({ length: unit.stars }).map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500 drop-shadow-lg" />)}
-                        </div>
-                      </div>
-                      {unit.items.length > 0 && (
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex -space-x-1 z-30">
-                          {unit.items.map((it, i) => (
-                            <div key={i} className="w-7 h-7 rounded-lg border-2 border-black overflow-hidden shadow-2xl transform hover:scale-110 transition-transform">
-                              <img src={getTFTItemIcon(it)} alt={it} className="w-full h-full object-cover" onMouseEnter={(e) => setTooltip({ visible: true, title: it, description: getItemDescription(it) || 'No description available', x: e.clientX, y: e.clientY })} onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))} />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
                 
                   {isActive && !unit && (
                     <div className="absolute inset-0 flex items-center justify-center animate-pulse">

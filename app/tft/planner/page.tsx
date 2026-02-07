@@ -2,9 +2,9 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Navbar from '@/components/navbar';
 import Footer from '@/components/footer';
 import { TftTeamPlanner } from '@/components/tft/TftTeamPlanner';
+import NavbarTft from '@/components/navbartft';
 
 function PlannerContent() {
   const searchParams = useSearchParams();
@@ -21,7 +21,7 @@ export default function PlannerPage() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      <Navbar />
+      <NavbarTft />
 
       <main className="relative max-w-[1800px] mx-auto px-4 sm:px-6 py-8">
         <Suspense fallback={

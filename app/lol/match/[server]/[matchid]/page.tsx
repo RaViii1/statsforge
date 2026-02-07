@@ -5,7 +5,8 @@ import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
-import { MatchAnalytics } from "@/components/lol/MatchAnalitics";
+import { MatchAnalytics } from "@/components/lol/matchanalitics/MatchAnalitics";
+import NavbarLoL from "@/components/navbarlol";
 
 export default function MatchAnalyticsPage() {
   const params = useParams();
@@ -24,7 +25,7 @@ export default function MatchAnalyticsPage() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
       </div>
 
-      <Navbar />
+      <NavbarLoL />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Back Button */}
