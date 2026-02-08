@@ -23,6 +23,28 @@ type ChampionStat = {
     soloQueueGames: number;
     flexQueueGames: number;
   };
+  soloStats?: {
+    gamesPlayed: number;
+    wins: number;
+    losses: number;
+    winrate: number;
+    kda: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    averageCS: number;
+  };
+  flexStats?: {
+    gamesPlayed: number;
+    wins: number;
+    losses: number;
+    winrate: number;
+    kda: number;
+    kills: number;
+    deaths: number;
+    assists: number;
+    averageCS: number;
+  };
   matchIds: string[];
 };
 
@@ -55,9 +77,19 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
     if (queueType === "all") {
       filtered = allChampionStats;
     } else if (queueType === "solo") {
-      filtered = allChampionStats.filter(stat => stat.queueBreakdown.soloQueueGames > 0);
+      filtered = allChampionStats
+        .filter(stat => stat.queueBreakdown.soloQueueGames > 0)
+        .map(stat => ({
+          ...stat,
+          ...stat.soloStats,
+        }));
     } else {
-      filtered = allChampionStats.filter(stat => stat.queueBreakdown.flexQueueGames > 0);
+      filtered = allChampionStats
+        .filter(stat => stat.queueBreakdown.flexQueueGames > 0)
+        .map(stat => ({
+          ...stat,
+          ...stat.flexStats,
+        }));
     }
     
     // Apply sorting
@@ -110,7 +142,21 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
         const parsed = JSON.parse(cachedData) as ChampionStat[];
         setAllChampionStats(parsed.map(stat => ({ ...stat, matchIds: stat.matchIds ?? [] })));
       }
+      
+      // Load already processed match IDs from localStorage
+      const cachedMatchIds = localStorage.getItem(matchIdsKey);
+      if (cachedMatchIds) {
+        const parsed = JSON.parse(cachedMatchIds);
+        setLoadedMatchIds(parsed.loaded ?? []);
+        setTotalAvailableMatches(parsed.total ?? 0);
+      }
+
       setIsLoading(false);
+
+      // If no cached data, fetch fresh stats
+      if (!cachedData) {
+        updateStats();
+      }
     } catch {
       setError("Failed to load cached champion stats");
       setIsLoading(false);
@@ -175,6 +221,44 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
         const totalAssists = existing.assists + newStat.assists;
         const totalCS = existing.averageCS * existing.gamesPlayed + newStat.averageCS * newStat.gamesPlayed;
         
+        // Merge solo stats
+        const mergedSoloStats = {
+          gamesPlayed: (existing.soloStats?.gamesPlayed || 0) + (newStat.soloStats?.gamesPlayed || 0),
+          wins: (existing.soloStats?.wins || 0) + (newStat.soloStats?.wins || 0),
+          losses: ((existing.soloStats?.gamesPlayed || 0) + (newStat.soloStats?.gamesPlayed || 0)) - ((existing.soloStats?.wins || 0) + (newStat.soloStats?.wins || 0)),
+          winrate: 0, // Will be calculated after merging
+          kda: 0, // Will be calculated after merging
+          kills: (existing.soloStats?.kills || 0) + (newStat.soloStats?.kills || 0),
+          deaths: (existing.soloStats?.deaths || 0) + (newStat.soloStats?.deaths || 0),
+          assists: (existing.soloStats?.assists || 0) + (newStat.soloStats?.assists || 0),
+          averageCS: 0, // Will be calculated after merging
+        };
+        if (mergedSoloStats.gamesPlayed > 0) {
+          mergedSoloStats.winrate = parseFloat(((mergedSoloStats.wins / mergedSoloStats.gamesPlayed) * 100).toFixed(1));
+          mergedSoloStats.kda = mergedSoloStats.deaths === 0 ? mergedSoloStats.kills + mergedSoloStats.assists : parseFloat(((mergedSoloStats.kills + mergedSoloStats.assists) / mergedSoloStats.deaths).toFixed(2));
+          const totalSoloCS = (existing.soloStats?.averageCS || 0) * (existing.soloStats?.gamesPlayed || 0) + (newStat.soloStats?.averageCS || 0) * (newStat.soloStats?.gamesPlayed || 0);
+          mergedSoloStats.averageCS = parseFloat((totalSoloCS / mergedSoloStats.gamesPlayed).toFixed(1));
+        }
+        
+        // Merge flex stats
+        const mergedFlexStats = {
+          gamesPlayed: (existing.flexStats?.gamesPlayed || 0) + (newStat.flexStats?.gamesPlayed || 0),
+          wins: (existing.flexStats?.wins || 0) + (newStat.flexStats?.wins || 0),
+          losses: ((existing.flexStats?.gamesPlayed || 0) + (newStat.flexStats?.gamesPlayed || 0)) - ((existing.flexStats?.wins || 0) + (newStat.flexStats?.wins || 0)),
+          winrate: 0, // Will be calculated after merging
+          kda: 0, // Will be calculated after merging
+          kills: (existing.flexStats?.kills || 0) + (newStat.flexStats?.kills || 0),
+          deaths: (existing.flexStats?.deaths || 0) + (newStat.flexStats?.deaths || 0),
+          assists: (existing.flexStats?.assists || 0) + (newStat.flexStats?.assists || 0),
+          averageCS: 0, // Will be calculated after merging
+        };
+        if (mergedFlexStats.gamesPlayed > 0) {
+          mergedFlexStats.winrate = parseFloat(((mergedFlexStats.wins / mergedFlexStats.gamesPlayed) * 100).toFixed(1));
+          mergedFlexStats.kda = mergedFlexStats.deaths === 0 ? mergedFlexStats.kills + mergedFlexStats.assists : parseFloat(((mergedFlexStats.kills + mergedFlexStats.assists) / mergedFlexStats.deaths).toFixed(2));
+          const totalFlexCS = (existing.flexStats?.averageCS || 0) * (existing.flexStats?.gamesPlayed || 0) + (newStat.flexStats?.averageCS || 0) * (newStat.flexStats?.gamesPlayed || 0);
+          mergedFlexStats.averageCS = parseFloat((totalFlexCS / mergedFlexStats.gamesPlayed).toFixed(1));
+        }
+        
         merged.set(newStat.champion, {
           champion: newStat.champion,
           championId: newStat.championId,
@@ -188,9 +272,11 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
           assists: totalAssists,
           averageCS: parseFloat((totalCS / totalGames).toFixed(1)),
           queueBreakdown: {
-            soloQueueGames: existing.queueBreakdown.soloQueueGames + newStat.queueBreakdown.soloQueueGames,
-            flexQueueGames: existing.queueBreakdown.flexQueueGames + newStat.queueBreakdown.flexQueueGames,
+            soloQueueGames: mergedSoloStats.gamesPlayed,
+            flexQueueGames: mergedFlexStats.gamesPlayed,
           },
+          soloStats: mergedSoloStats,
+          flexStats: mergedFlexStats,
           matchIds: [...new Set([...existing.matchIds, ...newStat.matchIds])],
         });
       } else {
@@ -219,8 +305,9 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
       <ArrowDown className="w-3 h-3" />;
   };
 
-  const getChampionImageUrl = (championName: string) =>
-    `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${championName}.png`;
+  const getChampionImageUrl = (championId: number) =>
+    `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
+    
 
   const displayedChampions = isExpanded ? filteredChampionStats : filteredChampionStats.slice(0, 5);
   const hasMore = filteredChampionStats.length > 5;
@@ -231,24 +318,24 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden mb-6">
       {/* Header */}
-      <div className="p-5 border-b border-zinc-800">
-        <div className="flex flex-col sm:flex-col sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h2 className="text-md font-bold text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-orange-500" />
+      <div className="p-4 border-b border-zinc-800">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-orange-500" />
               Champion Stats
             </h2>
             {totalGamesDisplayed > 0 && (
-              <span className="px-3 py-1 bg-orange-950/50 border border-orange-600/30 rounded-lg text-orange-400 text-sm font-semibold">
+              <span className="text-xs text-zinc-500 font-medium">
                 {totalGamesDisplayed} {totalGamesDisplayed === 1 ? 'Game' : 'Games'}
               </span>
             )}
           </div>
-          <div className="flex flex-wrap flex-colitems-center gap-2">
-            <div className="flex gap-1 bg-zinc-800/50 rounded-lg p-1">
+          <div className="flex justify-center gap-2">
+            <div className="flex gap-0.5 bg-zinc-800/50 rounded p-0.5">
               <button
                 onClick={() => setQueueType("all")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
                   queueType === "all" ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -256,7 +343,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
               </button>
               <button
                 onClick={() => setQueueType("solo")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
                   queueType === "solo" ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -264,7 +351,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
               </button>
               <button
                 onClick={() => setQueueType("flex")}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
                   queueType === "flex" ? "bg-orange-600 text-white" : "text-zinc-400 hover:text-white"
                 }`}
               >
@@ -274,9 +361,9 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
             <button
               onClick={updateStats}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors"
+              className="px-2 py-0.5 bg-orange-950/50 border border-orange-600/30 rounded text-orange-400 text-xs font-semibold hover:bg-orange-950/80 transition-all disabled:opacity-50 flex items-center gap-1"
             >
-              {isLoading ? "Loading..." : "Update"}
+              {isLoading ? "..." : "Update"}
             </button>
           </div>
         </div>
@@ -301,219 +388,59 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
 
       {!isLoading && !error && filteredChampionStats.length > 0 && (
         <>
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-zinc-800/50">
-                <tr className="text-xs text-zinc-400 uppercase">
-                  <th className="text-left py-3 px-4 font-semibold">
-                    <button 
-                      onClick={() => handleSort("champion")}
-                      className="flex items-center gap-1 hover:text-white transition-colors"
-                    >
-                      Champion
-                      <SortIcon field="champion" />
-                    </button>
-                  </th>
-                  <th className="text-center py-3 px-4 font-semibold">
-                    <button 
-                      onClick={() => handleSort("games")}
-                      className="flex items-center gap-1 hover:text-white transition-colors mx-auto"
-                    >
-                      Games
-                      <SortIcon field="games" />
-                    </button>
-                  </th>
-                  <th className="text-center py-3 px-4 font-semibold">W/L</th>
-                  <th className="text-center py-3 px-4 font-semibold">
-                    <button 
-                      onClick={() => handleSort("winrate")}
-                      className="flex items-center gap-1 hover:text-white transition-colors mx-auto"
-                    >
-                      WR%
-                      <SortIcon field="winrate" />
-                    </button>
-                  </th>
-                  <th className="text-center py-3 px-4 font-semibold">
-                    <button 
-                      onClick={() => handleSort("kda")}
-                      className="flex items-center gap-1 hover:text-white transition-colors mx-auto"
-                    >
-                      KDA
-                      <SortIcon field="kda" />
-                    </button>
-                  </th>
-                  <th className="text-center py-3 px-4 font-semibold">
-                    <button 
-                      onClick={() => handleSort("cs")}
-                      className="flex items-center gap-1 hover:text-white transition-colors mx-auto"
-                    >
-                      CS
-                      <SortIcon field="cs" />
-                    </button>
-                  </th>
-                  {queueType === "all" && <th className="text-center py-3 px-4 font-semibold">Queue</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/50">
-                {displayedChampions.map((stat) => {
-                  const avgKills = (stat.kills / stat.gamesPlayed).toFixed(1);
-                  const avgDeaths = (stat.deaths / stat.gamesPlayed).toFixed(1);
-                  const avgAssists = (stat.assists / stat.gamesPlayed).toFixed(1);
-
-                  return (
-                    <tr key={`${stat.champion}-${stat.championId}`} className="hover:bg-zinc-800/30 transition-colors">
-                      <td className="py-2 px-4">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={getChampionImageUrl(stat.champion)}
-                            alt={stat.champion}
-                            className="w-8 h-8 rounded border border-zinc-700"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://via.placeholder.com/32?text=" + stat.champion.charAt(0);
-                            }}
-                          />
-                          <span className="text-white text-sm font-medium">{stat.champion}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 text-center text-white text-sm">{stat.gamesPlayed}</td>
-                      <td className="py-2 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1 text-xs">
-                          <span className="text-green-400 font-medium">{stat.wins}</span>
-                          <span className="text-zinc-600">/</span>
-                          <span className="text-red-400 font-medium">{stat.losses}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
-                          stat.winrate >= 55
-                            ? "bg-green-500/20 text-green-400"
-                            : stat.winrate >= 50
-                            ? "bg-blue-500/20 text-blue-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}>
-                          {stat.winrate}%
-                        </span>
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <div className="flex flex-col items-center">
-                          <span className={`font-bold text-sm ${
-                            stat.kda >= 4 ? "text-orange-400" : stat.kda >= 3 ? "text-green-400" : "text-zinc-300"
-                          }`}>
-                            {stat.kda}
-                          </span>
-                          <span className="text-[10px] text-zinc-500">
-                            <span className="text-green-400">{avgKills}</span>/
-                            <span className="text-red-400">{avgDeaths}</span>/
-                            <span className="text-blue-400">{avgAssists}</span>
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Wheat className="w-3 h-3 text-orange-400" />
-                          <span className="text-white text-sm font-medium">{stat.averageCS}</span>
-                        </div>
-                      </td>
-                      {queueType === "all" && (
-                        <td className="py-2 px-4 text-center">
-                          <div className="flex gap-1 justify-center">
-                            {stat.queueBreakdown.soloQueueGames > 0 && (
-                              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px] font-medium">
-                                S:{stat.queueBreakdown.soloQueueGames}
-                              </span>
-                            )}
-                            {stat.queueBreakdown.flexQueueGames > 0 && (
-                              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-medium">
-                                F:{stat.queueBreakdown.flexQueueGames}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden divide-y divide-zinc-800/50">
+          {/* Compact Champion Stats Grid */}
+          <div className="space-y-2 p-3">
             {displayedChampions.map((stat) => {
               const avgKills = (stat.kills / stat.gamesPlayed).toFixed(1);
               const avgDeaths = (stat.deaths / stat.gamesPlayed).toFixed(1);
               const avgAssists = (stat.assists / stat.gamesPlayed).toFixed(1);
 
               return (
-                <div key={`${stat.champion}-${stat.championId}`} className="p-3 hover:bg-zinc-800/30 transition-colors">
-                  <div className="flex items-start gap-3">
+                <div 
+                  key={`${stat.champion}-${stat.championId}`} 
+                  className="flex items-center justify-between p-2 hover:bg-zinc-800/30 rounded-lg transition-colors"
+                >
+                  {/* Champion Info */}
+                  <div className="flex items-center gap-3 min-w-0">
                     <img
-                      src={getChampionImageUrl(stat.champion)}
+                      src={getChampionImageUrl(stat.championId)}
                       alt={stat.champion}
-                      className="w-12 h-12 rounded border border-zinc-700 shrink-0"
+                      className="w-10 h-10 rounded border border-zinc-700 shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/48?text=" + stat.champion.charAt(0);
+                        e.currentTarget.src = "https://via.placeholder.com/40?text=" + stat.champion.charAt(0);
                       }}
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="text-white font-semibold text-sm truncate">{stat.champion}</h3>
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          stat.winrate >= 55
-                            ? "bg-green-500/20 text-green-400"
-                            : stat.winrate >= 50
-                            ? "bg-blue-500/20 text-blue-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}>
-                          {stat.winrate}%
-                        </span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-white truncate">{stat.champion}</h3>
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <span>CS {stat.averageCS}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div className="flex flex-col">
-                          <span className="text-zinc-400">Games</span>
-                          <span className="text-white font-medium">{stat.gamesPlayed}</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-zinc-400">W/L</span>
-                          <span className="text-white font-medium">
-                            <span className="text-green-400">{stat.wins}</span>/
-                            <span className="text-red-400">{stat.losses}</span>
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-zinc-400">KDA</span>
-                          <span className={`font-bold ${
-                            stat.kda >= 4 ? "text-orange-400" : stat.kda >= 3 ? "text-green-400" : "text-zinc-300"
-                          }`}>
-                            {stat.kda}
-                          </span>
-                        </div>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 text-right">
+                    {/* KDA */}
+                    <div className="text-center">
+                      <div className={`font-bold text-sm ${
+                        stat.kda >= 4 ? "text-orange-400" : stat.kda >= 3 ? "text-green-400" : "text-zinc-300"
+                      }`}>
+                        {stat.kda.toFixed(2)} KDA
                       </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-800">
-                        <span className="text-[10px] text-zinc-500">
-                          <span className="text-green-400">{avgKills}</span>/
-                          <span className="text-red-400">{avgDeaths}</span>/
-                          <span className="text-blue-400">{avgAssists}</span>
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Wheat className="w-3 h-3 text-orange-400" />
-                          <span className="text-white text-xs font-medium">{stat.averageCS}</span>
-                        </div>
-                        {queueType === "all" && (
-                          <div className="flex gap-1">
-                            {stat.queueBreakdown.soloQueueGames > 0 && (
-                              <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 rounded text-[10px]">
-                                S:{stat.queueBreakdown.soloQueueGames}
-                              </span>
-                            )}
-                            {stat.queueBreakdown.flexQueueGames > 0 && (
-                              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px]">
-                                F:{stat.queueBreakdown.flexQueueGames}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                      <div className="text-[10px] text-zinc-500">
+                        {avgKills}/{avgDeaths}/{avgAssists}
+                      </div>
+                    </div>
+
+                    {/* Win Rate */}
+                    <div className="text-center">
+                      <div className={`font-bold text-sm ${
+                        stat.winrate >= 55 ? "text-green-400" : stat.winrate >= 50 ? "text-blue-400" : "text-red-400"
+                      }`}>
+                        {stat.winrate}%
+                      </div>
+                      <div className="text-[10px] text-zinc-500">
+                        {stat.gamesPlayed} Game{stat.gamesPlayed === 1 ? "" : "s"}
                       </div>
                     </div>
                   </div>
@@ -521,6 +448,8 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
               );
             })}
           </div>
+
+
 
           {/* Expand/Collapse Button */}
           {hasMore && (

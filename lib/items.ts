@@ -598,7 +598,7 @@ export const items: Item[] = [
       "Jungle"
     ],
     "description": "ConsumeRestores 120 Health over 15 seconds.",
-    "image": "autoatlas/smallicons/2003_healthpotion_64px.milkshake_env.png"
+    "image": "22003_class_t1_healthpotion.png"
   },
   {
     "id": "2007",
@@ -619,7 +619,7 @@ export const items: Item[] = [
     "name": "Total Biscuit of Everlasting Will",
     "stats": [],
     "description": "Active - Consume: Eat the biscuit to restore Health over 5 seconds, increased based on missing health. Consuming or selling a biscuit permanently grants 30 maximum Health.",
-    "image": "autoatlas/smallicons/2010_totalbiscuitofeverlastingwill_64px.milkshake_env.png"
+    "image": "2010_class_t1_totalbiscuitofeverlastingwill.png"
   },
   {
     "id": "2015",
@@ -682,7 +682,7 @@ export const items: Item[] = [
       "Jungle"
     ],
     "description": "Active (2 charges)Restores 100 Health over 12 seconds. Refills upon visiting the shop.",
-    "image": "autoatlas/smallicons/2031_refillablepotion_64px.milkshake_env.png"
+    "image": "2031_class_t1_refillablepotion.png"
   },
   {
     "id": "2033",
@@ -789,7 +789,7 @@ export const items: Item[] = [
       "Tenacity"
     ],
     "description": "ConsumeGrants 300 Health, 25% Tenacity and increased size for 3 minutes. While active, you leave a path behind that boosts allied champions' Move Speed by 15%.",
-    "image": "autoatlas/smallicons/2138_elixirofiron_64px.milkshake_env.png"
+    "image": "2138_class_elixirofiron.png"
   },
   {
     "id": "2139",
@@ -800,7 +800,7 @@ export const items: Item[] = [
       "SpellDamage"
     ],
     "description": "ConsumeGrants 50 Ability Power and 15% Mana Regen for 3 minutes. While active, damaging a champion or turret deals 25 bonus true damage ( 5s against champions).",
-    "image": "autoatlas/smallicons/2139_elixirofsorcery_64px.milkshake_env.png"
+    "image": "2139_class_t1_elixirofsorcery.png"
   },
   {
     "id": "2140",
@@ -812,7 +812,7 @@ export const items: Item[] = [
       "SpellVamp"
     ],
     "description": "ConsumeGrants 30 Attack Damage and 12% Physical Vamp against champions for 3 minutes.",
-    "image": "autoatlas/smallicons/2140_elixirofwrath_64px.milkshake_env.png"
+    "image": "2140_class_t0_elixirofwrath.png"
   },
   {
     "id": "2141",

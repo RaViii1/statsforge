@@ -70,6 +70,17 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const [activePhase, setActivePhase] = useState<PhaseKey>('final');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
+  
+  // Reset to first page when search or traits change
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setUnitPage(0);
+  };
+  
+  const handleTraitsChange = (traits: string[]) => {
+    setSelectedTraits(traits);
+    setUnitPage(0);
+  };
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [draggedChampionId, setDraggedChampionId] = useState<string | null>(null);
@@ -749,11 +760,11 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                   canEdit={canEdit}
                 />
               ) : (
-                <UnitSelector
+                 <UnitSelector
                   searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
+                  setSearchQuery={handleSearchChange}
                   selectedTraits={selectedTraits}
-                  setSelectedTraits={setSelectedTraits}
+                  setSelectedTraits={handleTraitsChange}
                   filteredChampions={filteredChampions}
                   unitPage={unitPage}
                   setUnitPage={setUnitPage}

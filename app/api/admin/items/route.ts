@@ -20,7 +20,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
     const body = await request.json() as TFTItem;
   
-    const { id, name, set_id, image_path, description, stats, is_component, is_artifact, is_radiant, is_seasonal } = body;
+    console.log('Received item data:', body);
+  
+    const { id, name, set_id, image_path, description, stats, is_component, is_artifact, is_radiant, is_seasonal, build_path } = body;
   
     const dbData = {
       id: id || `TFT_Item_${name.toLowerCase().replace(/\s+/g, "_")}`,
@@ -32,7 +34,8 @@ export async function POST(request: Request) {
       is_component,
       is_artifact,
       is_radiant,
-      is_seasonal
+      is_seasonal,
+      build_path: build_path || []
     };
 
   const { error } = await supabase
@@ -40,6 +43,7 @@ export async function POST(request: Request) {
     .upsert([dbData]);
 
   if (error) {
+    console.error('Error saving item:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

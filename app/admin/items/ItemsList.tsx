@@ -86,28 +86,63 @@ export default function ItemList({ initialItems }: ItemListProps) {
                 </div>
                 <p className="text-xs text-zinc-500">Set {item.tft_sets?.set_number} • {item.tft_sets?.name}</p>
                 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {Object.entries(item.stats || {}).map(([key, value]) => {
-                    if (!value || value === 0) return null;
-                    const iconMap: Array<{id: string, icon: string, color: string}> = [
-                      { id: 'hp', icon: 'health', color: 'text-green-400' },
-                      { id: 'ap', icon: 'ap', color: 'text-blue-500' },
-                      { id: 'ad', icon: 'dmg', color: 'text-orange-500' },
-                      { id: 'as', icon: 'attackspeed', color: 'text-yellow-300' },
-                      { id: 'armor', icon: 'armor', color: 'text-orange-400' },
-                      { id: 'mr', icon: 'mr', color: 'text-purple-500' },
-                      { id: 'mana', icon: 'mana', color: 'text-cyan-400' },
-                      { id: 'crit', icon: 'crit', color: 'text-red-500' }
-                    ];
-                    const stat = iconMap.find(s => s.id === key);
-                    return (
-                      <div key={key} className="flex items-center gap-1 text-[10px] text-zinc-400 bg-zinc-950/50 px-2 py-1 rounded-lg border border-zinc-800/50">
-                        <SvgIcon type={stat?.icon as any || 'ap'} size={12} className={stat?.color}/>
-                        <span className="font-bold">+{String(value)}{key === 'as' ? '%' : ''}</span>
-                        <span className="uppercase text-[8px] opacity-50">{key}</span>
-                      </div>
-                    );
-                  })}
+                <div className="mt-3 space-y-2">
+                 
+                  {/* Stats Display */}
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(item.stats || {}).map(([key, value]) => {
+                      if (!value || value === 0) return null;
+                      const iconMap: Array<{id: string, icon: string, color: string}> = [
+                        { id: 'hp', icon: 'health', color: 'text-green-400' },
+                        { id: 'ap', icon: 'ap', color: 'text-blue-500' },
+                        { id: 'ad', icon: 'dmg', color: 'text-orange-500' },
+                        { id: 'as', icon: 'attackspeed', color: 'text-yellow-300' },
+                        { id: 'armor', icon: 'armor', color: 'text-orange-400' },
+                        { id: 'mr', icon: 'mr', color: 'text-purple-500' },
+                        { id: 'mana', icon: 'mana', color: 'text-cyan-400' },
+                        { id: 'crit', icon: 'crit', color: 'text-red-500' },
+                        { id: 'lifesteal', icon: 'lifesteal', color: 'text-red-600' },
+                        { id: 'dmgAmp', icon: 'dmgamp', color: 'text-white' }
+                      ];
+                      const stat = iconMap.find(s => s.id === key);
+                      return (
+                        <div key={key} className="flex items-center gap-1 text-[10px] text-zinc-400 bg-zinc-950/50 px-2 py-1 rounded-lg border border-zinc-800/50">
+                          <SvgIcon type={stat?.icon as any || 'ap'} size={12} className={stat?.color}/>
+                          <span className="font-bold">+{String(value)}{key === 'as' ? '%' : ''}</span>
+                          <span className="uppercase text-[8px] opacity-50">{key}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {item.build_path && item.build_path.length > 0 && (
+                    <div className="flex flex-col gap-1.5 text-[10px] text-zinc-400">
+                    <span className="uppercase text-[8px] mr-1">Components:</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+                      {item.build_path.map((componentId: string, index: number) => {
+                        const component = initialItems.find(i => i.id === componentId);
+                        return (
+                          <div key={`${componentId}-${index}`} className="flex items-center gap-1">
+                            {component?.image_path ? (
+                              <img 
+                                src={component.image_path} 
+                                alt={component.name} 
+                                className="w-4 h-4 rounded border border-zinc-700"
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded bg-zinc-700 border border-zinc-600 flex items-center justify-center text-[8px] text-zinc-400">
+                                ?
+                              </div>
+                            )}
+                            <span className="px-1 py-0.5 text-[8px] bg-zinc-800 rounded text-zinc-400">
+                              {component?.name || componentId}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

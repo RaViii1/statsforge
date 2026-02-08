@@ -25,7 +25,7 @@ export interface TFTItem {
   is_radiant?: boolean;
   is_seasonal?: boolean;
   created_at?: string;
-  
+  build_path?: string[]; // Array of component item IDs that build into this item
 }
 
 export const itemstft: TFTItem[] = [

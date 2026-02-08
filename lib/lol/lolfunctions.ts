@@ -197,10 +197,10 @@ export function formatGamenametoNameandTagline(gamename?: string | "noname") {
 
   export const getRankIcon = (tier: string | undefined) => {
     if (tier === null || !tier) {
-      return 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png';
+      return '/images/ranks/unranked.png';
     }
-    const tierLower = tier.toLowerCase();
-    return `https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/${tierLower}.png`;
+    const tierCapitalized = tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase();
+    return `/images/ranks/${tierCapitalized}.png`;
   };
 
   export const getChampionSplashByName = (championName: string) => {

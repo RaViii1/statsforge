@@ -3,6 +3,7 @@ import { ArrowLeft, Box } from "lucide-react";
 import ItemForm from "./ItemsForm";
 import ItemList from "./ItemsList";
 import { TFTSet }  from "@/lib/tft/champions";
+import { TFTItem } from "@/lib/tft/itemstft";
 import Link from "next/link";
 
 export default async function AdminItemsPage() {
@@ -17,6 +18,13 @@ export default async function AdminItemsPage() {
     .from("tft_sets")
     .select("id, name, set_number")
     .order("set_number", { ascending: false });
+
+   // Get component items (is_component = true) for build path selection
+  const { data: components } = await supabase
+    .from("tft_items")
+    .select("id, name, image_path")
+    .eq("is_component", true)
+    .order("name", { ascending: true });
 
   return (
     <div className="space-y-8 pb-20">
@@ -37,7 +45,10 @@ export default async function AdminItemsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-1">
           <div className="sticky top-8">
-            <ItemForm sets={(sets as (TFTSet & { id: number })[]) || []} />
+            <ItemForm 
+              sets={(sets as (TFTSet & { id: number })[]) || []} 
+              components={(components as TFTItem[]) || []}
+            />
           </div>
         </div>
 

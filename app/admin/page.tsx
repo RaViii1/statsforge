@@ -44,7 +44,7 @@ export default async function AdminDashboard() {
   // Fetch actual stats
   const { count: userCount } = await supabase.from("profiles").select("*", { count: "exact", head: true });
   const { count: compCount } = await supabase.from("tft_team_comps").select("*", { count: "exact", head: true });
-  const { data: activeSet } = await supabase.from("tft_sets").select("set_number").eq("is_active", true).single();
+  const { data: activeSets } = await supabase.from("tft_sets").select("set_number").eq("is_active", true).order("set_number", { ascending: false });
   
   // Fetch users for the tab
   const { data: users } = await supabase.from("profiles").select("*").order("updated_at", { ascending: false });
@@ -98,10 +98,32 @@ export default async function AdminDashboard() {
             {/* Active Set */}
             <div className="p-6 bg-zinc-950/50 border border-zinc-800/50 rounded-xl group hover:border-orange-400/60 hover:shadow-md transition-all duration-200">
               <div className="text-xs text-zinc-500 uppercase tracking-wider font-semibold mb-3">Active Set</div>
-              <div className="text-2xl font-bold text-white flex items-center gap-2">
-                Set {activeSet?.set_number || 'N/A'}
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              </div>
+              <div className="space-y-2">
+                  {activeSets && activeSets.length > 0 ? (
+                    activeSets.length === 1 ? (
+                      <div className="text-2xl font-bold text-white flex items-center gap-2">
+                        Set {activeSets[0].set_number}
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="text-lg font-bold text-white mb-2">Active Sets ({activeSets.length})</div>
+                        <div className="flex flex-wrap gap-2">
+                          {activeSets.map((set) => (
+                            <span key={set.set_number} className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-sm font-bold">
+                              Set {set.set_number}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )
+                  ) : (
+                    <div className="text-2xl font-bold text-white flex items-center gap-2">
+                      Set N/A
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    </div>
+                  )}
+                </div>
             </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400/90 to-orange-500/90 bg-clip-text text-transparent">

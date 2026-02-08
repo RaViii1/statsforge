@@ -5,8 +5,8 @@ import { MatchParticipant } from '@/app/types/lolInterfaces';
 const QUEUES_RANKED_SOLO = 420;
 const QUEUES_RANKED_FLEX = 440;
 const BATCH_SIZE = 30; 
-const endDate = new Date('2026-01-08T20:00:00Z'); 
-const endTimeEpoch = Math.floor(endDate.getTime() / 1000);
+const START_DATE = new Date('2026-01-08T20:00:00Z'); 
+const START_TIME_EPOCH = Math.floor(START_DATE.getTime() / 1000);
 
 const REGIONAL_ROUTING: Record<string, string> = {
   na1: 'americas',
@@ -67,7 +67,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ serv
       `https://${regionalHost}/lol/match/v5/matches/by-puuid/${puuid}/ids`,
       {
         headers: { 'X-Riot-Token': API_KEY },
-        params: { start: 0, count: 100, type: "ranked", endTime: endTimeEpoch },
+        params: { start: 0, count: 100, type: "ranked", startTime: START_TIME_EPOCH },
       }
     );
     const allMatchIds: string[] = allMatchIdsResponse.data;
@@ -125,13 +125,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ serv
 
     const validMatches = matches.filter((m) => m !== null);
 
-    // Aggregation with matchIds tracked per champion
+    // Aggregation with matchIds tracked per champion and queue type
     const championAggregates: Record<
       string,
       {
         championId: number;
         stats: ChampionStats;
-        queues: Record<number, number>;
+        soloStats: ChampionStats;
+        flexStats: ChampionStats;
         matchIds: string[];
       }
     > = {};
@@ -149,7 +150,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ serv
         championAggregates[champ] = {
           championId: champId,
           stats: { gamesPlayed: 0, wins: 0, kills: 0, deaths: 0, assists: 0, totalCS: 0 },
-          queues: {},
+          soloStats: { gamesPlayed: 0, wins: 0, kills: 0, deaths: 0, assists: 0, totalCS: 0 },
+          flexStats: { gamesPlayed: 0, wins: 0, kills: 0, deaths: 0, assists: 0, totalCS: 0 },
           matchIds: [],
         };
       }
@@ -158,21 +160,50 @@ export async function GET(request: Request, { params }: { params: Promise<{ serv
         championAggregates[champ].matchIds.push(matchId);
       }
       
-      const stats = championAggregates[champ].stats;
-      stats.gamesPlayed++;
-      if (participant.win) stats.wins++;
-      stats.kills += participant.kills;
-      stats.deaths += participant.deaths;
-      stats.assists += participant.assists;
-      stats.totalCS += participant.totalMinionsKilled + participant.neutralMinionsKilled;
-      championAggregates[champ].queues[queue] = (championAggregates[champ].queues[queue] || 0) + 1;
+      // Update total stats
+      const totalStats = championAggregates[champ].stats;
+      totalStats.gamesPlayed++;
+      if (participant.win) totalStats.wins++;
+      totalStats.kills += participant.kills;
+      totalStats.deaths += participant.deaths;
+      totalStats.assists += participant.assists;
+      totalStats.totalCS += participant.totalMinionsKilled + participant.neutralMinionsKilled;
+
+      // Update per-queue stats
+      if (queue === QUEUES_RANKED_SOLO) {
+        const soloStats = championAggregates[champ].soloStats;
+        soloStats.gamesPlayed++;
+        if (participant.win) soloStats.wins++;
+        soloStats.kills += participant.kills;
+        soloStats.deaths += participant.deaths;
+        soloStats.assists += participant.assists;
+        soloStats.totalCS += participant.totalMinionsKilled + participant.neutralMinionsKilled;
+      } else if (queue === QUEUES_RANKED_FLEX) {
+        const flexStats = championAggregates[champ].flexStats;
+        flexStats.gamesPlayed++;
+        if (participant.win) flexStats.wins++;
+        flexStats.kills += participant.kills;
+        flexStats.deaths += participant.deaths;
+        flexStats.assists += participant.assists;
+        flexStats.totalCS += participant.totalMinionsKilled + participant.neutralMinionsKilled;
+      }
     });
 
     const championStats = Object.entries(championAggregates)
       .map(([champ, data]) => {
         const stats = data.stats;
+        const soloStats = data.soloStats;
+        const flexStats = data.flexStats;
+        
         const winrate = stats.gamesPlayed ? (stats.wins / stats.gamesPlayed) * 100 : 0;
         const kda = stats.deaths === 0 ? stats.kills + stats.assists : (stats.kills + stats.assists) / stats.deaths;
+        
+        const soloWinrate = soloStats.gamesPlayed ? (soloStats.wins / soloStats.gamesPlayed) * 100 : 0;
+        const soloKda = soloStats.deaths === 0 ? soloStats.kills + soloStats.assists : (soloStats.kills + soloStats.assists) / soloStats.deaths;
+        
+        const flexWinrate = flexStats.gamesPlayed ? (flexStats.wins / flexStats.gamesPlayed) * 100 : 0;
+        const flexKda = flexStats.deaths === 0 ? flexStats.kills + flexStats.assists : (flexStats.kills + flexStats.assists) / flexStats.deaths;
+        
         return {
           champion: champ,
           championId: data.championId,
@@ -186,8 +217,30 @@ export async function GET(request: Request, { params }: { params: Promise<{ serv
           assists: stats.assists,
           averageCS: parseFloat((stats.totalCS / stats.gamesPlayed).toFixed(1)),
           queueBreakdown: {
-            soloQueueGames: data.queues[QUEUES_RANKED_SOLO] || 0,
-            flexQueueGames: data.queues[QUEUES_RANKED_FLEX] || 0,
+            soloQueueGames: soloStats.gamesPlayed,
+            flexQueueGames: flexStats.gamesPlayed,
+          },
+          soloStats: {
+            gamesPlayed: soloStats.gamesPlayed,
+            wins: soloStats.wins,
+            losses: soloStats.gamesPlayed - soloStats.wins,
+            winrate: parseFloat(soloWinrate.toFixed(1)),
+            kda: parseFloat(soloKda.toFixed(2)),
+            kills: soloStats.kills,
+            deaths: soloStats.deaths,
+            assists: soloStats.assists,
+            averageCS: soloStats.gamesPlayed > 0 ? parseFloat((soloStats.totalCS / soloStats.gamesPlayed).toFixed(1)) : 0,
+          },
+          flexStats: {
+            gamesPlayed: flexStats.gamesPlayed,
+            wins: flexStats.wins,
+            losses: flexStats.gamesPlayed - flexStats.wins,
+            winrate: parseFloat(flexWinrate.toFixed(1)),
+            kda: parseFloat(flexKda.toFixed(2)),
+            kills: flexStats.kills,
+            deaths: flexStats.deaths,
+            assists: flexStats.assists,
+            averageCS: flexStats.gamesPlayed > 0 ? parseFloat((flexStats.totalCS / flexStats.gamesPlayed).toFixed(1)) : 0,
           },
           matchIds: data.matchIds,
         };

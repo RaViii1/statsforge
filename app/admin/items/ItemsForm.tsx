@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { Plus, Box, X, Target } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Box, X, Target, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { TFTItem } from "@/lib/tft/itemstft";
@@ -11,12 +11,17 @@ import { color } from "framer-motion";
 
 interface ItemFormProps {
   sets: (TFTSet & { id: number })[];
+  components: TFTItem[]; // List of component items for build path selection
 }
 
-export default function ItemForm({ sets }: ItemFormProps) {
+export default function ItemForm({ sets, components }: ItemFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [componentInput, setComponentInput] = useState("");
+  const [filteredComponents, setFilteredComponents] = useState<TFTItem[]>([]);
+  const [showComponentSuggestions, setShowComponentSuggestions] = useState(false);
+  const componentSuggestionRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<Partial<TFTItem>>({
     name: "",
@@ -27,6 +32,7 @@ export default function ItemForm({ sets }: ItemFormProps) {
     is_artifact: false,
     is_radiant: false,
     is_seasonal: false,
+    build_path: [],
     stats: {
       hp: 0,
       ap: 0,
@@ -45,6 +51,47 @@ export default function ItemForm({ sets }: ItemFormProps) {
   });
 
   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (componentSuggestionRef.current && !componentSuggestionRef.current.contains(event.target as Node)) {
+        setShowComponentSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleComponentInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setComponentInput(value);
+    
+    if (value.trim()) {
+      const filtered = components.filter(component => 
+        component.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredComponents(filtered);
+      setShowComponentSuggestions(true);
+    } else {
+      setShowComponentSuggestions(false);
+    }
+  };
+
+  const addComponent = (component: TFTItem) => {
+    setFormData(prev => ({
+      ...prev,
+      build_path: [...(prev.build_path || []), component.id]
+    }));
+    setComponentInput("");
+    setShowComponentSuggestions(false);
+  };
+
+  const removeComponent = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      build_path: prev.build_path?.filter((_, i) => i !== index)
+    }));
+  };
+
+  useEffect(() => {
     const handleEditEvent = (event: any) => {
       const item = event.detail;
       setIsEditing(true);
@@ -55,6 +102,7 @@ export default function ItemForm({ sets }: ItemFormProps) {
         is_artifact: !!item.is_artifact,
         is_radiant: !!item.is_radiant,
         set_id: item.set_id || 0,
+        build_path: item.build_path || [],
         stats: item.stats || { hp: 0, ap: 0, ad: 0, armor: 0, mr: 0, as: 0, mana: 0, crit: 0, crit_dmg: 0, healing: 0, shield: 0, lifesteal: 0, dmgAmp: 0 }
       });
     };
@@ -93,6 +141,7 @@ export default function ItemForm({ sets }: ItemFormProps) {
           is_artifact: false,
           is_radiant: false,
           is_seasonal: false,
+          build_path: [],
           stats: { hp: 0, ap: 0, ad: 0, armor: 0, mr: 0, as: 0, mana: 0, crit: 0, crit_dmg: 0, healing: 0, shield: 0, lifesteal: 0, dmgAmp: 0 }
         });
       router.refresh();
@@ -227,6 +276,91 @@ export default function ItemForm({ sets }: ItemFormProps) {
             </label>
           </div>
 
+        {/* Build Path Section */}
+        {!formData.is_component && !formData.is_artifact && !formData.is_radiant && (
+          <div className="pt-4 border-t border-zinc-800 space-y-4">
+            <label className="text-sm font-bold text-white flex items-center gap-2">
+              <Box className="w-4 h-4 text-green-500" />
+              Build Path
+            </label>
+            <div className="space-y-3 relative">
+              <p className="text-xs text-zinc-500">Select up to 2 component items (can be identical) that build into this item</p>
+              
+              {/* Current Build Path Display */}
+              <div className="flex flex-wrap gap-2 mb-2 min-h-[30px] p-2 bg-zinc-950/50 rounded-xl border border-dashed border-zinc-800">
+                {formData.build_path?.length === 0 && <span className="text-zinc-600 text-[10px] italic">No components added</span>}
+                {formData.build_path?.map((componentId: string, index: number) => {
+                  const component = components.find(c => c.id === componentId);
+                  return (
+                    <span key={`${componentId}-${index}`} className="bg-green-500/10 border border-green-500/30 text-green-500 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 group">
+                      <div className="w-4 h-4 rounded overflow-hidden">
+                        {component?.image_path ? (
+                          <img src={component.image_path} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-700 flex items-center justify-center text-[8px] text-zinc-400">
+                            ?
+                          </div>
+                        )}
+                      </div>
+                      {component?.name || componentId}
+                      <button 
+                        type="button" 
+                        onClick={() => removeComponent(index)} 
+                        className="hover:text-white transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Add Component Input */}
+              {(formData.build_path || []).length < 2 && (
+                <div className="relative">
+                  <input 
+                    value={componentInput}
+                    onChange={handleComponentInputChange}
+                    onFocus={() => componentInput && setShowComponentSuggestions(true)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-green-500/50 outline-none" 
+                    placeholder="Type to search components..." 
+                  />
+                  <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              )}
+              
+              {showComponentSuggestions && filteredComponents.length > 0 && (
+                <div 
+                  ref={componentSuggestionRef}
+                  className="absolute z-50 w-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto"
+                >
+                  {filteredComponents.map(component => (
+                    <button
+                      key={component.id}
+                      type="button"
+                      onClick={() => addComponent(component)}
+                      className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-3"
+                    >
+                      <div className="w-6 h-6 bg-zinc-800 rounded-md flex items-center justify-center overflow-hidden">
+                        {component.image_path ? (
+                          <img src={component.image_path} alt="" className="w-4 h-4 object-cover" />
+                        ) : (
+                          <Box className="w-3 h-3 text-zinc-600" />
+                        )}
+                      </div>
+                      {component.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {components.length === 0 && (
+                <p className="text-xs text-zinc-600 text-center py-4">No component items available</p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="pt-6 border-t border-zinc-800 space-y-4">
           <label className="text-sm font-bold text-white flex items-center gap-2">
             <Target className="w-4 h-4 text-green-500" />
@@ -246,8 +380,8 @@ export default function ItemForm({ sets }: ItemFormProps) {
               { id: 'crit_dmg', label: 'Crit DMG', icon: 'critdmg', color: 'text-pink-500' },
               { id: 'healing', label: 'Healing', icon: 'healing', color: 'text-green-300' },
               { id: 'shield', label: 'Shield', icon: 'shield', color: 'text-blue-300' },
-              { id: 'lifesteal', label: 'Lifesteal', icon: 'lifesteal', color: 'text-red-400' },
-              { id: 'dmgAmp', label: 'DMG Amp', icon: 'dmgamp', color: 'text-purple-400' },
+              { id: 'lifesteal', label: 'Lifesteal', icon: 'lifesteal', color: 'text-red-600' },
+              { id: 'dmgAmp', label: 'DMG Amp', icon: 'dmgamp', color: 'text-white' },
             ].map(stat => (
               <div key={stat.id} className="space-y-1">
                 <label className="text-[9px] uppercase font-black text-zinc-600 flex items-center justify-center gap-1">
