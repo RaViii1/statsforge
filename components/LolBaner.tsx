@@ -25,4 +25,5 @@ export default function LolBanner() {
                 </div>
               </div>
             </div>)
+
 }
