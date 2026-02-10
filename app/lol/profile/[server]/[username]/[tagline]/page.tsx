@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import LolBanner from "@/components/LolBaner";
 import NavbarLol from "@/components/NavbarLol";
 import Footer from "@/components/Footer";
-import ChampionStatsCard from "@/components/ChampionStatsCard";
+import ChampionStatsCard from "@/components/lol/ChampionStatsCard";
 
 import { SummonerData, MatchHistory, ChampionMastery, RankedEntry } from "@/app/types/lolInterfaces";
 
