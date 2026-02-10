@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, Clock, X, Trophy, TrendingUp } from "lucide-react";
+import { Search, Loader2, Clock, X, Trophy, TrendingUp, Store, Users2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -127,8 +127,8 @@ export default function TFTPage() {
 
     if (input.includes('#')) {
       const parts = input.split('#');
-      gameName = parts[0];
-      tagLine = parts[1];
+      gameName = parts[0].trim();
+      tagLine = parts[1].trim();
     } else {
       gameName = input;
       const serverDefaults: Record<string, string> = {
@@ -271,81 +271,79 @@ export default function TFTPage() {
 
       
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto relative" style={{ zIndex: 1 }}>
-          <Link 
-            href="/tft/planner"
-            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center"></div>
-            
-            <div className="relative z-10">
-              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
-              </div>
-              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Team Planner</h3>
-              <p className="text-zinc-400 text-sm mb-6">Build and save your perfect compositions with our interactive hex-grid tool.</p>
-              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                Launch Tool <Search className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
 
           <Link 
-            href="/tft/comps"
-            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-yellow-500/50 transition-all"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/20 via-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
-            
-            <div className="relative z-10">
-              <div className="w-14 h-14 bg-yellow-950/80 border border-yellow-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-yellow-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <TrendingUp className="w-7 h-7 text-yellow-500 group-hover:text-white transition-colors" />
+              href="/tft/planner"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-50 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Search className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Team Planner</h3>
+                <p className="text-zinc-400 text-sm mb-6">Build and save your perfect compositions with our interactive hex-grid tool.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  View Team Planner
+                </div>
               </div>
-              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Meta Comps</h3>
-              <p className="text-zinc-400 text-sm mb-6">Explore the highest win-rate compositions and trending strategies for Set {CurrentSetNumber}.</p>
-              <div className="flex items-center gap-2 text-yellow-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                View Meta <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
-
+            </Link>
           <Link 
-            href="/tft/shop-odds"
-            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
-            
-            <div className="relative z-10">
-              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+              href="/tft/comps"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Meta Comps</h3>
+                <p className="text-zinc-400 text-sm mb-6">Explore the highest win-rate compositions and trending strategies for Set {CurrentSetNumber}.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  View Meta
+                </div>
               </div>
-              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Shop Odds</h3>
-              <p className="text-zinc-400 text-sm mb-6">Know exactly when to roll with our detailed champion drop rate reference.</p>
-              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                Check Odds <Search className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
-
+            </Link>
           <Link 
-            href="/tft/units"
-            className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all md:col-span-3"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/texture.jpg')] bg-cover bg-center"></div>
-            
-            <div className="relative z-10 max-w-md">
-              <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+              href="/tft/shop-odds"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Store className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Shop Odds</h3>
+                <p className="text-zinc-400 text-sm mb-6">Know exactly when to roll with our detailed champion drop rate reference.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  Check Shop Odds
+                </div>
               </div>
-              <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Units</h3>
-              <p className="text-zinc-400 text-sm mb-6">Explore all champions in the current set with detailed stats and traits.</p>
-              <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                Check set {CurrentSetNumber} Units <Search className="w-4 h-4" />
+            </Link>            
+          <Link 
+              href="/tft/units"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Users2 className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Units</h3>
+                <p className="text-zinc-400 text-sm mb-6">Explore all champions in the current set with detailed stats and traits.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  Check set {CurrentSetNumber} Units
+                </div>
               </div>
-            </div>
-          </Link>
+            </Link> 
         </div>
 
         

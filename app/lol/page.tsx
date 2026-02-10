@@ -1,12 +1,12 @@
 "use client";
 
-import { Search, Loader2, TrendingUp, Users, Target, Clock, X } from "lucide-react";
+import { Search, Loader2, TrendingUp, Users, Target, Clock, X, Layers } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import  Navbar  from "@/components/navbar";
-import Footer  from "@/components/footer";
+import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import NavbarLoL from "@/components/navbarlol";
 
 const SERVERS = [
@@ -144,8 +144,8 @@ export default function LolPage() {
 
     if (input.includes('#')) {
       const parts = input.split('#');
-      gameName = parts[0];
-      tagLine = parts[1];
+      gameName = parts[0].trim();
+      tagLine = parts[1].trim();
     } else {
       gameName = input;
       const serverDefaults: Record<string, string> = {
@@ -307,77 +307,67 @@ export default function LolPage() {
             </div>
           </form>
 
-           {/* Quick Links */}
-          <div className="flex flex-wrap items-center justify-center gap-4 relative z-1 text-left">
-              <Link 
+          {/* Quick Links */}
+          <div className="flex flex-wrap items-center justify-center gap-8 relative z-1 text-left">
+            {/* Multi Search Button */}
+            <Link 
               href="/lol/multisearch"
-              className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
               
               <div className="relative z-10">
-                <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Users className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Multi Search</h3>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Multi Search</h3>
                 <p className="text-zinc-400 text-sm mb-6">Search and compare multiple League of Legends players at once.</p>
                 <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Launch Tool <Search className="w-4 h-4" />
+                  Launch Search Tool
                 </div>
               </div>
-          </Link>
-              <Link 
+            </Link>
+            
+            {/* Leaderboard Button */}
+            <Link 
+              href="/lol/leaderboard"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/lol/leaderboards.png')] bg-cover bg-center"></div>
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <Layers className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Leaderboard</h3>
+                <p className="text-zinc-400 text-sm mb-6">View the top ranked players across all regions and queues.</p>
+                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
+                  View Leaderboard
+                </div>
+              </div>
+            </Link>
+            
+            {/* Tier Lists Button */}
+            <Link 
               href="/lol/champions"
-              className="group relative overflow-hidden p-8 bg-zinc-900 border border-zinc-800 rounded-[2.5rem] hover:border-orange-500/50 transition-all"
+              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
               
               <div className="relative z-10">
-                <div className="w-14 h-14 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Search className="w-7 h-7 text-orange-500 group-hover:text-white transition-colors" />
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+                  <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-2xl font-black text-white mb-2 italic uppercase tracking-tight">Tier Lists</h3>
-                <p className="text-zinc-400 text-sm mb-6">Search and compare champion tier lists for all regions and patches.</p>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Tier Lists</h3>
+                <p className="text-zinc-400 text-sm mb-6">Explore champion tier lists for all regions and patches. Follow the meta!</p>
                 <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Tier Lists <Search className="w-4 h-4" />
+                  View Tier Lists
                 </div>
               </div>
-          </Link>
-          </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 hover:bg-zinc-900/80 transition-all">
-            <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center mb-4">
-              <Users className="w-6 h-6 text-orange-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Player Profiles</h3>
-            <p className="text-zinc-400">
-              View detailed summoner profiles with ranked stats, match history, and champion mastery across all regions
-            </p>
-          </div>
-
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-purple-900/50 hover:bg-zinc-900/80 transition-all">
-            <div className="w-12 h-12 bg-purple-950/50 border border-purple-900/30 rounded-lg flex items-center justify-center mb-4">
-              <Target className="w-6 h-6 text-purple-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Champion Stats</h3>
-            <p className="text-zinc-400">
-              Explore champion win rates, pick rates, and performance across different roles and patches
-            </p>
-          </div>
-
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 hover:bg-zinc-900/80 transition-all">
-            <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center mb-4">
-              <TrendingUp className="w-6 h-6 text-orange-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Match Analysis</h3>
-            <p className="text-zinc-400">
-              Deep dive into match details with performance metrics, damage stats, and comprehensive rune analysis
-            </p>
+            </Link>
           </div>
         </div>
 

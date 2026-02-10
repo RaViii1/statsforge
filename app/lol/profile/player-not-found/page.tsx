@@ -2,8 +2,9 @@
 import { Search, ArrowLeft, Anvil, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function PlayerNotFoundPage() {
+const PlayerNotFoundContent = () => {
   const searchParams = useSearchParams();
   const gameName = searchParams?.get("name") || "";
   const tagLine = searchParams?.get("tag") || "";
@@ -100,5 +101,17 @@ export default function PlayerNotFoundPage() {
         </div>
       </main>
     </div>
+  );
+};
+
+export default function PlayerNotFoundPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <PlayerNotFoundContent />
+    </Suspense>
   );
 }

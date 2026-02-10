@@ -91,7 +91,7 @@ export const META_TIER_CONFIG: Record<MetaTier, {
 export interface TeamComp {
   id: string;
   name: string;
-  set_id: number;
+  set_id?: number;
   description: string;
   phases: Record<PhaseKey, TeamPhase>;
   mainCarryIds: string[];

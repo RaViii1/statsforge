@@ -60,7 +60,7 @@ export function PlayedWithComponent({
             puuid: teammate.puuid,
             gameName: teammate.riotIdGameName || "Unknown",
             tagLine: teammate.riotIdTagline || "0000",
-            profileIconId: teammate.profileIcon,
+            profileIconId: teammate.profileIconId,
             gamesPlayed: 1,
             wins: playerWon ? 1 : 0,
             losses: playerWon ? 0 : 1,
@@ -82,7 +82,7 @@ export function PlayedWithComponent({
   }
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 mb-8">
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 mb-8">
       <h2 className="text-md font-bold text-white mb-4 flex  gap-2 items-end">
         <Users className="w-5 h-5 text-orange-500 " />
         Recent teammates

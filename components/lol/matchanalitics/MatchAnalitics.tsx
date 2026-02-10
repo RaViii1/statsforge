@@ -40,7 +40,7 @@ interface MatchAnalyticsProps {
 
 interface ParticipantData {
   puuid: string;
-  profileIcon: number;
+  profileIconId: number;
   summonerName: string;
   championName: string;
   teamPosition: string;
@@ -93,7 +93,7 @@ interface MatchData {
 
 interface PlayerScore {
   puuid: string;
-  profileIcon: number;
+  profileIcon?: number;
   summonerName: string;
   championName: string;
   teamPosition: string;

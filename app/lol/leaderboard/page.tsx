@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -52,7 +52,7 @@ interface LeaderboardPlayer {
   veteran?: boolean;
 }
 
-export default function LeaderboardPage() {
+const LeaderboardContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -498,23 +498,19 @@ export default function LeaderboardPage() {
                           </td>
                           <td className="px-4 py-4">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-base font-black text-white group-hover:text-orange-400 transition-colors">{player.leaguePoints.toLocaleString()}</span>
-                              <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">LP</span>
+                              <span className="text-lg font-black text-zinc-100">
+                                {player.leaguePoints}
+                              </span>
+                              <span className="text-[10px] text-orange-500 font-bold uppercase">LP</span>
                             </div>
                           </td>
                           <td className="pr-6 pl-4 py-4 text-right">
                             <div className="flex flex-col items-end gap-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-black tracking-tighter ${
-                                  winrate >= 60 ? "text-green-500" : 
-                                  winrate >= 50 ? "text-zinc-100" : 
-                                  "text-red-500"
-                                }`}>
-                                  {winrate}% WR
-                                </span>
-                              </div>
-                              <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                                {player.wins + player.losses} Games Total
+                              <span className={`text-lg font-black ${winrate >= 55 ? 'text-green-500' : winrate >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                {winrate}%
+                              </span>
+                              <span className="text-[10px] font-black text-zinc-500">
+                                {player.wins} - {player.losses}
                               </span>
                             </div>
                           </td>
@@ -524,84 +520,54 @@ export default function LeaderboardPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              {/* Pagination Controls */}
-              <div className="p-6 border-t border-zinc-800 bg-zinc-950/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
-                  Showing page <span className="text-white">{currentPage}</span> of <span className="text-white">{totalPages}</span>
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between gap-4 px-6">
+              <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">
+                Showing <span className="text-zinc-300">{currentPage}</span> of <span className="text-zinc-300">{totalPages}</span> Pages
+              </div>
+              
+              <div className="flex items-center gap-1 bg-zinc-900/40 p-1 rounded-lg border border-zinc-800/50">
+                <button 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-md hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-zinc-400" />
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum = i + 1;
+                    if (totalPages > 5 && currentPage > 3) {
+                      pageNum = currentPage - 2 + i;
+                      if (pageNum > totalPages) pageNum = totalPages - (4 - (i - (totalPages - currentPage + 2)));
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-3 py-1.5 rounded-md text-[11px] font-black transition-all ${
+                          currentPage === pageNum
+                            ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                            : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1 || loading}
-                    className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
-                  
-                  <div className="flex items-center gap-1">
-                    {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          disabled={loading}
-                          className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${
-                            currentPage === pageNum
-                              ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                              : "bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages || loading}
-                    className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
-                  <span className="text-white">{(totalPlayers || 0).toLocaleString()}</span> Total Contenders
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Info Footer */}
-        {!loading && (
-          <div className="mt-12 p-6 rounded-2xl border border-zinc-800/30 bg-zinc-900/10 flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-              Real-time competitive metrics
-            </div>
-            <div className="flex items-center gap-8">
-              <div className="flex flex-col md:flex-row items-center gap-2">
-                <span className="text-zinc-700">Refreshed:</span>
-                <span className="text-zinc-400">Just now</span>
-              </div>
-              <div className="flex flex-col md:flex-row items-center gap-2">
-                <span className="text-zinc-700">Displaying:</span>
-                <span className="text-zinc-400">Top {totalPlayers > 0 ? totalPlayers : 'N/A'} Players</span>
+                <button 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-md hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
               </div>
             </div>
           </div>
@@ -610,5 +576,17 @@ export default function LeaderboardPage() {
 
       <Footer />
     </div>
+  );
+};
+
+export default function LeaderboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+      </div>
+    }>
+      <LeaderboardContent />
+    </Suspense>
   );
 }

@@ -48,7 +48,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
   const primaryStyle = playerData.perks?.styles?.[0];
   const secondaryStyle = playerData.perks?.styles?.[1];
   const primaryKeystone = primaryStyle?.selections?.[0]?.perk;
-  const secondaryTree = secondaryStyle?.style;
+  const secondaryTree = (secondaryStyle as any)?.style;
 
   const lpChange = getLPChange(match, playerData, rankedData);
 

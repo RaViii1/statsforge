@@ -598,6 +598,18 @@ export const items: Item[] = [
       "Jungle"
     ],
     "description": "ConsumeRestores 120 Health over 15 seconds.",
+    "image": "2003_class_t1_healthpotion.png"
+  },
+    {
+    "id": "22003",
+    "name": "Health Potion",
+    "stats": [
+      "HealthRegen",
+      "Consumable",
+      "Lane",
+      "Jungle"
+    ],
+    "description": "ConsumeRestores 120 Health over 15 seconds.",
     "image": "22003_class_t1_healthpotion.png"
   },
   {

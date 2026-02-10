@@ -35,8 +35,8 @@ export async function GET(
   }
 
   try {
-    const decodedGameName = decodeURIComponent(username);
-    const decodedTagLine = decodeURIComponent(tagline);
+    const decodedGameName = decodeURIComponent(username).trim();
+    const decodedTagLine = decodeURIComponent(tagline).trim();
     const region = PLATFORM_TO_REGION[server.toLowerCase()] || 'europe';
     const regionalHost = `${region}.api.riotgames.com`;
 

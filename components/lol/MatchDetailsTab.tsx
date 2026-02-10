@@ -43,9 +43,6 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
   const team1 = match.info.participants.filter((p: MatchParticipant) => p.teamId === 100);
   const team2 = match.info.participants.filter((p: MatchParticipant) => p.teamId === 200);
   
-  // Check for team surrenders
-  const team1Surrendered = match.info.teams?.find((t: any) => t.teamId === 100)?.teamEarlySurrendered || false;
-  const team2Surrendered = match.info.teams?.find((t: any) => t.teamId === 200)?.teamEarlySurrendered || false;
 
   // Arena teams - group by playerSubteamId and sort by subteamPlacement
   const arenaTeams: { [key: number]: MatchParticipant[] } = {};
@@ -519,9 +516,9 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
     return (
       <div className="grid md:grid-cols-2 gap-6">
         {[
-          { team: team1, name: "Blue Team", surrendered: team1Surrendered },
-          { team: team2, name: "Red Team", surrendered: team2Surrendered }
-        ].map(({ team, name, surrendered }) => (
+          { team: team1, name: "Blue Team" },
+          { team: team2, name: "Red Team" }
+        ].map(({ team, name }) => (
           <div key={name} className="overflow-visible">
           <div className={`group relative mb-4 overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
           team[0]?.win
@@ -561,14 +558,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
               <div className="text-right">
               <p className="text-lg font-bold text-white drop-shadow-sm tracking-tight">{name}</p>
               
-              {surrendered && (
-                  <div className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-black/40 px-2 py-0.5 border border-zinc-800/50">
-                  <Flag className="h-3 w-3 text-zinc-500" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                      Surrendered
-                  </span>
-                  </div>
-              )}
+
               </div>
           </div>
           </div>
@@ -592,7 +582,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 return (
                   <div 
                     key={participant.puuid}
-                    className={`p-3 rounded-xl transition-all duration-200 overflow-visible border-2 shadow-md ${
+                    className={`px-3 rounded-xl transition-all duration-200 overflow-visible border-2 shadow-md ${
                       participant.puuid === summonerPuuid 
                         ? 'bg-linear-to-r from-orange-950/40 to-orange-900/20 border-orange-600/60 hover:border-orange-500 hover:shadow-orange-900/30' 
                         : 'bg-zinc-800/40 border-zinc-700/50 hover:bg-zinc-800/60 hover:border-zinc-600 hover:shadow-lg'

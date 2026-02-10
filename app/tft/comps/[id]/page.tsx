@@ -270,6 +270,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
 
         setComp({
           id: comp.id,
+          set_id: comp.set_id,
           name: comp.name,
           description: comp.description || '',
           patch: comp.patch || '16.1',

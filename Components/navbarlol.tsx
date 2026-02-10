@@ -129,8 +129,8 @@ export default function NavbarLoL() {
     
     if (input.includes('#')) {
       const parts = input.split('#');
-      gameName = parts[0];
-      tagLine = parts[1];
+      gameName = parts[0].trim();
+      tagLine = parts[1].trim();
     } else {
       gameName = input;
       const serverDefaults: Record<string, string> = {
@@ -220,7 +220,7 @@ export default function NavbarLoL() {
                           <button
                             type="button"
                             onClick={(e) => removeRecentSearch(index, e)}
-                            className="p-1.5 rounded-lg hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                            className="p-1.5 rounded-lg hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                           >
                             <X className="w-4 h-4 text-zinc-400" />
                           </button>
@@ -316,7 +316,7 @@ export default function NavbarLoL() {
                           className="px-3 py-2 flex items-center justify-between hover:bg-zinc-800 transition-all group cursor-pointer"
                         >
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <div className="w-6 h-6 bg-orange-950/30 border border-orange-900/30 rounded flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 bg-orange-950/30 border border-orange-900/30 rounded flex items-center justify-center shrink-0">
                               <span className="text-xs font-bold text-orange-500">
                                 {SERVERS.find(s => s.value === search.server)?.label || search.server.toUpperCase()}
                               </span>
@@ -328,7 +328,7 @@ export default function NavbarLoL() {
                           <button
                             type="button"
                             onClick={(e) => removeRecentSearch(index, e)}
-                            className="p-1 rounded hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                            className="p-1 rounded hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                           >
                             <X className="w-3 h-3 text-zinc-400" />
                           </button>
