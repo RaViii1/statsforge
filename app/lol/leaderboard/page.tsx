@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Trophy, Loader2, ArrowUpRight, Medal, TrendingUp, Users, Search, Globe, ChevronLeft, ChevronRight, Layers, User2, Star, ArrowLeft, ArrowRight } from "lucide-react";
-import NavbarLoL from "@/components/navbarlol";
-import Footer from "@/components/footer";
+import NavbarLoL from "@/components/NavbarLol";
+import Footer from "@/components/Footer";
 import { getRankIcon } from "@/lib/lol/lolfunctions";
 import { toast } from "sonner";
 

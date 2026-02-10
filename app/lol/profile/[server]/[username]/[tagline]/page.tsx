@@ -3,9 +3,9 @@ import { Search, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import LolBanner from "@/components/lolbaner";
-import NavbarLol from "@/components/navbarlol";
-import Footer from "@/components/footer";
+import LolBanner from "@/components/LolBaner";
+import NavbarLol from "@/components/NavbarLol";
+import Footer from "@/components/Footer";
 import ChampionStatsCard from "@/components/ChampionStatsCard";
 
 import { SummonerData, MatchHistory, ChampionMastery, RankedEntry } from "@/app/types/lolInterfaces";

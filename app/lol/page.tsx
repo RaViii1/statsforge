@@ -5,9 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
-import NavbarLoL from "@/components/navbarlol";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import NavbarLoL from "@/components/NavbarLol";
 
 const SERVERS = [
   { value: "na1", label: "NA" },

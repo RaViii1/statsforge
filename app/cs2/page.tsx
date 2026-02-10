@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 interface RecentSearch {
   steamId: string;

@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { Home, ArrowLeft, BarChart3, ShieldAlert, Search, RefreshCcw, Activity, Hammer, Flame, Terminal, Database, Cpu, HardDrive } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export default function NotFound() {
   return (

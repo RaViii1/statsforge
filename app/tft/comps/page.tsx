@@ -22,12 +22,12 @@ import {
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, TooltipState, META_TIER_CONFIG, MetaTier, META_TIERS } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import Footer from '@/components/footer';
+import Footer from '@/components/Footer';
 import { CurrentSetNumber, getChampionCost, getCostBorderColor, SET_16_CHAMPIONS } from '@/lib/tft/champions';
 import { HexGrid } from '@/components/tft/planner'; 
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { getDifficultyConfig, DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
-import NavbarTft from '@/components/navbartft';
+import NavbarTft from '@/components/NavbarTft';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 

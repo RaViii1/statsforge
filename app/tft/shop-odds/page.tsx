@@ -11,7 +11,7 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react';
-import NavbarTft from '@/components/navbartft';
+import NavbarTft from '@/components/NavbarTft';
 
 const SHOP_ODDS = [
   { level: 2, odds: [100, 0, 0, 0, 0] },

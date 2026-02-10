@@ -6,8 +6,8 @@ import {
   Eye, PieChart, Activity, Flame, ChevronRight, 
   Award, Trophy, Cpu, Zap, Box
 } from "lucide-react";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import Link from "next/link";
 
 const featuredGames = [

@@ -3,11 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { Search, ChevronLeft, Users, Filter, X, Loader2 } from "lucide-react";
 import Link from "next/link";
-import Footer from "@/components/footer";
+import Footer from "@/components/Footer";
 import { getCostBorderColor, getCostColor, CurrentSetNumber } from "@/lib/tft/champions";
 import { getTFTUnitSplash } from "@/lib/tft/tftfunctions";
 import { TFTChampion } from "@/lib/tft/champions";
-import NavbarTft from "@/components/navbartft";
+import NavbarTft from "@/components/NavbarTft";
 
 const COST_FILTERS = [
   { value: 0, label: "All", color: "bg-zinc-700" },

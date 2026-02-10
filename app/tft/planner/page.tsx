@@ -2,9 +2,9 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Footer from '@/components/footer';
+import Footer from '@/components/Footer';
 import { TftTeamPlanner } from '@/components/tft/TftTeamPlanner';
-import NavbarTft from '@/components/navbartft';
+import NavbarTft from '@/components/NavbarTft';
 
 function PlannerContent() {
   const searchParams = useSearchParams();

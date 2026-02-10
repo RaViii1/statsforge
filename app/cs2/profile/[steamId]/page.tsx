@@ -28,8 +28,8 @@ import {
   Bomb,
   TrendingUp
 } from "lucide-react";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { toast } from "sonner";
 
 interface GameStats {

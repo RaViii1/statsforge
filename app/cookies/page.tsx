@@ -1,5 +1,5 @@
-import Footer from '@/components/footer';
-import NavbarLoL from '@/components/navbar';
+import Footer from '@/components/Footer';
+import NavbarLoL from '@/components/Navbar';
 import React from 'react';
 
 const CookiesPolicy: React.FC = () => {

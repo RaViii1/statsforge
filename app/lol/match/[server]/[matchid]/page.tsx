@@ -3,10 +3,10 @@
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ChevronRight, Home, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { MatchAnalytics } from "@/components/lol/matchanalitics/MatchAnalitics";
-import NavbarLoL from "@/components/navbarlol";
+import NavbarLoL from "@/components/NavbarLol";
 
 export default function MatchAnalyticsPage() {
   const params = useParams();

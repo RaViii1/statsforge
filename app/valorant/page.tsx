@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Footer from "@/components/footer";
-import Navbar from "@/components/navbar";
+import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 const REGIONS = [
   { value: "na", label: "North America" },

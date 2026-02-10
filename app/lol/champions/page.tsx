@@ -3,8 +3,8 @@ import { Search, Loader2, Filter, TrendingUp, Target } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 interface ChampionStats {
   id: string;

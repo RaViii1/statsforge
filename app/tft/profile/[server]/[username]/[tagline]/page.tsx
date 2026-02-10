@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Footer from "@/components/footer";
+import Footer from "@/components/Footer";
 import TftProfileHeader from "@/components/tft/TftProfileHeader";
 import TftMatchItem from "@/components/tft/TftMatchItem";
 import { TftRankedStatsSection } from "@/components/tft/TftRankedStatsSection";
 import { TftTeamPlanner } from "@/components/tft/TftTeamPlanner";
 import { AlertCircle, Gamepad2, Loader2, Anvil, Clock, Award, Target } from 'lucide-react';
-import NavbarTft from '@/components/navbartft';
+import NavbarTft from '@/components/NavbarTft';
 
 export default function TftProfilePage() {
   const params = useParams();

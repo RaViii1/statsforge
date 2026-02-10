@@ -5,8 +5,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import Footer from "@/components/footer";
-import NavbarTft from "@/components/navbartft";
+import Footer from "@/components/Footer";
+import NavbarTft from "@/components/NavbarTft";
 import { CurrentSetNumber } from "@/lib/tft/champions";
 
 const SERVERS = [

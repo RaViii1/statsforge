@@ -3,14 +3,14 @@
 import { use, useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import Footer from "@/components/footer";
+import Footer from "@/components/Footer";
 import { CurrentSetNumber, getCostBorderColor } from "@/lib/tft/champions";
 import { getTFTUnitIcon, getTFTItemIcon, getTFTTraitIcon, getTFTUnitSplash } from "@/lib/tft/tftfunctions";
 import { TRAIT_DESCRIPTIONS } from "@/lib/tft/tftTraits";
 import SvgIcon from "@/components/SvgIcon";
 import { TFTChampion } from "@/lib/tft/champions";
-import Navbar from "@/components/navbar";
-import NavbarTft from "@/components/navbartft";
+import Navbar from "@/components/Navbar";
+import NavbarTft from "@/components/NavbarTft";
 
 type SvgIconType = 'ap' | 'dmg' | 'health' | 'armor' | 'mr' | 'crit' | 'attackspeed' | 'mana' | 'dps' | 'gold';
 

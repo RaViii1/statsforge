@@ -25,10 +25,10 @@ import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, Me
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
-import Footer from '@/components/footer';
+import Footer from '@/components/Footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
-import NavbarTft from '@/components/navbartft';
+import NavbarTft from '@/components/NavbarTft';
 
 
 const PHASE_CONFIG: Record<PhaseKey, { label: string; color: string; accentColor: string; icon: React.ReactNode; desc: string }> = {

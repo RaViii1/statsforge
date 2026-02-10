@@ -1,11 +1,11 @@
 "use client";
 
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import MultiSearch from "@/components/lol/MultiSearch";
 import { Users, ArrowRight } from "lucide-react";
-import NavbarLoL from "@/components/navbarlol";
-import LolBanner from "@/components/lolbaner";
+import NavbarLoL from "@/components/NavbarLol";
+import LolBanner from "@/components/LolBaner";
 
 export default function MultiSearchPage() {
   return (
