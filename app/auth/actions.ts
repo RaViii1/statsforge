@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 export async function login(formData: FormData) {
   const { createClient } = await import('@/lib/supabase/server')
@@ -46,7 +47,12 @@ export async function signup(formData: FormData) {
     username: formData.get('username') as string,
   }
 
-  console.log('Attempting signup for:', data.email)
+  const headersList = await headers()
+  const host = headersList.get('x-forwarded-host') || headersList.get('host') || 'localhost:3000'
+  const protocol = headersList.get('x-forwarded-proto') || 'http'
+  const origin = `${protocol}://${host}`
+
+  console.log('Attempting signup for:', data.email, 'with redirect to:', `${origin}/auth/callback`)
     const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -56,7 +62,7 @@ export async function signup(formData: FormData) {
           display_name: data.username,
           full_name: data.username,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+        emailRedirectTo: `${origin}/auth/callback`,
       },
     })
 
