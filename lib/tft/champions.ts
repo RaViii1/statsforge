@@ -64,24 +64,58 @@ export interface TFTChampion {
 }
 
 
-export const getChampionById = (characterId: string): TFTChampion | undefined => {
+export const getChampionById = (characterId: string, champions?: TFTChampion[]): TFTChampion | undefined => {
+  if (champions) {
+    return champions.find(c => c.id === characterId);
+  }
   return SET_16_CHAMPIONS.find(c => c.id === characterId);
 };
 
-export const getChampionCost = (characterId: string): number => {
-  return SET_16_CHAMPIONS.find(c => c.id === characterId)?.cost || 1;
+export const getChampionCost = (characterId: string, champions?: TFTChampion[]): number => {
+  if (champions) {
+    const foundChampion = champions.find(c => c.id === characterId);
+    console.log('getChampionCost - champions array search:', {
+      characterId,
+      foundChampion,
+      availableIds: champions.map(c => c.id)
+    });
+    if (foundChampion) {
+      return foundChampion.cost;
+    }
+  }
+  
+  const set16Champion = SET_16_CHAMPIONS.find(c => c.id === characterId);
+  if (set16Champion) {
+    console.log('getChampionCost - SET_16_CHAMPIONS search:', {
+      characterId,
+      foundChampion: set16Champion
+    });
+    return set16Champion.cost;
+  }
+  
+  console.log('getChampionCost - no champion found, returning default 1:', characterId);
+  return 1;
 };
 
-export const getChampionBestItems = (characterId: string): TFTItem[] => {
+export const getChampionBestItems = (characterId: string, champions?: TFTChampion[]): TFTItem[] => {
+  if (champions) {
+    return champions.find(c => c.id === characterId)?.tft_champion_best_items || [];
+  }
   return SET_16_CHAMPIONS.find(c => c.id === characterId)?.tft_champion_best_items || [];
 };
 
-export const getChampionStats = (characterId: string): TFTChampion['stats'] | undefined => {
+export const getChampionStats = (characterId: string, champions?: TFTChampion[]): TFTChampion['stats'] | undefined => {
+  if (champions) {
+    return champions.find(c => c.id === characterId)?.stats;
+  }
   return SET_16_CHAMPIONS.find(c => c.id === characterId)?.stats;
 };
 
-export const getChampionAbility = (characterId: string): TFTChampion['ability'] => {
-  return SET_16_CHAMPIONS.find(c => c.id === characterId)?.ability
+export const getChampionAbility = (characterId: string, champions?: TFTChampion[]): TFTChampion['ability'] => {
+  if (champions) {
+    return champions.find(c => c.id === characterId)?.ability;
+  }
+  return SET_16_CHAMPIONS.find(c => c.id === characterId)?.ability;
 }
 
 export const getCostColor = (cost: number): string => {

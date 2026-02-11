@@ -17,12 +17,23 @@ export async function login(formData: FormData) {
 
   if (error) {
     console.error('Login error:', error.message)
-    return redirect('/login?error=' + encodeURIComponent(error.message))
+    const redirectUrl = formData.get('redirect') as string | undefined
+    const errorUrl = redirectUrl 
+      ? `/login?error=${encodeURIComponent(error.message)}&redirect=${encodeURIComponent(redirectUrl)}`
+      : `/login?error=${encodeURIComponent(error.message)}`
+    return redirect(errorUrl)
   }
 
   console.log('Login successful for:', authData.user?.email)
+  
+  const redirectUrl = formData.get('redirect') as string | undefined
+  const targetUrl = redirectUrl || '/'
+  
+  // Clear all caches to ensure fresh data is loaded
   revalidatePath('/', 'layout')
-  redirect('/')
+  revalidatePath('/', 'page')
+  
+  redirect(targetUrl)
 }
 
 export async function signup(formData: FormData) {

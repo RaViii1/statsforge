@@ -246,7 +246,10 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
 
     setLoading(true);
     try {
-      const id = formData.id || formData.name.toLowerCase().replace(/\s+/g, "-");
+      // Get the selected set's number from the sets array
+      const selectedSet = sets.find(s => s.id === formData.set_id);
+      const setNumber = selectedSet?.set_number || 16; // Default to 16 if not found
+      const id = formData.id || `${setNumber}_${formData.name.toLowerCase().replace(/\s+/g, "_")}`;
       
       const res = await fetch("/api/admin/champions", {
         method: "POST",

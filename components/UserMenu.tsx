@@ -1,45 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
 import { User, LogOut, ChevronDown } from 'lucide-react'
 import { signOut } from '@/app/auth/actions'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function UserMenu() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const [userName, setUserName] = useState<string | null>(null)
-  const supabase = createClient()
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-      
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, username')
-          .eq('id', user.id)
-          .single()
-        
-        setUserRole(profile?.role ?? "user")
-        setUserName(profile?.username ?? user?.email?.split('@')[0] ?? "User")
-      }
-    }
-
-    getUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+  const { user, loading, userRole, userName } = useAuth()
 
   if (loading) return <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" /> 
 

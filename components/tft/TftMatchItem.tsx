@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Users, Clock, Star, Coins, Skull, Trophy, Sword } from "lucide-react";
+import { TFTItem } from "@/lib/tft/itemstft";
 import { 
     ParticipantDto, 
     getTFTUnitIcon, 
@@ -28,8 +29,26 @@ interface TFTMatchCardProps {
 export default function TFTMatchCard({ match, puuid }: TFTMatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [rankedDataMap, setRankedDataMap] = useState<Record<string, any>>({});
+  const [items, setItems] = useState<TFTItem[]>([]);
   const playerData = match.info.participants.find((p: ParticipantDto) => p.puuid === puuid);
   const server = match.metadata.match_id.split('_')[0].toLowerCase();
+
+  // Fetch items from database on component mount
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const response = await fetch('/api/tft/items');
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch TFT items:', error);
+      }
+    };
+
+    fetchItems();
+  }, []);
   
   useEffect(() => {
     if (!isExpanded) return;
@@ -198,19 +217,23 @@ export default function TFTMatchCard({ match, puuid }: TFTMatchCardProps) {
                         </div>
 
                         <div className="flex justify-center">
-                          {unit.itemNames?.slice(0, 3).map((itemName: string, i: number) => (
-                            <div 
-                              key={i} 
-                              className="w-3.5 h-3.5 rounded overflow-hidden bg-zinc-950 border border-zinc-800"
-                              title={itemName}
-                            >
-                              <img 
-                                src={getTFTItemIcon(itemName)} 
-                                alt={itemName}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
+                          {unit.itemNames?.slice(0, 3).map((itemName: string, i: number) => {
+                            const item = items.find(it => it.Riot_Api_Name === itemName);
+                            return (
+                              <div 
+                                key={i} 
+                                className="w-3.5 h-3.5 rounded overflow-hidden bg-zinc-950 border border-zinc-800"
+                                title={item?.name || itemName.replace("TFT_Item_", "").replace(/_/g, " ")}
+                              >
+                                <img 
+                                  src={item?.image_path || '/images/noitem.png'} 
+                                  alt={ itemName} //item?.name ||
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                     </div>
                   </div>
@@ -359,22 +382,26 @@ export default function TFTMatchCard({ match, puuid }: TFTMatchCardProps) {
                                 />
                               </div>
                               
-                              {/* Items - below unit, 3 items fit */}
-                              <div className="flex justify-center">
-                                {unit.itemNames?.slice(0, 3).map((itemName: string, i: number) => (
-                                  <div 
-                                    key={i} 
-                                    className="w-4 h-4 rounded overflow-hidden bg-zinc-950 border border-zinc-800"
-                                    title={itemName.replace("TFT_Item_", "").replace(/_/g, " ")}
-                                  >
-                                    <img 
-                                      src={getTFTItemIcon(itemName)} 
-                                      alt={itemName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
+                               {/* Items - below unit, 3 items fit */}
+                               <div className="flex justify-center">
+                                 {unit.itemNames?.slice(0, 3).map((itemName: string, i: number) => {
+                                   const item = items.find(it => it.Riot_Api_Name === itemName);
+                                   return (
+                                     <div 
+                                       key={i} 
+                                       className="w-4 h-4 rounded overflow-hidden bg-zinc-950 border border-zinc-800"
+                                       title={item?.name || itemName}
+                                     >
+                                       <img 
+                                         src={item?.image_path || '/images/noitem.png'} 
+                                         alt={item?.name || itemName}
+                                         className="w-full h-full object-cover"
+                                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
+                                       />
+                                     </div>
+                                   );
+                                 })}
+                               </div>
                             </div>
                           ))}
                         </div>

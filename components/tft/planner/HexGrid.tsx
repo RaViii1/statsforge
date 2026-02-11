@@ -52,7 +52,16 @@ export const HexGrid = ({
           {[0, 1, 2, 3].map(row => [0, 1, 2, 3, 4, 5, 6].map(col => {
             const unit = units.find(u => u.row === row && u.col === col);
             const champ = unit ? champions.find(c => c.id === unit.characterId) : undefined;
-            const cost = champ?.cost || 1;
+            const cost = unit ? getChampionCost(unit.characterId, champions) : 1;
+            
+            // Debug logs
+            if (unit) {
+              console.log('=== HexGrid Unit Debug ===');
+              console.log('Unit characterId:', unit.characterId);
+              console.log('Found champ:', champ);
+              console.log('Calculated cost:', cost);
+              console.log('Champions array:', champions);
+            }
             const isOffset = row % 2 !== 0;
             const isActive = selectedHex?.row === row && selectedHex?.col === col;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);

@@ -26,6 +26,7 @@ export interface TFTItem {
   is_seasonal?: boolean;
   created_at?: string;
   build_path?: string[]; // Array of component item IDs that build into this item
+  Riot_Api_Name?: string;
 }
 
 export const itemstft: TFTItem[] = [

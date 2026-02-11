@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { ALL_TRAITS, TFTChampion, TFTSet } from '@/lib/tft/champions';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
@@ -63,7 +64,7 @@ const createEmptyTeam = (setId: number = 0, setNumber: number = 16): TeamComp =>
 
 export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
+  const { user, userRole, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [currentTeam, setCurrentTeam] = useState<TeamComp | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -101,13 +102,11 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   // Load initial data (sets + items only)
   useEffect(() => {
     async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
+      if (user) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .single();
         setProfile(profileData);
       }
@@ -133,7 +132,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     }
     
     init();
-  }, []);
+  }, [user]);
 
   // Refetch champions/traits when selectedSetId changes
   useEffect(() => {
@@ -305,9 +304,9 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const canEdit = useMemo(() => {
     if (!currentTeam) return false;
     if (!isEditMode) return true;
-    if (profile?.role === 'admin') return true;
+    if (userRole === 'admin') return true;
     return user && currentTeam.user_id === user.id;
-  }, [user, profile, currentTeam, isEditMode]);
+  }, [user, userRole, currentTeam, isEditMode]);
 
   const [isSaving, setIsSaving] = useState(false);
 

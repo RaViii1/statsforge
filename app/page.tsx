@@ -4,17 +4,18 @@ import { motion } from "framer-motion";
 import { 
   TrendingUp, Bell, Calendar, Shield, BarChart3, Target, 
   Eye, PieChart, Activity, Flame, ChevronRight, 
-  Award, Trophy, Cpu, Zap, Box
+  Award, Trophy, Cpu, Zap, Box, User
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { useAuth } from '@/contexts/AuthContext';
 
 const featuredGames = [
   {
     title: "League of Legends",
     category: "MOBA",
-    image: "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Ahri_0.jpg",
+    image: "/images/Ahri.webp",
     link: "/lol",
     accent: "orange"
     
@@ -22,7 +23,7 @@ const featuredGames = [
     {
     title: "TFT",
     category: "Auto Chess",
-    image: "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news/12210015038f15148d157c5a4facdd8bd5cb5e78-1232x978.png?auto=format&fit=fill&q=80&w=720",
+    image: "/images/pengu.webp",
     link: "/tft",
     accent: "green",
     Badge: true,
@@ -31,7 +32,7 @@ const featuredGames = [
   {
     title: "CS2",
     category: "FPS",
-    image: "/images/cs2.png",
+    image: "/images/cs2.webp",
     link: "/cs2",
     accent: "orange",
     Badge: true,
@@ -40,7 +41,7 @@ const featuredGames = [
   {
     title: "Valorant",
     category: "Tactical FPS",
-    image: "https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/e89ed4f29436931ec80e58d85def28cb1df0e8b1-3440x1020.png?auto=format&fit=fill&q=80&h=640",
+    image: "/images/Valorant.webp",
     link: "/valorant",
     accent: "orange",
     Badge: true,
@@ -137,6 +138,8 @@ const containerVariants = {
 
 
 export default function Home() {
+  const { user, userName } = useAuth();
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-300 selection:bg-orange-500/30 overflow-x-hidden font-sans">
 
@@ -180,13 +183,24 @@ export default function Home() {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-6">
-                  <Link href="/register" className="group relative px-10 py-5 rounded-xl bg-orange-500 text-white font-black uppercase tracking-widest overflow-hidden transition-all hover:scale-105 shadow-lg shadow-orange-500/20">
-                    <span className="relative z-10 flex items-center gap-2">
-                      Login Now<ChevronRight className="w-4 h-4" />
-                    </span>
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                  </Link>
-                    <Link href="#games" className="group relative px-10 py-5 rounded-xl bg-white text-black hover:text-white font-black uppercase tracking-widest overflow-hidden transition-all hover:scale-105 shadow-lg shadow-white/20">
+                  {!user ? (
+                    <Link href="/register" className="group relative px-10 py-5 rounded-xl bg-orange-500 text-white font-black uppercase tracking-widest overflow-hidden transition-all hover:scale-105 shadow-lg shadow-orange-500/20">
+                      <span className="relative z-10 flex items-center gap-2">
+                        Login Now<ChevronRight className="w-4 h-4" />
+                      </span>
+                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-3 pr-8 py-4 rounded-xl transition-all">
+                      <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+                        <User className="w-4 h-4 text-orange-500" />
+                      </div>
+                      <span className="text-white text-2xl font-bold uppercase tracking-wider">
+                        Welcome, <span className="text-orange-500">{userName}</span>!
+                      </span>
+                    </div>
+                  )}
+                  <Link href="#games" className="group relative px-10 py-5 rounded-xl bg-white text-black hover:text-white font-black uppercase tracking-widest overflow-hidden transition-all hover:scale-105 shadow-lg shadow-white/20">
                     <span className="relative z-10 flex items-center gap-2">
                       Games <ChevronRight className="w-4 h-4" />
                     </span>
@@ -377,29 +391,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* Social Proof: Network Integrity
-        <section className="py-48 bg-zinc-950 border-y border-zinc-900">
-          <div className="container mx-auto px-6">
-            <div className="grid md:grid-cols-3 gap-24">
-              <div className="space-y-8 group">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500/5 border border-orange-500/10 flex items-center justify-center group-hover:border-orange-500/30 transition-all">
-                  <Eye className="w-8 h-8 text-orange-500" />
-                </div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Active Surveillance</h3>
-                <p className="text-zinc-500 text-lg leading-relaxed font-light italic">Continuous monitoring of competitive data nodes ensures accuracy for elite tracking.</p>
-              </div>
-              <div className="space-y-8 group">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-orange-500/5 border border-orange-500/10 flex items-center justify-center group-hover:border-orange-500/30 transition-all">
-                  <Trophy className="w-8 h-8 text-orange-500" />
-                </div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Permanent Registry</h3>
-                <p className="text-zinc-500 text-lg leading-relaxed font-light italic">Every competitive milestone is etched into our immutable database, creating a verifiable gaming legacy.</p>
-              </div>
-            </div>
-          </div>
-        </section> */}
-
         
         <section className="py-48 relative overflow-hidden bg-zinc-950 border-t border-zinc-900 group/cta">
           

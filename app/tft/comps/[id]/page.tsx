@@ -30,6 +30,9 @@ import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
 import NavbarTft from '@/components/NavbarTft';
 
+import { createClient } from '@/lib/supabase/client';
+
+
 
 const PHASE_CONFIG: Record<PhaseKey, { label: string; color: string; accentColor: string; icon: React.ReactNode; desc: string }> = {
   early: { 
@@ -124,7 +127,7 @@ const ReadOnlyHexGrid = ({
             const unit = units.find(u => u.row === row && u.col === col);
             const isOffset = row % 2 !== 0;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
-            const cost = unit ? getChampionCost(unit.characterId) : 1;
+            const cost = unit ? getChampionCost(unit.characterId, champions) : 1;
             const champ = unit ? champions.find(c => c.id === unit.characterId) : null;
             
             return (
@@ -216,8 +219,6 @@ const ReadOnlyHexGrid = ({
 };
 
 
-import { createClient } from '@/lib/supabase/client';
-
 export default function CompDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const [comp, setComp] = useState<TeamComp | null>(null);
@@ -234,14 +235,16 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
           fetch('/api/tft/champions'),
           fetch('/api/tft/items')
         ]);
-
+        console.log("API responses:",  champsRes);
+        
         if (!compRes.ok) throw new Error('Failed to fetch comp');
         
-        const { comp, phases, steps, units } = await compRes.json();
-        
-        if (champsRes.ok) setChampions(await champsRes.json());
-        if (itemsRes.ok) setItems(await itemsRes.json());
-
+         const { comp, phases, steps, units } = await compRes.json();
+         
+         const champsData = champsRes.ok ? await champsRes.json() : [];
+         const itemsData = itemsRes.ok ? await itemsRes.json() : [];
+         setChampions(champsData);
+         setItems(itemsData);
         const teamPhases: Record<PhaseKey, any> = {
           early: { units: [], notes: '' },
           mid: { units: [], notes: '' },
@@ -270,7 +273,6 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
 
         setComp({
           id: comp.id,
-          set_id: comp.set_id,
           name: comp.name,
           description: comp.description || '',
           patch: comp.patch || '16.1',
@@ -328,12 +330,12 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
   const presetName = getPresetName(comp.activePresetId);
 
   const finalUnits = comp.phases.final.units;
-  const carries = comp.mainCarryIds
-    .map(id => {
-      const unit = finalUnits.find(u => u.characterId === id);
-      return unit ? { unit, cost: getChampionCost(id) } : null;
-    })
-    .filter(Boolean) as { unit: UnitPosition; cost: number }[];
+     const carries = comp.mainCarryIds
+      .map(id => {
+        const unit = finalUnits.find(u => u.characterId === id);
+        return unit ? { unit, cost: getChampionCost(id, champions) } : null;
+      })
+      .filter(Boolean) as { unit: UnitPosition; cost: number }[];
 
   const carryItems = carries.flatMap(c => c.unit.items);
   const priorityItems = [...new Set(carryItems)];

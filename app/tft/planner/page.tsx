@@ -1,19 +1,29 @@
-"use client";
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Footer from '@/components/Footer';
 import { TftTeamPlanner } from '@/components/tft/TftTeamPlanner';
 import NavbarTft from '@/components/NavbarTft';
 
-function PlannerContent() {
-  const searchParams = useSearchParams();
-  const editId = searchParams?.get('edit') ??null;
+// Server-side authentication check
+export default async function PlannerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>
+}) {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
   
-  return <TftTeamPlanner key={editId || 'new'} editId={editId} />;
-}
+  const params = await searchParams;
+  const editId = params?.edit ?? null;
 
-export default function PlannerPage() {
+  if (!session?.user) {
+    const redirectUrl = editId 
+      ? `/tft/planner?edit=${editId}`
+      : '/tft/planner';
+    redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -24,17 +34,10 @@ export default function PlannerPage() {
       <NavbarTft />
 
       <main className="relative max-w-[1800px] mx-auto px-4 sm:px-6 py-8">
-        <Suspense fallback={
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        }>
-          <PlannerContent />
-        </Suspense>
+        <TftTeamPlanner editId={editId} key={editId || 'new'} />
       </main>
 
       <Footer />
     </div>
   );
 }
-
