@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { User, LogOut, ChevronDown } from 'lucide-react'
-import { signOut } from '@/app/auth/actions'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const { user, loading, userRole, userName } = useAuth()
+  const router = useRouter()
 
   if (loading) return <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" /> 
 
@@ -64,10 +67,14 @@ export default function UserMenu() {
               <p className="text-sm text-zinc-300 truncate">{user.email}</p>
             </div>
             <button
-              onClick={() => {
-                signOut()
-                setIsOpen(false)
-              }}
+                onClick={async () => {
+                    setIsOpen(false)
+                    const supabase = createClient()
+                    await supabase.auth.signOut()
+                    toast.success('Signed out successfully!')
+                    router.push('/')
+                    router.refresh()
+                  }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-lg transition-all"
             >
               <LogOut className="w-4 h-4" />
