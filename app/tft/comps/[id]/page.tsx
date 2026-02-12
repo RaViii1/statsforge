@@ -23,6 +23,7 @@ import {
 import { getTFTUnitIcon, getTFTItemIcon, copyToClipboard } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, MetaTier } from '@/lib/tft/teamplanner-types';
 import { getItemDescription } from '@/lib/tft/itemstft';
+import { CustomTooltip } from '@/components/tft/planner';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Footer from '@/components/Footer';
@@ -31,6 +32,7 @@ import { toast } from 'sonner';
 import NavbarTft from '@/components/NavbarTft';
 
 import { createClient } from '@/lib/supabase/client';
+import SvgIcon from '@/components/SvgIcon';
 
 
 
@@ -187,7 +189,7 @@ const ReadOnlyHexGrid = ({
                             return (
                               <div 
                                 key={i} 
-                                className="w-5 h-5 rounded-md border border-zinc-700 overflow-hidden bg-zinc-900 cursor-help hover:scale-150 hover:z-10 transition-all duration-300 shadow-xl"
+                                className="w-5 h-5 rounded-md border border-zinc-700 overflow-hidden bg-zinc-900  hover:scale-150 hover:z-10 transition-all duration-300 shadow-xl"
                                 onMouseEnter={(e) => setTooltip({ 
                                   visible: true, 
                                   title: item, 
@@ -432,7 +434,10 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                             <div className="flex-1">
                               <p className="font-black text-white uppercase tracking-tight text-lg italic">{champ?.name || unit.name}</p>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{cost} Gold</span>
+                                 <div className="flex items-center gap-1 text-[12px] font-bold text-zinc-500 uppercase tracking-widest">
+                                   <span className='font-black'>{cost}</span>
+                                   <SvgIcon type="gold" className="text-yellow-500" size={12} />
+                                 </div>
                               </div>
                             </div>
                         {unit.items.length > 0 && (
@@ -442,7 +447,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                               return (
                                 <div 
                                   key={idx} 
-                                  className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden cursor-help hover:scale-125 transition-all shadow-xl"
+                                  className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 overflow-hidden  hover:scale-125 transition-all shadow-xl"
                                   onMouseEnter={(e) => setTooltip({ 
                                     visible: true, 
                                     title: item, 
@@ -484,7 +489,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                       return (
                         <div key={idx} className="flex items-center gap-4">
                           <div 
-                            className="relative w-14 h-14 rounded-2xl bg-zinc-800 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
+                            className="relative w-14 h-14 rounded-2xl bg-zinc-800 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all  shadow-2xl group"
                             onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY })}
                             onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                           >
@@ -649,14 +654,15 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
       <Footer />
  
       {tooltip.visible && (
-        <div 
-          className="fixed z-[100] pointer-events-none bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl max-w-[280px] transform-gpu transition-transform animate-in fade-in zoom-in duration-200"
-          style={{ left: tooltip.x + 20, top: tooltip.y + 20 }}
-        >
-          <div className="absolute -top-2 -left-2 w-4 h-4 bg-orange-500 rounded-full opacity-20 blur-sm" />
-          <p className="font-black text-white text-xs mb-2 uppercase tracking-tight italic border-b border-white/10 pb-2">{tooltip.title}</p>
-          <p className="text-[10px] text-zinc-400 font-medium leading-relaxed tracking-tight uppercase opacity-80">{tooltip.description}</p>
-        </div>
+        <CustomTooltip 
+          visible={tooltip.visible}
+          title={tooltip.title}
+          description={tooltip.description}
+          x={tooltip.x}
+          y={tooltip.y}
+          item={items.find(it => it.name === tooltip.title)}
+          allItems={items}
+        />
       )}
 
       <style jsx global>{`

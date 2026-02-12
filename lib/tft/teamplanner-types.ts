@@ -104,12 +104,16 @@ export interface TeamComp {
   user_id: string;
 }
 
+import { TFTItem } from "@/lib/tft/itemstft";
+
 export interface TooltipState {
   visible: boolean;
   title: string;
   description: string;
   x: number;
   y: number;
+  item?: TFTItem;
+  allItems?: TFTItem[];
 }
 
 export const generatePatchesForSet = (setNumber: number): string[] => {

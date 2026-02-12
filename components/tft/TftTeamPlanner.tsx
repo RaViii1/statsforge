@@ -137,11 +137,11 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   // Refetch champions/traits when selectedSetId changes
   useEffect(() => {
     if (!selectedSetId) {
-      console.log('selectedSetId is null, skipping fetch');
+      // console.log('selectedSetId is null, skipping fetch');
       return;
     }
     
-    console.log('selectedSetId changed to:', selectedSetId, 'fetching champions and traits...');
+    // console.log('selectedSetId changed to:', selectedSetId, 'fetching champions and traits...');
     
     const loadSetData = async () => {
       try {
@@ -152,7 +152,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
         if (champsRes.ok) {
           const champsData = await champsRes.json();
-          console.log('Fetched champions:', champsData.length);
+          // console.log('Fetched champions:', champsData.length);
           setChampions(champsData);
           // Clear search/traits when champions change
           setSearchQuery('');
@@ -164,7 +164,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
         
         if (traitsRes.ok) {
           const traitsData = await traitsRes.json();
-          console.log('Fetched traits:', traitsData.length);
+          // console.log('Fetched traits:', traitsData.length);
           setAllTraits(traitsData.map((t: any) => t.name));
         } else {
           console.error('Failed to fetch traits:', traitsRes.status);
@@ -184,8 +184,8 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       
       const { comp, phases, steps, units } = await res.json();
       
-      console.log('Fetched team comp:', comp);
-      console.log('Set ID from team comp:', comp.set_id);
+      // console.log('Fetched team comp:', comp);
+      // console.log('Set ID from team comp:', comp.set_id);
 
       const teamPhases: Record<PhaseKey, TeamPhase> = {
         early: { units: [], notes: '' },
@@ -236,7 +236,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
       
       if (team.set_id) {
-        console.log('Setting selectedSetId to:', team.set_id);
+        // console.log('Setting selectedSetId to:', team.set_id);
         setSelectedSetId(team.set_id);
       }
 
@@ -488,11 +488,31 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     updateTeam({ levelingSteps: newSteps });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (tooltip.visible) {
-      setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }));
-    }
-  };
+  // Handle window scroll to hide tooltip
+  useEffect(() => {
+    const handleScroll = () => {
+      if (tooltip.visible) {
+        setTooltip(prev => ({ ...prev, visible: false }));
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (tooltip.visible) {
+        setTooltip(prev => ({ 
+          ...prev, 
+          x: e.clientX, 
+          y: e.clientY 
+        }));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [tooltip.visible]);
 
   const handleSetChange = useCallback((setId: number) => {
     if (!isEditMode) {  
@@ -545,7 +565,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
           Back to Comps
         </Link>
       </div>
-      <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500" onMouseMove={handleMouseMove}>
+      <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500">
         <CustomTooltip {...tooltip} />
         <div className="flex items-center gap-4 justify-between px-6 py-4 bg-white/2 border-b border-white/5">
           <span className="text-[11px] font-black text-orange-500 tracking-[0.2em]">

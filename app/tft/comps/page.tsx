@@ -26,9 +26,10 @@ import Footer from '@/components/Footer';
 import { CurrentSetNumber, getChampionCost, getCostBorderColor, SET_16_CHAMPIONS } from '@/lib/tft/champions';
 import { HexGrid } from '@/components/tft/planner'; 
 import { getItemDescription } from '@/lib/tft/itemstft';
+import { CustomTooltip } from '@/components/tft/planner';
 import { getDifficultyConfig, DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
 import NavbarTft from '@/components/NavbarTft';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const getPresetStyle = (presetId: string | undefined) => {
@@ -116,17 +117,19 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
     <>
     
       {tooltip.visible && (
-        <div 
-          className="fixed z-100 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl pointer-events-none"
-          style={{ left: tooltip.x + 10, top: tooltip.y + 10 }}
-        >
-          <p className="text-sm font-bold text-white">{tooltip.title}</p>
-          <p className="text-xs text-zinc-400 max-w-[200px]">{tooltip.description}</p>
-        </div>
+        <CustomTooltip 
+          visible={tooltip.visible}
+          title={tooltip.title}
+          description={tooltip.description}
+          x={tooltip.x}
+          y={tooltip.y}
+          item={items.find(it => it.name === tooltip.title)}
+          allItems={items}
+        />
       )}
       <div 
         
-        className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all cursor-pointer"
+        className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all"
       >
         <div className="p-5">
           <div className="flex items-center gap-6">
@@ -156,7 +159,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               </div>
             </div>
             {carries.length > 0 && (
-              <div className="shrink-0 flex items-center gap-1 border border-r-orange-500/40 pr-4">
+              <div className="shrink-0 flex items-center gap-1 border-r border-r-orange-500/40 pr-4">
                 {carries.map(({ unit, cost }, i) => {
                   const champ = champions.find(c => c.id === unit.characterId);
                   return (
@@ -168,12 +171,25 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      {unit.items.length > 0 && (
+                       {unit.items.length > 0 && (
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                           {unit.items.slice(0, 3).map((item, idx) => {
                             const itemObj = items.find(it => it.name === item);
                             return (
-                              <div key={idx} className="w-4 h-4 rounded bg-zinc-800 border border-zinc-600 overflow-hidden">
+                              <div 
+                                key={idx} 
+                                className="w-4 h-4 rounded bg-zinc-800 border border-zinc-600 overflow-hidden "
+                                onMouseEnter={(e) => setTooltip({ 
+                                  visible: true, 
+                                  title: item, 
+                                  description: itemObj?.description || 'No description', 
+                                  x: e.clientX, 
+                                  y: e.clientY,
+                                  item: itemObj,
+                                  allItems: items
+                                })}
+                                onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                              >
                                 <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
                               </div>
                             );
@@ -193,7 +209,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               </div>
             )}
 
-            <div className="flex-1 flex items-center gap-2 overflow-hidden">
+            <div className="flex-1 flex items-center gap-2 overflow-hidden p-2">
               {finalUnits.map((unit, i) => {
                 const cost = getChampionCost(unit.characterId);
                 const isCarry = comp.mainCarryIds.includes(unit.characterId);
@@ -208,18 +224,31 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    {unit.items.length > 0 && (
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
-                        {unit.items.slice(0, 3).map((item, idx) => {
-                          const itemObj = items.find(it => it.name === item);
-                          return (
-                            <div key={idx} className="w-3.5 h-3.5 rounded-sm bg-zinc-800 border border-zinc-600 overflow-hidden">
-                              <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                     {unit.items.length > 0 && (
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
+                          {unit.items.slice(0, 3).map((item, idx) => {
+                            const itemObj = items.find(it => it.name === item);
+                            return (
+                              <div 
+                                key={idx} 
+                                className="w-3.5 h-3.5 rounded-sm bg-zinc-800 border border-zinc-600 overflow-hidden "
+                                onMouseEnter={(e) => setTooltip({ 
+                                  visible: true, 
+                                  title: item, 
+                                  description: itemObj?.description || 'No description', 
+                                  x: e.clientX, 
+                                  y: e.clientY,
+                                  item: itemObj,
+                                  allItems: items
+                                })}
+                                onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                              >
+                                <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     {unit.stars >= 3 && (
                       <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 flex">
                         {[...Array(3)].map((_, i) => (
@@ -236,14 +265,14 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <Link href={`/tft/comps/${comp.id}`} onClick={(e) => e.stopPropagation()}>
+              <Link href={`/tft/comps/${comp.id}`} onClick={(e) => e.stopPropagation()} prefetch={false}>
                 <button data-action="view" className="w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-500 flex items-center justify-center transition-colors">
                   <Eye className="w-5 h-5 text-white" />
                 </button>
               </Link>
               {canEdit && (
                 <>
-                  <Link href={`/tft/planner?edit=${comp.id}`} onClick={(e) => e.stopPropagation()}>
+                  <Link href={`/tft/planner?edit=${comp.id}`} onClick={(e) => e.stopPropagation()} prefetch={false}>
                     <button data-action="edit" className="w-10 h-10 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center transition-colors">
                       <Pencil className="w-4 h-4 text-white" />
                     </button>
@@ -327,7 +356,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                                   <div 
                                     key={idx} 
                                     className="w-6 h-6 rounded bg-zinc-700 border border-zinc-600 overflow-hidden"
-                                    onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY })}
+                                    onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                                     onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                   >
                                     <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
@@ -354,8 +383,8 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                     return (
                       <div key={idx} className="flex items-center gap-4">
                         <div 
-                          className="relative w-10 h-10 rounded-2xl bg-zinc-800/50 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all cursor-help shadow-2xl group"
-                          onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY })}
+                          className="relative w-10 h-10 rounded-2xl bg-zinc-800/50 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all  shadow-2xl group"
+                           onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                           onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                         >
                           <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
@@ -430,25 +459,14 @@ export default function TeamCompsPage() {
   const [filter, setFilter] = useState<DifficultyLevel | 'all'>('all');
   const [tierFilter, setTierFilter] = useState<MetaTier | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<{ id: string; role?: string } | null>(null);
   const [activeSets, setActiveSets] = useState<any[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+  
+  const { user, userRole, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchUserAndComps = async () => {
       try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-          
-          setUser({ id: session.user.id, role: profile?.role });
-        }
 
         // Fetch active sets
         const setsRes = await fetch('/api/tft/active-sets');
@@ -470,14 +488,17 @@ export default function TeamCompsPage() {
 
         if (compsRes.ok) {
           const data = await compsRes.json();
+          // console.log('Fetched comps:', data);
           setTeamComps(data);
         }
         if (champsRes.ok) {
           const data = await champsRes.json();
+          // console.log('Fetched champions:', data);
           setChampions(data);
         }
         if (itemsRes.ok) {
           const data = await itemsRes.json();
+          // console.log('Fetched items:', data);
           setItems(data);
         }
       } catch (error) {
@@ -685,7 +706,7 @@ export default function TeamCompsPage() {
         {filteredComps.length > 0 ? (
           <div className="space-y-4">
             {filteredComps.map((comp) => {
-              const isAdmin = user?.role === 'admin';
+              const isAdmin = userRole === 'admin';
               const isOwner = user?.id === comp.user_id;
               const canEdit = isAdmin || isOwner;
 
@@ -723,7 +744,7 @@ export default function TeamCompsPage() {
               <Link href="/tft/planner">
                 <button className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold transition-all">
                   <Plus className="w-5 h-5" />
-                  Create Your First Comp
+                  Create First Comp
                 </button>
               </Link>
             )}

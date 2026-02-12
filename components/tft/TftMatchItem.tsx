@@ -24,31 +24,14 @@ import TftTraitIcon from "./TftTraitIcon";
 interface TFTMatchCardProps {
   match: any;
   puuid: string;
+  items: TFTItem[];
 }
 
-export default function TFTMatchCard({ match, puuid }: TFTMatchCardProps) {
+export default function TFTMatchCard({ match, puuid, items }: TFTMatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [rankedDataMap, setRankedDataMap] = useState<Record<string, any>>({});
-  const [items, setItems] = useState<TFTItem[]>([]);
   const playerData = match.info.participants.find((p: ParticipantDto) => p.puuid === puuid);
   const server = match.metadata.match_id.split('_')[0].toLowerCase();
-
-  // Fetch items from database on component mount
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const response = await fetch('/api/tft/items');
-        if (response.ok) {
-          const data = await response.json();
-          setItems(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch TFT items:', error);
-      }
-    };
-
-    fetchItems();
-  }, []);
   
   useEffect(() => {
     if (!isExpanded) return;

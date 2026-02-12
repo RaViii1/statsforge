@@ -25,6 +25,7 @@ export default function TftProfilePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [items, setItems] = useState<any[]>([]);
   const offsetRef = useRef(0);
 
   const fetchRankedData = async (puuid: string) => {
@@ -91,10 +92,11 @@ export default function TftProfilePage() {
         const data = await response.json();
         setProfile(data);
 
-        // Parallel fetch matches and ranked data (13 = 10 + 3 extra rows)
+        // Parallel fetch matches, ranked data, and items (13 = 10 + 3 extra rows)
         await Promise.all([
           fetchMatches(data.puuid, 0, 13, false),
           fetchRankedData(data.puuid),
+          fetch('/api/tft/items').then(res => res.json()).then(data => setItems(data)),
         ]);
       } catch (err: any) {
         setError(err.message || "An error occurred");
@@ -261,8 +263,8 @@ export default function TftProfilePage() {
                 </div>
               ) : (
                 <>
-                  {matches.map((match) => (
-                    <TftMatchItem key={match.metadata.match_id} match={match} puuid={profile.puuid} />
+                   {matches.map((match) => (
+                    <TftMatchItem key={match.metadata.match_id} match={match} puuid={profile.puuid} items={items} />
                   ))}
                   
                   {hasMore && (
@@ -291,3 +293,4 @@ export default function TftProfilePage() {
     </div>
   );
 }
+

@@ -77,7 +77,22 @@ export default function TraitList({ initialTraits }: TraitListProps) {
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-bold text-white truncate">{trait.name}</h3>
                 <p className="text-xs text-zinc-500">Set {trait.tft_sets?.set_number} • {trait.tft_sets?.name}</p>
-                <p className="text-[10px] text-zinc-400 mt-2 line-clamp-2 italic">{trait.description}</p>
+                
+                {/* Trait Tiers */}
+                {trait.tft_trait_tiers && trait.tft_trait_tiers.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {trait.tft_trait_tiers.map((tier: any, index: number) => (
+                      <div key={index} className="text-[10px] text-zinc-400 truncate">
+                        <span className="font-semibold text-zinc-300">
+                          ({tier.units_required} units):
+                        </span>{" "}
+                        {tier.description}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-zinc-400 mt-2 line-clamp-2 italic">{trait.description}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">

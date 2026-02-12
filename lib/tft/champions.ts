@@ -17,11 +17,12 @@ export interface TFTTrait {
   description: string;
   icon_path: string;
   set_id: number;
+  champions?: any[];
 }
 
 export interface TFTTraitTier {
   id?: number;
-  trait_id: string;
+  trait_id?: string;
   tier: 'bronze' | 'silver' | 'gold' | 'prismatic';
   units_required: number;
   description: string;
@@ -74,11 +75,6 @@ export const getChampionById = (characterId: string, champions?: TFTChampion[]):
 export const getChampionCost = (characterId: string, champions?: TFTChampion[]): number => {
   if (champions) {
     const foundChampion = champions.find(c => c.id === characterId);
-    console.log('getChampionCost - champions array search:', {
-      characterId,
-      foundChampion,
-      availableIds: champions.map(c => c.id)
-    });
     if (foundChampion) {
       return foundChampion.cost;
     }
@@ -86,14 +82,10 @@ export const getChampionCost = (characterId: string, champions?: TFTChampion[]):
   
   const set16Champion = SET_16_CHAMPIONS.find(c => c.id === characterId);
   if (set16Champion) {
-    console.log('getChampionCost - SET_16_CHAMPIONS search:', {
-      characterId,
-      foundChampion: set16Champion
-    });
     return set16Champion.cost;
   }
   
-  console.log('getChampionCost - no champion found, returning default 1:', characterId);
+  // console.log('getChampionCost - no champion found, returning default 1:', characterId);
   return 1;
 };
 

@@ -6,7 +6,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tft_traits")
-    .select("*, tft_sets(name, set_number)")
+    .select("*, tft_sets(name, set_number), tft_trait_tiers(*)")
     .order("name", { ascending: true });
 
   if (error) {
@@ -17,28 +17,63 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const body = await request.json() as TFTTrait;
+  try {
+    const supabase = await createClient();
+    const body = await request.json() as TFTTrait;
 
-  const { id, name, set_id, icon_path, description } = body;
+    const { id, name, set_id, icon_path, description, tiers } = body;
+    // Ensure traitId is always a string
+    const traitId = String(id || `${set_id}_${name.toLowerCase().replace(/\s+/g, "_")}`);
 
-  const dbData = {
-    id: id || name.toLowerCase().replace(/\s+/g, "-"),
-    name,
-    set_id,
-    icon_path,
-    description
-  };
+    const dbData = {
+      id: traitId,
+      name,
+      set_id,
+      icon_path,
+      description
+    };
 
-  const { error } = await supabase
-    .from("tft_traits")
-    .upsert([dbData]);
+    // Upsert trait
+    const { error: traitError } = await supabase
+      .from("tft_traits")
+      .upsert([dbData]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (traitError) {
+      console.error("Trait upsert error:", traitError);
+      return NextResponse.json({ error: traitError.message }, { status: 500 });
+    }
+
+    // Upsert tiers
+    if (tiers && tiers.length > 0) {
+      const tierData = tiers.map(tier => ({
+        trait_id: traitId,
+        tier: tier.tier,
+        units_required: tier.units_required,
+        description: tier.description
+      }));
+
+      // Delete existing tiers first
+      await supabase
+        .from("tft_trait_tiers")
+        .delete()
+        .eq("trait_id", traitId);
+
+      // Insert new tiers
+      const { error: tiersError } = await supabase
+        .from("tft_trait_tiers")
+        .upsert(tierData);
+
+      if (tiersError) {
+        console.error("Tiers upsert error:", tiersError);
+        return NextResponse.json({ error: tiersError.message }, { status: 500 });
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("POST endpoint error:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: Request) {
@@ -50,6 +85,13 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "ID is required" }, { status: 400 });
   }
 
+  // Delete trait tiers first
+  await supabase
+    .from("tft_trait_tiers")
+    .delete()
+    .eq("trait_id", id);
+
+  // Delete trait
   const { error } = await supabase
     .from("tft_traits")
     .delete()

@@ -10,7 +10,7 @@ export default async function AdminTraitsPage() {
   
   const { data: traits } = await supabase
     .from("tft_traits")
-    .select("*, tft_sets(name, set_number)")
+    .select("*, tft_sets(name, set_number), tft_trait_tiers(*)")
     .order("name", { ascending: true });
 
   const { data: sets } = await supabase

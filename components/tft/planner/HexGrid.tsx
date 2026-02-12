@@ -55,13 +55,13 @@ export const HexGrid = ({
             const cost = unit ? getChampionCost(unit.characterId, champions) : 1;
             
             // Debug logs
-            if (unit) {
-              console.log('=== HexGrid Unit Debug ===');
-              console.log('Unit characterId:', unit.characterId);
-              console.log('Found champ:', champ);
-              console.log('Calculated cost:', cost);
-              console.log('Champions array:', champions);
-            }
+            // if (unit) {
+            //   console.log('=== HexGrid Unit Debug ===');
+            //   console.log('Unit characterId:', unit.characterId);
+            //   console.log('Found champ:', champ);
+            //   console.log('Calculated cost:', cost);
+            //   console.log('Champions array:', champions);
+            // }
             const isOffset = row % 2 !== 0;
             const isActive = selectedHex?.row === row && selectedHex?.col === col;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
@@ -141,7 +141,15 @@ export const HexGrid = ({
                                     src={itemObj?.image_path || '/images/noitem.png'} 
                                     alt={itemName} 
                                     className="w-full h-full object-cover" 
-                                    onMouseEnter={(e) => setTooltip({ visible: true, title: itemName, description: itemObj?.description || 'No description available', x: e.clientX, y: e.clientY })} 
+                                    onMouseEnter={(e) => setTooltip({ 
+                                    visible: true, 
+                                    title: itemObj?.name || 'Unknown Item', 
+                                    description: itemObj?.description || 'No description available', 
+                                    x: e.clientX, 
+                                    y: e.clientY,
+                                    item: itemObj,
+                                    allItems: items
+                                  })} 
                                     onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))} 
                                      onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
                                                                                   

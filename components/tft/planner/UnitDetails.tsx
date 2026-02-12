@@ -90,7 +90,7 @@ export const UnitDetails = ({
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2"><Backpack className="w-4 h-4" /> Loadout Analysis</p>
+          <p className="text-[9px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-2"><Backpack className="w-4 h-4" /> Loadout Analysis</p>
           <span className="text-[9px] font-black text-white/20">{unit.items.length} / 3</span>
         </div>
           <div className="flex gap-4">
@@ -98,7 +98,7 @@ export const UnitDetails = ({
               const itemName = unit.items[i];
               const itemObj = items.find(it => it.name === itemName);
                   return (
-                    <div key={i} onClick={() => { if (itemName && canEdit) onRemoveItem(i); }} className={`group relative w-20 h-20 rounded-2xl border-2 border-dashed flex items-center justify-center transition-all cursor-pointer ${itemName ? 'border-orange-500/30 bg-white/5' : 'border-white/5 bg-black/20 hover:border-white/10'} ${!canEdit ? 'cursor-not-allowed' : ''}`}>
+                    <div key={i} onClick={() => { if (itemName && canEdit) onRemoveItem(i); }} className={`group relative w-16 h-16 rounded-2xl border-2 border-dashed flex items-center justify-center transition-all cursor-pointer ${itemName ? 'border-orange-500/30 bg-white/5' : 'border-white/5 bg-black/20 hover:border-white/10'} ${!canEdit ? 'cursor-not-allowed' : ''}`}>
                       {itemName ? (
                           <>
                             <img 
@@ -124,13 +124,21 @@ export const UnitDetails = ({
               <input placeholder="Search Item List..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="w-full pl-11 pr-5 py-4 bg-black/30 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-white placeholder:text-white/50 focus:outline-none focus:border-orange-500/20 transition-all shadow-inner" />
             </div>
             <div className="grid grid-cols-5 gap-2 max-h-[400px] overflow-y-auto custom-scrollbar p-1">
-              {items.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase())).map(it => (
+               {items.filter(it => it.name.toLowerCase().includes(itemSearch.toLowerCase())).map(it => (
                   <button 
                     key={it.id} 
                     draggable={canEdit}
                     onDragStart={() => canEdit && setDraggedItemId(it.name)}
                     onClick={() => { if (canEdit && unit.items.length < 3) { onAddItem(it.name); toast.success(`Equipped ${it.name}`); } }} 
-                      onMouseEnter={(e) => setTooltip({ visible: true, title: it.name, description: it.description, x: e.clientX, y: e.clientY })} 
+                      onMouseEnter={(e) => setTooltip({ 
+                        visible: true, 
+                        title: it.name, 
+                        description: it.description, 
+                        x: e.clientX, 
+                        y: e.clientY,
+                        item: it,
+                        allItems: items
+                      })} 
                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))} 
                       className={`aspect-square bg-white/4 border border-white/5 rounded-xl overflow-hidden hover:border-orange-500/40 transition-all group active:scale-90 cursor-grab active:cursor-grabbing ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >

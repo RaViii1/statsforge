@@ -3,8 +3,6 @@
 import { Crown, X, Plus } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
 import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
-import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
-import { getItemDescription } from '@/lib/tft/itemstft';
 import { useEffect, useState } from 'react';
 
 interface MainCarryTrayProps {
@@ -45,7 +43,7 @@ export const MainCarryTray = ({
 
   return (
     <div 
-      className="p-6 bg-white/2 rounded-3xl border border-white/5 relative group/tray"
+      className="p-4 sm:p-6 bg-white/2 rounded-3xl border border-white/5 relative group/tray"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -72,7 +70,7 @@ export const MainCarryTray = ({
         <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">{mainCarryIds.length} / 3</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[0, 1, 2].map(i => {
             const carryCharacterId = mainCarryIds[i];
             const champ = carryCharacterId && champions ? champions.find(c => c.id === carryCharacterId) : null;
@@ -81,7 +79,7 @@ export const MainCarryTray = ({
             return (
               <div 
                 key={i} 
-                className={`relative h-28 rounded-2xl border transition-all duration-300 flex items-center gap-4 px-4 ${champ ? 'bg-white/4 border-orange-500/20 shadow-xl' : 'bg-transparent border-white/5 border-dashed hover:border-orange-500/20'}`}
+                className={`relative h-24 sm:h-28 rounded-2xl border transition-all duration-300 flex items-center gap-3 sm:gap-4 px-3 sm:px-4 ${champ ? 'bg-white/4 border-orange-500/20 shadow-xl' : 'bg-transparent border-white/5 border-dashed hover:border-orange-500/20'}`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   if (!carryCharacterId || !canEdit) return;
@@ -95,7 +93,7 @@ export const MainCarryTray = ({
                 {champ ? (
                   <>
                       <div className="relative shrink-0">
-                        <div className="w-16 h-16 rounded-xl border-2 border-orange-500/40 overflow-hidden">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl border-2 border-orange-500/40 overflow-hidden">
                           <img 
                             src={champ.image_path || '/images/nochampionimage.jpg'} 
                             alt={champ.name} 
@@ -113,13 +111,21 @@ export const MainCarryTray = ({
                           const itemName = unitOnBoard?.items[idx];
                           const itemObj = items?.find(it => it.name === itemName);
                             return (
-                              <div key={idx} className={`w-7 h-7 rounded-lg border transition-all overflow-hidden ${itemName ? 'border-orange-500/40 bg-zinc-800' : 'border-white/5 bg-black/20'}`}>
+                              <div key={idx} className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg border transition-all overflow-hidden ${itemName ? 'border-orange-500/40 bg-zinc-800' : 'border-white/5 bg-black/20'}`}>
                                 {itemName && (
                                   <img 
                                     src={itemObj?.image_path || '/images/noitem.png'} 
                                     alt={itemName} 
                                     className="w-full h-full object-cover" 
-                                    onMouseEnter={(e) => setTooltip({ visible: true, title: itemName, description: itemObj?.description || 'No description available', x: e.clientX, y: e.clientY })} 
+                                    onMouseEnter={(e) => setTooltip({ 
+                                      visible: true, 
+                                      title: itemName, 
+                                      description: itemObj?.description || 'No description available', 
+                                      x: e.clientX, 
+                                      y: e.clientY,
+                                      item: itemObj,
+                                      allItems: items
+                                    })} 
                                     onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))} 
                                      onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
                                   />
