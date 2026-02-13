@@ -62,7 +62,7 @@ export default function TraitList({ initialTraits }: TraitListProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {filtered.map((trait) => (
-          <div key={trait.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-3xl hover:border-zinc-700 transition-all group">
+          <div key={trait.id} className="bg-zinc-900 border border-zinc-800 p-4 max-h-48 rounded-3xl hover:border-zinc-700 transition-all group">
             <div className="flex items-start gap-4">
               <div className="relative shrink-0">
                 <div className="w-14 h-14 rounded-xl border-2 border-zinc-800 overflow-hidden bg-zinc-950 flex items-center justify-center p-2">
@@ -74,14 +74,31 @@ export default function TraitList({ initialTraits }: TraitListProps) {
                 </div>
               </div>
 
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-white truncate">{trait.name}</h3>
+               <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-white truncate flex items-center gap-2">
+                  {trait.name}
+                  {trait.is_Hero && (
+                    <span className="text-xs font-bold text-purple-500 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                      Hero
+                    </span>
+                  )}
+                </h3>
                 <p className="text-xs text-zinc-500">Set {trait.tft_sets?.set_number} • {trait.tft_sets?.name}</p>
                 
                 {/* Trait Tiers */}
                 {trait.tft_trait_tiers && trait.tft_trait_tiers.length > 0 ? (
                   <div className="mt-2 space-y-1">
-                    {trait.tft_trait_tiers.map((tier: any, index: number) => (
+                    {[...trait.tft_trait_tiers].sort((a, b) => {
+                      const getTierOrder = (tier: string): number => {
+                        const [base, suffix] = tier.split('_');
+                        const order = { bronze: 0, silver: 1, gold: 2, prismatic: 3 };
+                        const baseOrder = order[base as keyof typeof order] ?? 99;
+                        const suffixNum = suffix ? parseInt(suffix, 10) : 0;
+                        return baseOrder * 100 + suffixNum;
+                      };
+                      
+                      return getTierOrder(a.tier) - getTierOrder(b.tier);
+                    }).map((tier: any, index: number) => (
                       <div key={index} className="text-[10px] text-zinc-400 truncate">
                         <span className="font-semibold text-zinc-300">
                           ({tier.units_required} units):

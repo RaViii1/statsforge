@@ -3,8 +3,10 @@
 import { Plus, Star, Crown } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
 import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
-import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
+import { getTFTUnitIcon, getTFTItemIcon, getTierBorderColor, getTierColor } from '@/lib/tft/tftfunctions';
 import { getItemDescription } from '@/lib/tft/itemstft';
+import { TraitTooltip } from './TraitTooltip';
+
 
 interface HexGridProps {
   units: UnitPosition[];
@@ -12,10 +14,20 @@ interface HexGridProps {
   champions: TFTChampion[];
   items: any[];
   selectedHex: { row: number; col: number } | null;
-  activeTraits: { name: string; count: number }[];
+  activeTraits: { 
+    name: string; 
+    count: number; 
+    activeTier?: string; 
+    unitsRequired?: number; 
+    iconPath?: string; 
+    isHero?: boolean;
+    description?: string;
+    tiers?: any[];
+  }[];
   onHexClick: (row: number, col: number, isActive: boolean) => void;
   onDrop: (row: number, col: number) => void;
   onUnitDragStart: (row: number, col: number, characterId: string) => void;
+  tooltip: TooltipState;
   setTooltip: React.Dispatch<React.SetStateAction<TooltipState>>;
   canEdit?: boolean;
 }
@@ -30,16 +42,67 @@ export const HexGrid = ({
   onHexClick,
   onDrop,
   onUnitDragStart,
+  tooltip,
   setTooltip,
   canEdit = true
 }: HexGridProps) => {
   return (
     <div className="flex flex-col items-center gap-10">
-      <div className="flex flex-wrap justify-center gap-2 px-10">
-        {activeTraits.map(trait => (
-          <div key={trait.name} className="group relative flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/4 border border-white/5 rounded-full hover:border-orange-500/30 transition-all cursor-default shadow-sm">
-            <div className="w-5 h-5 flex items-center justify-center bg-orange-500/60 rounded-full"><span className="text-[9px] font-black text-white">{trait.count}</span></div>
-            <span className="text-[9px] font-black text-white/60 uppercase tracking-widest">{trait.name}</span>
+      <TraitTooltip 
+        visible={tooltip.visible && !!tooltip.trait}
+        title={tooltip.title}
+        description={tooltip.description}
+        x={tooltip.x}
+        y={tooltip.y}
+        trait={tooltip.trait}
+      />
+       <div className="flex flex-wrap justify-center gap-2 px-10">
+         {activeTraits.map(trait => (
+          <div 
+            key={trait.name} 
+            className={`group relative flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/4 border rounded-full transition-all cursor-default shadow-sm ${
+              trait.isHero ? getTierBorderColor('gold') : (trait.activeTier ? getTierBorderColor(trait.activeTier) : 'border-white/5 hover:border-orange-500/30')
+            }`}
+            onMouseEnter={(e) => setTooltip({ 
+              visible: true, 
+              title: trait.name, 
+              description: trait.description || '', 
+              x: e.clientX, 
+              y: e.clientY,
+              trait: {
+                id: trait.name,
+                name: trait.name,
+                description: trait.description || '',
+                icon_path: trait.iconPath || '',
+                tiers: trait.tiers || [],
+                is_Hero: trait.isHero || false
+              }
+            })}
+            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+          >
+            <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
+              trait.isHero ? getTierColor('gold').split(' ')[0] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[0] : 'bg-orange-500/60')
+            }`}>
+              {trait.iconPath ? (
+                <img 
+                  src={trait.iconPath} 
+                  alt={trait.name} 
+                  className="w-3.5 h-3.5 object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <span className="text-[9px] font-black text-white">{trait.count}</span>
+              )}
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest ${
+              trait.isHero ? getTierColor('gold').split(' ')[1] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[1] : 'text-white/60')
+            }`}>
+              {trait.name}
+            </span>
+
+            <span className="text-[10px] font-black text-white px-1.5 py-0.5 rounded">
+              {trait.count}
+            </span>
           </div>
         ))}
         {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}

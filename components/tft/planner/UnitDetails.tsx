@@ -5,6 +5,7 @@ import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
 import { TFTChampion, getCostColor, getChampionCost, CurrentSetNumber } from '@/lib/tft/champions';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
+import SvgIcon from '@/components/SvgIcon';
 
 interface UnitDetailsProps {
   unit: UnitPosition;
@@ -58,7 +59,7 @@ export const UnitDetails = ({
                   </div>
 
                 <div className="absolute -bottom-2 -right-2 bg-black border border-white/10 px-2 py-1 rounded-lg">
-                <p className="text-[10px] font-black text-white" style={{ color: getCostColor(cost) }}>${cost}</p>
+                <p className="text-[10px] font-black text-white flex items-center justify-center gap-1" style={{ color: getCostColor(cost) }}>{cost}<SvgIcon type="gold" className="text-yellow-500" size={10} /></p>
               </div>
             </div>
             <div className="space-y-1">

@@ -16,14 +16,15 @@ export interface TFTTrait {
   tiers?: TFTTraitTier[];
   description: string;
   icon_path: string;
-  set_id: number;
+  set_id?: number;
   champions?: any[];
+  is_Hero?: boolean;
 }
 
 export interface TFTTraitTier {
-  id?: number;
+  id?: number | string;
   trait_id?: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'prismatic';
+  tier: string;
   units_required: number;
   description: string;
   stats?: any;

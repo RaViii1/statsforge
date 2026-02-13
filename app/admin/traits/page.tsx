@@ -37,7 +37,7 @@ export default async function AdminTraitsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-1">
           <div className="sticky top-8">
-            <TraitForm sets={(sets as (TFTSet & { id: number })[]) || []} />
+            <TraitForm key="trait-form" sets={(sets as (TFTSet & { id: number })[]) || []} />
           </div>
         </div>
 

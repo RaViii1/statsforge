@@ -22,15 +22,31 @@ export async function POST(request: Request) {
     const body = await request.json() as TFTTrait;
 
     const { id, name, set_id, icon_path, description, tiers } = body;
+    
+    // First, get the set number from the tft_sets table using set_id
+    const { data: setData, error: setError } = await supabase
+      .from("tft_sets")
+      .select("set_number")
+      .eq("id", set_id)
+      .single();
+
+    if (setError) {
+      console.error("Error fetching set data:", setError);
+      return NextResponse.json({ error: "Invalid set" }, { status: 400 });
+    }
+
+    const setNumber = setData.set_number;
+    
     // Ensure traitId is always a string
-    const traitId = String(id || `${set_id}_${name.toLowerCase().replace(/\s+/g, "_")}`);
+    const traitId = String(id || `${setNumber}_${name.toLowerCase().replace(/\s+/g, "_")}`);
 
     const dbData = {
       id: traitId,
       name,
       set_id,
       icon_path,
-      description
+      description,
+      is_Hero: body.is_Hero || false
     };
 
     // Upsert trait
@@ -66,6 +82,32 @@ export async function POST(request: Request) {
       if (tiersError) {
         console.error("Tiers upsert error:", tiersError);
         return NextResponse.json({ error: tiersError.message }, { status: 500 });
+      }
+    }
+
+    // Handle champion associations
+    if (body.champions && Array.isArray(body.champions)) {
+      // Delete existing associations
+      await supabase
+        .from("tft_champion_traits")
+        .delete()
+        .eq("trait_id", traitId);
+
+      // Insert new associations
+      if (body.champions.length > 0) {
+        const associations = body.champions.map((champion: any) => ({
+          trait_id: traitId,
+          champion_id: champion.id
+        }));
+
+        const { error: championError } = await supabase
+          .from("tft_champion_traits")
+          .insert(associations);
+
+        if (championError) {
+          console.error("Champion associations error:", championError);
+          return NextResponse.json({ error: championError.message }, { status: 500 });
+        }
       }
     }
 

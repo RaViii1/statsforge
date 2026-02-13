@@ -287,3 +287,26 @@ export const getQueueDisplayName = (queueType: string) => {
   };
   return names[queueType] || 'Standard';
 };
+
+
+export const getTierColor = (tier: string) => {
+  const baseTier = tier.split('_')[0];
+  switch (baseTier) {
+    case 'bronze': return 'bg-orange-500/60 text-orange-400';
+    case 'silver': return 'bg-gray-500/60 text-gray-400';
+    case 'gold': return 'bg-yellow-500/60 text-yellow-400';
+    case 'prismatic': return 'bg-purple-500/60 text-purple-400';
+    default: return 'bg-orange-500/60 text-orange-400';
+  }
+};
+
+export const getTierBorderColor = (tier: string) => {
+  const baseTier = tier.split('_')[0];
+  switch (baseTier) {
+    case 'bronze': return 'border-orange-500/30 hover:border-orange-500/60';
+    case 'silver': return 'border-gray-500/30 hover:border-gray-500/60';
+    case 'gold': return 'border-yellow-500/30 hover:border-yellow-500/60';
+    case 'prismatic': return 'border-purple-500/30 hover:border-purple-500/60';
+    default: return 'border-orange-500/30 hover:border-orange-500/60';
+  }
+};

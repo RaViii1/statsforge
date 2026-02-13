@@ -20,10 +20,10 @@ import {
   Layers,
   Share2
 } from 'lucide-react';
-import { getTFTUnitIcon, getTFTItemIcon, copyToClipboard } from '@/lib/tft/tftfunctions';
+import { copyToClipboard, getTierBorderColor, getTierColor } from '@/lib/tft/tftfunctions';
 import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, MetaTier } from '@/lib/tft/teamplanner-types';
-import { getItemDescription } from '@/lib/tft/itemstft';
 import { CustomTooltip } from '@/components/tft/planner';
+import { TraitTooltip } from '@/components/tft/planner/TraitTooltip';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Footer from '@/components/Footer';
@@ -89,13 +89,7 @@ const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
   );
 };
 
-interface TooltipState {
-  visible: boolean;
-  title: string;
-  description: string;
-  x: number;
-  y: number;
-}
+import { TooltipState } from '@/lib/tft/teamplanner-types';
 
 const ReadOnlyHexGrid = ({ 
   units, 
@@ -103,21 +97,85 @@ const ReadOnlyHexGrid = ({
   champions,
   items,
   setTooltip,
-  phase
+  tooltip,
+  phase,
+  activeTraits
 }: { 
   units: UnitPosition[]; 
   mainCarryIds: string[];
   champions: any[];
   items: any[];
   setTooltip: React.Dispatch<React.SetStateAction<TooltipState>>;
+  tooltip: TooltipState;
   phase: PhaseKey;
+  activeTraits: { name: string; count: number; activeTier?: string; unitsRequired?: number; iconPath?: string; isHero?: boolean; description?: string; tiers?: any[] }[];
 }) => {
   const hexWidth = 70;
   const hexHeight = 81;
   const spacing = 82;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center gap-8">
+      {/* Trait Tooltip */}
+      <TraitTooltip 
+        visible={tooltip.visible && !!tooltip.trait}
+        title={tooltip.title}
+        description={tooltip.description}
+        x={tooltip.x}
+        y={tooltip.y}
+        trait={tooltip.trait}
+      />
+      {/* Active Traits Display */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {activeTraits.map(trait => (
+          <div 
+            key={trait.name} 
+            className={`group relative flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/4 border rounded-full transition-all cursor-default shadow-sm ${
+              trait.isHero ? getTierBorderColor('gold') : (trait.activeTier ? getTierBorderColor(trait.activeTier) : 'border-white/5 hover:border-orange-500/30')
+            }`}
+            onMouseEnter={(e) => setTooltip({ 
+              visible: true, 
+              title: trait.name, 
+              description: trait.description || '', 
+              x: e.clientX, 
+              y: e.clientY,
+              trait: {
+                id: trait.name,
+                name: trait.name,
+                description: trait.description || '',
+                icon_path: trait.iconPath || '',
+                tiers: trait.tiers || [],
+                is_Hero: trait.isHero || false
+              }
+            })}
+            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+          >
+            <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
+              trait.isHero ? getTierColor('gold').split(' ')[0] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[0] : 'bg-orange-500/60')
+            }`}>
+              {trait.iconPath ? (
+                <img 
+                  src={trait.iconPath} 
+                  alt={trait.name} 
+                  className="w-3.5 h-3.5 object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : (
+                <span className="text-[9px] font-black text-white">{trait.count}</span>
+              )}
+            </div>
+            <span className={`text-[9px] font-black uppercase tracking-widest ${
+              trait.isHero ? getTierColor('gold').split(' ')[1] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[1] : 'text-white/60')
+            }`}>
+              {trait.name}
+            </span>
+            <span className="text-[10px] font-black text-white bg-black/20 px-1.5 py-0.5 rounded">
+              {trait.count}
+            </span>
+          </div>
+        ))}
+        {activeTraits.length === 0 && <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.4em] py-4">Sector Clear: No Active Synergies</p>}
+      </div>
       <div 
         className="relative rounded-3xl bg-black/40 border border-white/5 overflow-hidden p-8 backdrop-blur-md shadow-2xl"
         style={{ width: '680px', height: '390px' }}
@@ -160,7 +218,7 @@ const ReadOnlyHexGrid = ({
                           </clipPath>
                         </defs>
                         <image 
-                          href={champ?.image_path} 
+                          href={champ?.image_path || "/images/nochampionimage.jpg"} 
                           width="94" 
                           height="108" 
                           x="3" 
@@ -183,7 +241,7 @@ const ReadOnlyHexGrid = ({
                         </div>
                       </div>
                       {unit.items.length > 0 && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex -space-x-1 z-30">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex -space-x-1 z-30 gap-1.5">
                           {unit.items.map((item, i) => {
                             const itemObj = items.find(it => it.name === item);
                             return (
@@ -226,27 +284,31 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
   const [comp, setComp] = useState<TeamComp | null>(null);
   const [champions, setChampions] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
+  const [traits, setTraits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
 
   useEffect(() => {
     const fetchCompData = async () => {
       try {
-        const [compRes, champsRes, itemsRes] = await Promise.all([
+        const [compRes, champsRes, itemsRes, traitsRes] = await Promise.all([
           fetch(`/api/tft/team-comps/${resolvedParams.id}`),
           fetch('/api/tft/champions'),
-          fetch('/api/tft/items')
+          fetch('/api/tft/items'),
+          fetch('/api/tft/traits')
         ]);
-        console.log("API responses:",  champsRes);
+        console.log("API responses:",  champsRes.json);
         
         if (!compRes.ok) throw new Error('Failed to fetch comp');
         
          const { comp, phases, steps, units } = await compRes.json();
-         
+        
          const champsData = champsRes.ok ? await champsRes.json() : [];
          const itemsData = itemsRes.ok ? await itemsRes.json() : [];
+         const traitsData = traitsRes.ok ? await traitsRes.json() : [];
          setChampions(champsData);
          setItems(itemsData);
+         setTraits(traitsData);
         const teamPhases: Record<PhaseKey, any> = {
           early: { units: [], notes: '' },
           mid: { units: [], notes: '' },
@@ -342,6 +404,83 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
   const carryItems = carries.flatMap(c => c.unit.items);
   const priorityItems = [...new Set(carryItems)];
 
+  // Helper function to calculate active traits for a phase
+  const getActiveTraits = (units: UnitPosition[]) => {
+    const traitCounts: Record<string, number> = {};
+    const seenUnits = new Set<string>();
+
+    units.forEach(u => {
+      if (seenUnits.has(u.characterId)) return;
+      seenUnits.add(u.characterId);
+      const champ = champions.find(c => c.id === u.characterId);
+      champ?.traits.forEach((t: string) => {
+        traitCounts[t] = (traitCounts[t] || 0) + 1;
+      });
+    });
+
+    return Object.entries(traitCounts)
+      .map(([name, count]) => {
+        const trait = traits.find(t => t.name === name);
+        if (!trait) return null;
+
+        // For hero traits, show them even if they don't have tiers
+        if (trait.is_Hero) {
+          return {
+            name,
+            count,
+            activeTier: undefined,
+            unitsRequired: 0,
+            iconPath: trait.icon_path,
+            isHero: true,
+            description: trait.description,
+            tiers: trait.tft_trait_tiers || []
+          };
+        }
+
+        // For regular traits, require active tiers
+        if (!trait?.tft_trait_tiers) return null;
+
+        const sortedTiers = [...trait.tft_trait_tiers].sort((a, b) => a.units_required - b.units_required);
+        
+        const activeTier = sortedTiers.reduce((best, tier) => {
+          if (count >= tier.units_required && tier.units_required > (best?.units_required || 0)) {
+            return tier;
+          }
+          return best;
+        }, null);
+
+          if (activeTier) {
+            return { 
+              name, 
+              count, 
+              activeTier: activeTier.tier, 
+              unitsRequired: activeTier.units_required,
+              iconPath: trait.icon_path,
+              isHero: trait.is_Hero || false,
+              description: trait.description,
+              tiers: trait.tft_trait_tiers || []
+            };
+          }
+        
+        return null;
+      })
+      .filter((t): t is any => t !== null)
+      .sort((a, b) => {
+        // Hero traits should appear with gold tier priority
+        if (a.isHero && b.isHero) return b.count - a.count;
+        if (a.isHero) return -1; // Hero trait comes first
+        if (b.isHero) return 1; // Hero trait comes first
+        
+        // For regular traits, sort by count
+        return b.count - a.count;
+      });
+  };
+
+  // Calculate active traits for each phase
+  const earlyTraits = getActiveTraits(comp.phases.early.units);
+  const midTraits = getActiveTraits(comp.phases.mid.units);
+  const finalTraits = getActiveTraits(comp.phases.final.units);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500/30">
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-50">
@@ -387,6 +526,42 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                   
               </div>
               
+              {/* Active Traits Next to Team Comp Name */}
+              {finalTraits.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {finalTraits.map(trait => (
+                    <div 
+                      key={trait.name} 
+                      className={`group relative flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/4 border rounded-full transition-all cursor-default shadow-sm ${
+                        trait.isHero ? getTierBorderColor('gold') : (trait.activeTier ? getTierBorderColor(trait.activeTier) : 'border-white/5 hover:border-orange-500/30')
+                      }`}
+                    >
+                      <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
+                        trait.isHero ? getTierColor('gold').split(' ')[0] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[0] : 'bg-orange-500/60')
+                      }`}>
+                        {trait.iconPath ? (
+                          <img 
+                            src={trait.iconPath} 
+                            alt={trait.name} 
+                            className="w-3.5 h-3.5 object-contain"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span className="text-[9px] font-black text-white">{trait.count}</span>
+                        )}
+                      </div>
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${
+                        trait.isHero ? getTierColor('gold').split(' ')[1] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[1] : 'text-white/60')
+                      }`}>
+                        {trait.name}
+                      </span>
+                      <span className="text-[10px] font-black text-white bg-black/20 px-1.5 py-0.5 rounded">
+                        {trait.count}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               
               <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none italic">
                 {comp.name}
@@ -605,7 +780,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                       </div>
                     </div>
                     
-                    <div className="lg:col-span-8 flex justify-center">
+                      <div className="lg:col-span-8 flex justify-center">
                       {units.length > 0 ? (
                         <ReadOnlyHexGrid 
                           units={units} 
@@ -613,7 +788,13 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                           champions={champions}
                           items={items}
                           setTooltip={setTooltip}
+                          tooltip={tooltip}
                           phase={phase}
+                          activeTraits={
+                            phase === 'early' ? earlyTraits : 
+                            phase === 'mid' ? midTraits : 
+                            finalTraits
+                          }
                         />
                       ) : (
 
@@ -653,7 +834,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
 
       <Footer />
  
-      {tooltip.visible && (
+      {tooltip.visible && !tooltip.trait && (
         <CustomTooltip 
           visible={tooltip.visible}
           title={tooltip.title}

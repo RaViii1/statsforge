@@ -28,9 +28,9 @@ export async function GET(request: Request) {
       targetSetId = setData[0].id;
     }
 
-    const { data: traits, error } = await supabase
+     const { data: traits, error } = await supabase
       .from("tft_traits")
-      .select("*")
+      .select("*, tft_trait_tiers(*)")
       .eq("set_id", targetSetId)
       .order("name", { ascending: true });
 

@@ -32,8 +32,8 @@ export const CustomTooltip = ({
     <div 
       className="fixed z-100 pointer-events-none p-4 bg-zinc-950/95 border-2 border-orange-500/30 rounded-2xl shadow-[0_0_30px_rgba(249,115,22,0.1)] max-w-[260px] backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
       style={{ 
-        left: typeof window !== 'undefined' ? (x + 280 > window.innerWidth ? x - 270 : x + 20) : 0,
-        top: typeof window !== 'undefined' ? (y + 150 > window.innerHeight ? y - 140 : y + 20) : 0
+        left: typeof window !== 'undefined' ? (x + 150 > window.innerWidth ? x - 260 : x + 10) : 0,
+        top: typeof window !== 'undefined' ? (y + 80 > window.innerHeight ? y - 100 : y + 10) : 0
       }}
     >
       <div className="relative">
@@ -71,6 +71,7 @@ export const CustomTooltip = ({
                 
                 return (
                   <div key={stat} className="flex items-center gap-2 text-[10px]">
+                    <div className="w-0.5 h-0.5 rounded-full bg-slate-700" />
                   <span className="text-white font-bold">+{value}</span>
                     <div className="flex items-center gap-1">
                       <SvgIcon type={statConfig.type} size={12} className={statConfig.color} />

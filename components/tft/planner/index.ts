@@ -6,3 +6,4 @@ export { MainCarryTray } from './MainCarryTray';
 export { TierPicker } from './TierPicker';
 export { UnitDetails} from './UnitDetails';
 export { UnitSelector } from './UnitSelector';
+export { TraitTooltip } from './TraitTooltip';

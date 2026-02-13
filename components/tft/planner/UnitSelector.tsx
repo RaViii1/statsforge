@@ -6,6 +6,7 @@ import { TFTChampion, SET_16_CHAMPIONS, getCostColor, CurrentSetNumber } from '@
 import { getTFTUnitIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
+import SvgIcon from '@/components/SvgIcon';
 
 interface UnitSelectorProps {
   searchQuery: string;
@@ -115,7 +116,7 @@ export const UnitSelector = ({
                   ))}
                 </div>
               </div>
-              <div className="text-[9px] font-black mr-2" style={{ color: getCostColor(c.cost) }}>${c.cost}</div>
+              <div className="text-[9px] font-black mr-2 flex items-center justify-center gap-1" style={{ color: getCostColor(c.cost) }}>{c.cost} <SvgIcon type="gold" className="text-yellow-500" size={9} /></div>
             </div>
           ))}
         </div>

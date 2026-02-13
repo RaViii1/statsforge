@@ -96,7 +96,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
   const [champions, setChampions] = useState<TFTChampion[]>([]);
   const [items, setItems] = useState<any[]>([]);
-  const [allTraits, setAllTraits] = useState<string[]>([]);
+  const [allTraits, setAllTraits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load initial data (sets + items only)
@@ -137,11 +137,8 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   // Refetch champions/traits when selectedSetId changes
   useEffect(() => {
     if (!selectedSetId) {
-      // console.log('selectedSetId is null, skipping fetch');
       return;
     }
-    
-    // console.log('selectedSetId changed to:', selectedSetId, 'fetching champions and traits...');
     
     const loadSetData = async () => {
       try {
@@ -152,7 +149,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
         if (champsRes.ok) {
           const champsData = await champsRes.json();
-          // console.log('Fetched champions:', champsData.length);
           setChampions(champsData);
           // Clear search/traits when champions change
           setSearchQuery('');
@@ -162,13 +158,12 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
           console.error('Failed to fetch champions:', champsRes.status);
         }
         
-        if (traitsRes.ok) {
-          const traitsData = await traitsRes.json();
-          // console.log('Fetched traits:', traitsData.length);
-          setAllTraits(traitsData.map((t: any) => t.name));
-        } else {
-          console.error('Failed to fetch traits:', traitsRes.status);
-        }
+         if (traitsRes.ok) {
+            const traitsData = await traitsRes.json();
+            setAllTraits(traitsData);
+          } else {
+            console.error('Failed to fetch traits:', traitsRes.status);
+          }
       } catch (error) {
         console.error('Error fetching set data:', error);
       }
@@ -183,9 +178,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       if (!res.ok) return null;
       
       const { comp, phases, steps, units } = await res.json();
-      
-      // console.log('Fetched team comp:', comp);
-      // console.log('Set ID from team comp:', comp.set_id);
 
       const teamPhases: Record<PhaseKey, TeamPhase> = {
         early: { units: [], notes: '' },
@@ -234,12 +226,6 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
         set_id: comp.set_id
       };
 
-      
-      if (team.set_id) {
-        // console.log('Setting selectedSetId to:', team.set_id);
-        setSelectedSetId(team.set_id);
-      }
-
       return team;
     } catch (error) {
       console.error('Error fetching team comp:', error);
@@ -287,6 +273,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
         if (team) {
           setCurrentTeam(team);
           setIsEditMode(true);
+          setSelectedSetId(team.set_id || selectedSetId);
         } else {
           const currentSet = activeSets.find(s => s.id === selectedSetId);
           setCurrentTeam(createEmptyTeam(selectedSetId || 0, currentSet?.set_number || 16));
@@ -296,7 +283,9 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       load();
     } else {
       const currentSet = activeSets.find(s => s.id === selectedSetId);
-      setCurrentTeam(createEmptyTeam(selectedSetId || 0, currentSet?.set_number || 16));
+      if (selectedSetId) {
+        setCurrentTeam(createEmptyTeam(selectedSetId, currentSet?.set_number || 16));
+      }
       setIsEditMode(false);
     }
   }, [editId, selectedSetId, activeSets]);
@@ -365,7 +354,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
 
   const currentPhaseData = useMemo(() => currentTeam?.phases[activePhase] || null, [currentTeam, activePhase]);
 
-  const activeTraits = useMemo(() => {
+   const activeTraits = useMemo(() => {
     if (!currentPhaseData) return [];
     const traitCounts: Record<string, number> = {};
     const seenUnits = new Set<string>();
@@ -379,10 +368,67 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       });
     });
 
+    // Find active tiers for each trait
     return Object.entries(traitCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-  }, [currentPhaseData?.units, champions]);
+      .map(([name, count]) => {
+        const trait = allTraits.find(t => t.name === name);
+        if (!trait) return null;
+
+        // For hero traits, show them even if they don't have tiers
+        if (trait.is_Hero) {
+          return {
+            name,
+            count,
+            activeTier: undefined,
+            unitsRequired: 0,
+            iconPath: trait.icon_path,
+            isHero: true,
+            description: trait.description,
+            tiers: trait.tft_trait_tiers || []
+          };
+        }
+
+        // For regular traits, require active tiers
+        if (!trait?.tft_trait_tiers) return null;
+
+        // Sort tiers by units_required ascending
+        const sortedTiers = [...trait.tft_trait_tiers].sort((a, b) => a.units_required - b.units_required);
+        
+        // Find the highest tier that the count meets or exceeds
+        const activeTier = sortedTiers.reduce((best, tier) => {
+          if (count >= tier.units_required && tier.units_required > (best?.units_required || 0)) {
+            return tier;
+          }
+          return best;
+        }, null);
+
+        // Only include traits with active tiers
+         if (activeTier) {
+            return { 
+              name, 
+              count, 
+              activeTier: activeTier.tier, 
+              unitsRequired: activeTier.units_required,
+              iconPath: trait.icon_path, // Include trait icon path
+              isHero: trait.is_Hero || false, // Include hero trait flag
+              description: trait.description,
+              tiers: trait.tft_trait_tiers || []
+            };
+          }
+         
+        return null;
+      })
+      .filter((t): t is any => t !== null)
+      .sort((a, b) => {
+        // Hero traits should appear with gold tier priority
+        if (a.isHero && b.isHero) return b.count - a.count;
+        if (a.isHero) return -1; // Hero trait comes first
+        if (b.isHero) return 1; // Hero trait comes first
+        
+        // For regular traits, sort by count
+        return b.count - a.count;
+      });
+  }, [currentPhaseData?.units, champions, allTraits]);
 
   const filteredChampions = useMemo(() => {
     return champions.filter(c => {
@@ -699,6 +745,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
               activeTraits={activeTraits}
               onHexClick={(row, col, isActive) => setSelectedHex(isActive ? null : { row, col })}
               onDrop={handleHexDrop}
+              tooltip={tooltip}
               onUnitDragStart={(row, col, characterId) => {
                 if (!canEdit) return;
                 setDraggedFromBoard({ row, col });
@@ -797,8 +844,8 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                   }}
                   onSave={saveTeam}
                   setDraggedChampionId={setDraggedChampionId}
-                  canEdit={canEdit}
-                  allTraits={allTraits}
+                   canEdit={canEdit}
+                  allTraits={allTraits.map(t => t.name)}
                 />
               )}
             </div>
@@ -808,3 +855,4 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     </>
   );
 };
+

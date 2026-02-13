@@ -72,9 +72,10 @@ interface TeamCompCardProps {
   onDelete: () => void;
   champions: any[];
   items: any[];
+  traits: any[];
 }
 
-const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, items }: TeamCompCardProps) => {
+const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, items, traits }: TeamCompCardProps) => {
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
   const difficulty = getDifficultyConfig(comp.difficulty || 'medium');
   const finalUnits = comp.phases.final.units;
@@ -92,7 +93,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
     const carryItems = carries.flatMap(c => c.unit.items);
     const priorityItems = [...new Set(carryItems)];
 
-    const finalTraits = useMemo(() => {
+     const finalTraits = useMemo(() => {
       const traitCounts: Record<string, number> = {};
       const seenUnits = new Set<string>();
 
@@ -107,16 +108,73 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
         }
       });
 
+      // Find active tiers for each trait
       return Object.entries(traitCounts)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count);
-    }, [finalUnits, champions]);
+        .map(([name, count]) => {
+          const trait = traits.find(t => t.name === name);
+          if (!trait) return null;
+
+          // For hero traits, show them even if they don't have tiers
+          if (trait.is_Hero) {
+            return {
+              name,
+              count,
+              activeTier: undefined,
+              unitsRequired: 0,
+              iconPath: trait.icon_path,
+              isHero: true,
+              description: trait.description,
+              tiers: trait.tft_trait_tiers || []
+            };
+          }
+
+          // For regular traits, require active tiers
+          if (!trait?.tft_trait_tiers) return null;
+
+          // Sort tiers by units_required ascending
+          const sortedTiers = [...trait.tft_trait_tiers].sort((a, b) => a.units_required - b.units_required);
+          
+          // Find the highest tier that the count meets or exceeds
+          const activeTier = sortedTiers.reduce((best, tier) => {
+            if (count >= tier.units_required && tier.units_required > (best?.units_required || 0)) {
+              return tier;
+            }
+            return best;
+          }, null);
+
+          // Only include traits with active tiers
+           if (activeTier) {
+             return { 
+               name, 
+               count, 
+               activeTier: activeTier.tier, 
+               unitsRequired: activeTier.units_required,
+               iconPath: trait.icon_path, // Include trait icon path
+               isHero: trait.is_Hero || false, // Include hero trait flag
+               description: trait.description,
+               tiers: trait.tft_trait_tiers || []
+             };
+           }
+           
+          return null;
+        })
+        .filter((t): t is any => t !== null)
+        .sort((a, b) => {
+        // Hero traits should appear with gold tier priority
+        if (a.isHero && b.isHero) return b.count - a.count;
+        if (a.isHero) return -1; // Hero trait comes first
+        if (b.isHero) return 1; // Hero trait comes first
+        
+        // For regular traits, sort by count
+        return b.count - a.count;
+      });
+    }, [finalUnits, champions, traits]);
 
 
   return (
     <>
     
-      {tooltip.visible && (
+      {tooltip.visible && !tooltip.trait && (
         <CustomTooltip 
           visible={tooltip.visible}
           title={tooltip.title}
@@ -325,6 +383,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                   onDrop={() => {}}
                   onUnitDragStart={() => {}}
                   setTooltip={setTooltip}
+                  tooltip={tooltip}
                 />
 
               </div>
@@ -454,6 +513,7 @@ export default function TeamCompsPage() {
   const [teamComps, setTeamComps] = useState<TeamComp[]>([]);
   const [champions, setChampions] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
+  const [traits, setTraits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<DifficultyLevel | 'all'>('all');
@@ -480,16 +540,20 @@ export default function TeamCompsPage() {
         if (selectedSetId) {
           compsUrl += `?set_id=${selectedSetId}`;
         }
-        const [compsRes, champsRes, itemsRes] = await Promise.all([
+        const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
           fetch(compsUrl),
           fetch('/api/tft/champions'),
-          fetch('/api/tft/items')
+          fetch('/api/tft/items'),
+          fetch('/api/tft/traits')
         ]);
 
         if (compsRes.ok) {
           const data = await compsRes.json();
           // console.log('Fetched comps:', data);
           setTeamComps(data);
+          if (data.length > 0) {
+            setExpandedId(data[0].id);
+          }
         }
         if (champsRes.ok) {
           const data = await champsRes.json();
@@ -500,6 +564,11 @@ export default function TeamCompsPage() {
           const data = await itemsRes.json();
           // console.log('Fetched items:', data);
           setItems(data);
+        }
+        if (traitsRes.ok) {
+          const data = await traitsRes.json();
+          // console.log('Fetched traits:', data);
+          setTraits(data);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -711,7 +780,7 @@ export default function TeamCompsPage() {
               const canEdit = isAdmin || isOwner;
 
               return (
-                <TeamCompCard 
+                 <TeamCompCard 
                   key={comp.id} 
                   comp={comp} 
                   expanded={expandedId === comp.id}
@@ -720,6 +789,7 @@ export default function TeamCompsPage() {
                   onDelete={() => handleDelete(comp.id)}
                   champions={champions}
                   items={items}
+                  traits={traits}
                 />
               );
             })}
@@ -756,3 +826,4 @@ export default function TeamCompsPage() {
     </div>
   );
 }
+

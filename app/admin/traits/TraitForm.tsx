@@ -37,44 +37,69 @@ export default function TraitForm({ sets }: TraitFormProps) {
     icon_path: "",
     description: "",
     tiers: [],
-    champions: []
+    champions: [],
+    is_Hero: false
   });
 
   useEffect(() => {
     const handleEditEvent = async (event: any) => {
+      console.log('Edit event received:', event.detail);
       const trait = event.detail;
       setIsEditing(true);
       
       // Get champions associated with this trait
-      const { data: championData } = await supabase
+      const { data: championData, error: championError } = await supabase
         .from("tft_champion_traits")
         .select("champion_id, tft_champions(*)")
         .eq("trait_id", trait.id);
       
+      if (championError) {
+        console.error('Error fetching champion data:', championError);
+      }
+      
       const champions = championData?.map(c => c.tft_champions) || [];
 
-      // Determine if it's a hero trait (only 1 champion)
-      const heroTrait = champions.length === 1;
+      // Determine if it's a hero trait (from is_hero property)
+      const heroTrait = trait.is_hero || false;
 
       // Get existing tiers or start with empty
       const existingTiers = trait.tft_trait_tiers || [];
       console.log('Existing tiers:', existingTiers);
       
       setIsHeroTrait(heroTrait);
+      const formattedTiers = existingTiers.map((tier: any) => ({
+        tier: tier.tier || 'bronze',
+        units_required: tier.units_required || 0,
+        description: tier.description || '',
+        stats: tier.stats || {}
+      }));
+      
+      // Sort tiers correctly
+      const sortedTiers = formattedTiers.sort((a: TFTTraitTier, b: TFTTraitTier) => {
+        const getTierOrder = (tier: string): number => {
+          const [base, suffix] = tier.split('_');
+          const order = { bronze: 0, silver: 1, gold: 2, prismatic: 3 };
+          const baseOrder = order[base as keyof typeof order] ?? 99;
+          const suffixNum = suffix ? parseInt(suffix, 10) : 0;
+          return baseOrder * 100 + suffixNum;
+        };
+        
+        return getTierOrder(a.tier) - getTierOrder(b.tier);
+      });
+      
       setFormData({
         ...trait,
-        tiers: existingTiers.map((tier: any) => ({
-          tier: tier.tier || 'bronze',
-          units_required: tier.units_required || 0,
-          description: tier.description || '',
-          stats: tier.stats || {}
-        })),
+        tiers: sortedTiers,
         champions: champions
       });
     };
 
     window.addEventListener('edit-trait', handleEditEvent);
-    return () => window.removeEventListener('edit-trait', handleEditEvent);
+    console.log('Edit event listener added');
+    return () => {
+      window.removeEventListener('edit-trait', handleEditEvent);
+      console.log('Edit event listener removed');
+    };
   }, [supabase]);
 
   useEffect(() => {
@@ -141,24 +166,50 @@ export default function TraitForm({ sets }: TraitFormProps) {
   };
 
   const addTier = (tierType: 'bronze' | 'silver' | 'gold' | 'prismatic') => {
-    if (formData.tiers?.some(t => t.tier === tierType)) {
-      toast.error(`Tier ${tierType} already exists`);
-      return;
+    // Check how many tiers of this type already exist
+    const existingTiersOfType = formData.tiers?.filter(t => 
+      t.tier.startsWith(tierType)
+    ).length || 0;
+
+    let tierName: string;
+    if (existingTiersOfType === 0) {
+      tierName = tierType;
+    } else {
+      tierName = `${tierType}_${existingTiersOfType + 1}`;
     }
 
     const newTier: TFTTraitTier = {
-      tier: tierType,
+      tier: tierName,
       units_required: 0,
       description: '',
       stats: {}
     };
 
+    const updatedTiers = [...(formData.tiers || []), newTier];
+    console.log('Before sorting:', updatedTiers.map(t => t.tier));
+    
+    const sortedTiers = updatedTiers.sort((a, b) => {
+      const getTierOrder = (tier: string): number => {
+        const [base, suffix] = tier.split('_');
+        const order = { bronze: 0, silver: 1, gold: 2, prismatic: 3 };
+        const baseOrder = order[base as keyof typeof order] ?? 99;
+        const suffixNum = suffix ? parseInt(suffix, 10) : 0;
+        const totalOrder = baseOrder * 100 + suffixNum;
+        console.log(`Tier ${tier} - Base: ${base}, Order: ${baseOrder}, Suffix: ${suffixNum}, Total: ${totalOrder}`);
+        return totalOrder;
+      };
+      
+      const orderA = getTierOrder(a.tier);
+      const orderB = getTierOrder(b.tier);
+      console.log(`Comparing ${a.tier} (${orderA}) with ${b.tier} (${orderB}): ${orderA - orderB}`);
+      return orderA - orderB;
+    });
+    
+    console.log('After sorting:', sortedTiers.map(t => t.tier));
+    
     setFormData(prev => ({
       ...prev,
-      tiers: [...(prev.tiers || []), newTier].sort((a, b) => {
-        const order = { bronze: 0, silver: 1, gold: 2, prismatic: 3 };
-        return order[a.tier] - order[b.tier];
-      })
+      tiers: sortedTiers
     }));
   };
 
@@ -185,21 +236,28 @@ export default function TraitForm({ sets }: TraitFormProps) {
       if (formData.champions && formData.champions.length > 1) {
         setFormData(prev => ({
           ...prev,
+          is_Hero: true,
           champions: prev.champions ? [prev.champions[0]] : [],
           tiers: (prev.tiers || []).length > 0 ? [(prev.tiers || [])[0]] : []
         }));
       } else {
         setFormData(prev => ({
           ...prev,
+          is_Hero: true,
           tiers: (prev.tiers || []).length > 0 ? [(prev.tiers || [])[0]] : []
         }));
       }
     } else {
       // Regular trait can have multiple tiers
+      setFormData(prev => ({
+        ...prev,
+        is_Hero: false
+      }));
       // If there are no tiers, create default bronze tier
       if (!formData.tiers || formData.tiers.length === 0) {
         setFormData(prev => ({
           ...prev,
+          is_Hero: false,
           tiers: [{ tier: 'bronze', units_required: 0, description: '', stats: {} }]
         }));
       }
@@ -228,7 +286,10 @@ export default function TraitForm({ sets }: TraitFormProps) {
     }, 30000); // 30 second timeout
 
     try {
-      const id = String(formData.id || `${formData.set_id}_${formData.name.toLowerCase().replace(/\s+/g, "_")}`);
+      // Get the set number from the sets array using set_id
+      const selectedSet = sets.find(s => s.id === formData.set_id);
+      const setNumber = selectedSet?.set_number || 0;
+      const id = String(formData.id || `${setNumber}_${formData.name.toLowerCase().replace(/\s+/g, "_")}`);
       
       const res = await fetch("/api/admin/traits", {
         method: "POST",
@@ -241,27 +302,6 @@ export default function TraitForm({ sets }: TraitFormProps) {
       });
 
       if (!res.ok) throw new Error("Failed to save trait");
-
-      // Update trait-champion associations
-      if (formData.champions) {
-        // Delete existing associations
-        await supabase
-          .from("tft_champion_traits")
-          .delete()
-          .eq("trait_id", id);
-
-        // Insert new associations
-        if (formData.champions.length > 0) {
-          const associations = formData.champions.map(champion => ({
-            trait_id: id,
-            champion_id: champion.id
-          }));
-
-          await supabase
-            .from("tft_champion_traits")
-            .insert(associations);
-        }
-      }
 
       clearTimeout(timeoutId);
       toast.success("Trait saved successfully!");
@@ -283,11 +323,13 @@ export default function TraitForm({ sets }: TraitFormProps) {
       toast.error(error.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
+      setLoading(false);
     }
   };
 
   const getTierColor = (tier: string) => {
-    switch (tier) {
+    const baseTier = tier.split('_')[0];
+    switch (baseTier) {
       case 'bronze': return 'text-orange-400';
       case 'silver': return 'text-gray-400';
       case 'gold': return 'text-yellow-500';
@@ -586,18 +628,18 @@ export default function TraitForm({ sets }: TraitFormProps) {
                        </div>
                      </div>
                    ))}
-                   <div className="grid grid-cols-2 gap-2">
-                     {availableTierTypes.filter(tierType => !formData.tiers?.some(t => t.tier === tierType)).map(tierType => (
-                       <button
-                         key={tierType}
-                         type="button"
-                         onClick={() => addTier(tierType)}
-                         className={`px-3 py-1.5 w-full rounded-lg text-xs font-bold capitalize transition-colors ${getTierColor(tierType)} bg-zinc-900 border border-zinc-800 hover:bg-zinc-800`}
-                       >
-                         Add {tierType} Tier
-                       </button>
-                     ))}
-                   </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableTierTypes.map(tierType => (
+                        <button
+                          key={tierType}
+                          type="button"
+                          onClick={() => addTier(tierType)}
+                          className={`px-3 py-1.5 w-full rounded-lg text-xs font-bold capitalize transition-colors ${getTierColor(tierType)} bg-zinc-900 border border-zinc-800 hover:bg-zinc-800`}
+                        >
+                          Add {tierType} Tier
+                        </button>
+                      ))}
+                    </div>
                  </div>
                )}
             </div>
@@ -607,3 +649,4 @@ export default function TraitForm({ sets }: TraitFormProps) {
     </div>
   );
 }
+

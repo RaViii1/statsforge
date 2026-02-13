@@ -105,6 +105,7 @@ export interface TeamComp {
 }
 
 import { TFTItem } from "@/lib/tft/itemstft";
+import { TFTTrait } from "@/lib/tft/champions";
 
 export interface TooltipState {
   visible: boolean;
@@ -114,6 +115,7 @@ export interface TooltipState {
   y: number;
   item?: TFTItem;
   allItems?: TFTItem[];
+  trait?: TFTTrait;
 }
 
 export const generatePatchesForSet = (setNumber: number): string[] => {
