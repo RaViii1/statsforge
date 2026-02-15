@@ -551,9 +551,6 @@ export default function TeamCompsPage() {
           const data = await compsRes.json();
           // console.log('Fetched comps:', data);
           setTeamComps(data);
-          if (data.length > 0) {
-            setExpandedId(data[0].id);
-          }
         }
         if (champsRes.ok) {
           const data = await champsRes.json();
