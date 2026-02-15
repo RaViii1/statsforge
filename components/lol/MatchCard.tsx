@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Crown, Swords, XCircle, ChevronDown, ChevronUp, FlameIcon, Star, Flag, Zap, Droplet } from "lucide-react";
+import { ChevronDown, ChevronUp, FlameIcon, Star, Flag, Zap, Droplet } from "lucide-react";
 import { Match, MatchParticipant } from "@/app/types/lolInterfaces";
 import { 
   isRemake, 
@@ -38,6 +38,8 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
     (p: MatchParticipant) => p.puuid === summonerPuuid
   );
 
+  // console.log("player data", playerData)
+
   if (!playerData) return null;
 
   const remake = isRemake(match);
@@ -51,6 +53,13 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
   const secondaryTree = (secondaryStyle as any)?.style;
 
   const lpChange = getLPChange(match, playerData, rankedData);
+
+  const getOrdinal = (number: number): string => {
+    if (number === 1) return '1st';
+    if (number === 2) return '2nd';
+    if (number === 3) return '3rd';
+    return `${number}th`;
+  };
 
   const kda = playerData.deaths === 0 
     ? "Perfect" 
@@ -82,8 +91,8 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
         remake 
           ? "bg-zinc-900/40 border-zinc-700/50 hover:border-zinc-600"
           : playerData.win
-          ? "bg-emerald-950/20 border-emerald-900/30 hover:border-emerald-700 hover:shadow-md hover:shadow-emerald-900/10"
-          : "bg-red-950/20 border-red-900/30 hover:border-red-700 hover:shadow-md hover:shadow-red-900/10"
+          ? "bg-emerald-950/20 border-emerald-900/30 hover:border-emerald-900 hover:shadow-md hover:shadow-emerald-900/10"
+          : "bg-red-950/20 border-red-900/30 hover:border-red-900 hover:shadow-md hover:shadow-red-900/10"
       }`}
     >
       {/* Main Match Card */}
@@ -99,41 +108,22 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
               <div className={`flex items-center gap-2 ${
                 remake 
                   ? "text-zinc-400"
+                  : arena ? "text-white" 
                   : playerData.win ? "text-emerald-400" : "text-red-400"
               }`}>
                 {remake ? (
-                  <>
-                    <XCircle className="w-4 h-4" />
-                    <span className="font-bold text-sm">Remake</span>
-                  </>
+                  <span className="font-bold text-sm">Remake</span>
+                ) : arena && playerData.subteamPlacement ? (
+                  <span className="font-bold text-sm">{getOrdinal(playerData.subteamPlacement)}</span>
                 ) : playerData.win ? (
-                  <>
-                    <Crown className="w-4 h-4" />
-                    <span className="font-bold text-sm">Victory</span>
-                  </>
+                  <span className="font-bold text-sm">Victory {lpChange}</span>
                 ) : (
-                  <>
-                    <Swords className="w-4 h-4" />
-                    <span className="font-bold text-sm">Defeat</span>
-                  </>
+                  <span className="font-bold text-sm">Defeat {lpChange}</span>
                 )}
               </div>
             </div>
             
             <div className="text-right flex flex-col gap-0.5 items-end">
-              {lpChange && (
-                <span className={`text-xs font-bold ${
-                  lpChange.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {lpChange}
-                </span>
-              )}
-              { !arena && biggestMultikill && (
-                <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-600/20 border border-orange-500/40 rounded">
-                  <Zap className="w-3 h-3 text-orange-400" />
-                  <span className="text-xs font-bold text-orange-400">{biggestMultikill}</span>
-                </div>
-              )}
               <div className="flex items-center gap-1 text-xs text-zinc-500">
                 <span>{formatGameDuration(match.info.gameDuration)}</span>
               </div>
@@ -197,9 +187,9 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
 
             {/* KDA Stats */}
             <div className="flex flex-col flex-1 min-w-0">
-              <span className="text-base sm:text-lg font-bold text-red-">
-                {playerData.kills} / <span className={playerData.deaths === 0 ? "text-orange-400" : "text-red-500"}>{playerData.deaths}</span> / {playerData.assists}
-              </span>
+               <span className="text-base sm:text-lg font-bold text-white">
+                 {playerData.kills} / <span className={playerData.deaths === 0 ? "text-orange-400" : "text-red-500"}>{playerData.deaths}</span> / {playerData.assists}
+               </span>
               <span className="text-sm text-zinc-400">
                 {kda} KDA
               </span>
@@ -258,6 +248,22 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
               ))
             )}
           </div>
+
+          {/* First Blood and Multikill Pills */}
+          <div className="flex gap-2 flex-wrap">
+            {firstBloodKill && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-red-600/20 border border-red-500/40 rounded">
+                <Flag className="w-3 h-3 text-red-400" />
+                <span className="text-xs font-bold text-red-400">First Blood</span>
+              </div>
+            )}
+            { !arena && biggestMultikill && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-600/20 border border-orange-500/40 rounded">
+                <Zap className="w-3 h-3 text-orange-400" />
+                <span className="text-xs font-bold text-orange-400">{biggestMultikill}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Desktop/Tablet Layout (>= md) */}
@@ -270,23 +276,17 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
             <div className={`flex items-center gap-1.5 pb-0.5 ${
               remake 
                 ? "text-zinc-400"
+                : arena ? "text-white" 
                 : playerData.win ? "text-emerald-400" : "text-red-400"
             }`}>
               {remake ? (
-                <>
-                  <XCircle className="w-4 h-4 xl:w-5 xl:h-5" />
-                  <span className="font-bold text-sm">Remake</span>
-                </>
+                <span className="font-bold text-sm">Remake</span>
+              ) : arena && playerData.subteamPlacement ? (
+                <span className="font-bold text-sm">{getOrdinal(playerData.subteamPlacement)}</span>
               ) : playerData.win ? (
-                <>
-                  <Crown className="w-4 h-4 xl:w-5 xl:h-5" />
-                  <span className="font-bold text-sm">Victory</span>
-                </>
+                <span className="font-bold text-sm">Victory {lpChange}</span>
               ) : (
-                <>
-                  <Swords className="w-4 h-4 xl:w-5 xl:h-5" />
-                  <span className="font-bold text-sm">Defeat</span>
-                </>
+                <span className="font-bold text-sm">Defeat {lpChange}</span>
               )}
             </div>
             <div className="flex flex-row border-t border-zinc-700/50 pt-2 mt-1 ">
@@ -301,7 +301,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
               <div className="flex-1 flex items-center justify-center">
                 { !isGamemodeWithoutRoles(match.info.queueId) && (
                   <img
-                    src={getRoleIcon(determineRole(playerData))}
+                    src={getRoleIcon(determineRole(playerData, match.info.queueId) || "unknown")}
                     alt={playerData.lane}
                     className="w-6 h-6"
                   />
@@ -352,7 +352,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
             {!arena && primaryKeystone && secondaryTree && (
               <div className="flex flex-col gap-1">
                 <div 
-                  className="w-6 h-6 xl:w-7 xl:h-7 bg-zinc-800/40  border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
+                  className="w-6 h-6 xl:w-7 xl:h-7 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
                   title={`${getRuneName(primaryKeystone)}: ${getRuneDescription(primaryKeystone)}`}
                 >
                   <img
@@ -369,7 +369,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                   </div>
                 </div>
                 <div 
-                  className="w-6 h-6 xl:w-7 xl:h-7 bg-zinc-800/40 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
+                  className="w-6 h-6 xl:w-7 xl:h-7 border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center group relative"
                   title={getRuneTreeName(secondaryTree)}
                 >
                   <img
@@ -483,13 +483,6 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
 
           {/* Game Info + Multikill */}
           <div className="flex flex-col gap-0.5 text-right min-w-[100px] xl:min-w-[120px] ml-auto shrink-0">
-            {lpChange && (
-              <span className={`text-sm font-bold shrink-0 ${
-                lpChange.startsWith('+') ? 'text-emerald-400' : 'text-red-400'
-              }`}>
-                {lpChange}
-              </span>
-            )}
             {!arena && biggestMultikill && (
               <div className="flex items-center gap-1 px-2 py-0.5 mt-1 bg-orange-600/20 border border-orange-500/40 rounded justify-end ml-auto">
                 <Zap className="w-3 h-3 text-orange-400" />
@@ -524,8 +517,8 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="border-t border-zinc-700/50 bg-zinc-900/30">
-          <div className="p-3 sm:p-4">
+        <div className="border-t border-zinc-700/50">
+          <div className="p-3 sm:p-4 bg-gradient-to-r from-slate-800/20 via-black/2 to-orange-900/10">
             {expandedTab === "teams" && (
               <MatchDetailsTab
                 match={match}
@@ -591,3 +584,4 @@ function getLPChange(match: Match, playerData: MatchParticipant, rankedData: any
   // Format output
   return playerData.win ? `+${lpChange} LP` : `${lpChange} LP`;
 }
+

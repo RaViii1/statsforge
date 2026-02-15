@@ -15,6 +15,7 @@ import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneT
 import { getArenaAugmentName, getArenaAugmentIcon } from "@/lib/arena-augments";
 import { getItemImage, getItemDescription } from "@/lib/items";
 import { MatchRunesTab } from "@/components/lol/MatchRunesTab";
+import { MatchPerformanceTab } from "@/components/lol/MatchPerformanceTab";
 import { RankedIcon } from "@/components/lol/RankedIcon";
 import SvgIcon from "../SvgIcon";
 
@@ -25,7 +26,7 @@ interface MatchDetailsTabProps {
   onPlayerClick: (gameName: string, tagLine: string) => void;
 }
 
-type TabType = "details" | "runes";
+type TabType = "details" | "performance" | "runes";
 
 export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClick }: MatchDetailsTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("details");
@@ -136,26 +137,16 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
 
   const tabs = [
     { id: "details" as TabType, label: "Match Details", icon: Users },
+    { id: "performance" as TabType, label: "Performance", icon: BarChart3 },
     { id: "runes" as TabType, label: "Runes", icon: Sparkles },
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header with Tabs and Match Analytics Button */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        {/* Modern Tab Navigation */}
-        <div className="relative inline-flex items-stretch rounded-2xl bg-zinc-900/60 backdrop-blur-md border border-zinc-800/80 p-1.5 shadow-2xl shadow-black/20">
-          {/* Sliding background indicator */}
-          <div
-            className="absolute top-1.5 bottom-1.5 rounded-xl bg-linear-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/25 transition-all duration-300 ease-out"
-            style={{
-              left: arena ? '3px' : `${tabs.findIndex(t => t.id === activeTab) * (100 / tabs.length)}%`,
-              width: arena ? 'calc(100% - 6px)' : `calc(${100 / tabs.length}% - 6px)`,
-              marginLeft: arena ? '0' : '3px',
-            }}
-          />
-
-          {/* Tab Buttons */}
+      <div className="flex items-center justify-between gap-4 flex-wrap border-b border-zinc-800 pb-0">
+        {/* Flat Tab Navigation with Bottom Border */}
+        <div className="inline-flex gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -168,16 +159,15 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  relative z-10 flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl
-                  font-semibold text-sm whitespace-nowrap transition-all duration-300 ease-out
-                  min-w-[140px] sm:min-w-40
+                  flex items-center gap-2 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all
+                  border-b-2
                   ${isActive 
-                    ? 'text-white' 
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'text-orange-500 border-orange-500' 
+                    : 'text-zinc-400 border-transparent hover:text-zinc-200 hover:border-zinc-700'
                   }
                 `}
               >
-                <Icon className={`w-4 h-4 transition-all duration-300 ${isActive ? 'scale-110' : 'scale-100'}`} />
+                <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">
                   {tab.id === 'details' ? 'Details' : 'Runes'}
@@ -188,16 +178,15 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
         </div>
 
         {!arena && (
-        <button
-          onClick={handleOpenMatchAnalytics}
-          className="relative inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-sm bg-linear-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/40 transition-all duration-300 hover:scale-105 border border-orange-400/20"
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span className="hidden sm:inline">Match Analytics</span>
-          <span className="sm:hidden">Analytics</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-          
-        </button>
+          <button
+            onClick={handleOpenMatchAnalytics}
+            className="inline-flex items-center gap-2 px-4 py-2 font-medium text-sm bg-orange-500 hover:bg-orange-600 text-white transition-all"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="hidden sm:inline">Match Analytics</span>
+            <span className="sm:hidden">Analytics</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
         )}
       </div>
 
@@ -210,8 +199,17 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
           </div>
         )}
 
+        {/* Performance Tab */}
+        {activeTab === "performance" && (
+          <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
+            <MatchPerformanceTab
+              match={match}
+              summonerPuuid={summonerPuuid}
+            />
+          </div>
+        )}
+
         {/* Runes Tab */}
-        
         {activeTab === "runes" && !arena && primaryStyle && secondaryStyle && (
           <div className="animate-in fade-in duration-500 slide-in-from-bottom-4">
             <MatchRunesTab
@@ -230,11 +228,8 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
       return (
         <>
           {/* Arena Augments - Enhanced Display */}
-          <div className="mb-6 p-5 bg-linear-to-br from-purple-950/30 via-purple-900/20 to-purple-950/30 border-2 border-purple-800/40 rounded-xl shadow-lg">
-            <h4 className="text-base font-bold text-purple-300 mb-4 flex items-center gap-2">
-              <div className="w-8 h-8 bg-purple-900/50 border border-purple-700 rounded-lg flex items-center justify-center">
-                <Star className="w-5 h-5 text-purple-400" />
-              </div>
+          <div className="p-6">
+            <h4 className="text-base font-bold text-purple-200 mb-4 flex items-center gap-2.5">
               {playerData.riotIdGameName}'s Arena Augments
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -250,9 +245,9 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 return (
                   <div
                     key={idx}
-                    className="group relative flex flex-col items-center gap-2 p-3 bg-purple-950/30 border-2 border-purple-800/50 rounded-xl hover:bg-purple-900/40 hover:border-purple-600 hover:scale-105 transition-all duration-200 shadow-md hover:shadow-purple-900/30"
+                    className="group relative flex flex-col items-center gap-2.5 p-3.5 bg-purple-950/40 border border-purple-800/60 rounded-xl hover:bg-purple-900/50 hover:border-purple-600 hover:scale-105 transition-all duration-200 shadow-md hover:shadow-purple-900/40"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-purple-900/40 border-2 border-purple-700 overflow-hidden shrink-0 group-hover:border-purple-500 transition-colors">
+                    <div className="w-14 h-14 rounded-lg bg-purple-900/50 border border-purple-700 overflow-hidden shrink-0 group-hover:border-purple-500 transition-colors shadow-sm">
                       {augmentIcon ? (
                         <img
                           src={augmentIcon}
@@ -260,16 +255,16 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-7 h-7 text-purple-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>';
                           }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Star className="w-6 h-6 text-purple-400" />
+                          <Star className="w-7 h-7 text-purple-400" />
                         </div>
                       )}
                     </div>
-                    <span className="text-xs text-center text-purple-200 font-semibold leading-tight line-clamp-2">{augmentName}</span>
+                    <span className="text-xs text-center text-purple-200 font-medium leading-tight line-clamp-2">{augmentName}</span>
                   </div>
                 );
               })}
@@ -292,16 +287,12 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 return (
                   <div
                     key={subteamId}
-                    className={`p-5 rounded-xl border-2 shadow-xl transition-all duration-300 ${
-                      teamWon 
-                        ? 'bg-linear-to-br from-emerald-950/30 via-zinc-900 to-zinc-900 border-emerald-700/50 hover:border-emerald-600' 
-                        : 'bg-linear-to-br from-zinc-900 via-zinc-900 to-zinc-800 border-zinc-700 hover:border-zinc-600'
-                    }`}
+                    className="space-y-3"
                   >
-                    {/* Team Header */}
-                    <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-zinc-700/50">
+                    {/* Team Header - Flat Design */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg overflow-hidden `}>
+                        <div className="w-7 h-7 rounded-lg overflow-hidden">
                           <img
                             src={teamIconUrl}
                             alt={`Team ${subteamId}`}
@@ -311,26 +302,22 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                             }}
                           />
                         </div>
-                      <div className="flex justify-between items-center w-full">
-                      {/* Left side */}
-                      <div className="flex items-center gap-2">
-                          <span className="text-md font-bold text-white">
+                        <span className="text-sm font-bold text-white">
                           Team {subteamId}
+                        </span>
+                        {teamWon && (
+                          <span className="text-sm font-bold uppercase tracking-wider text-emerald-400">
+                            Won
                           </span>
-                          {teamWon && <Trophy className="w-5 h-5 text-green-400" />}
+                        )}
                       </div>
-
-                      {/* Right side */}
-                      <span className="text-md text-zinc-400">
-                          Place: #{placement}
+                      <span className="text-sm text-zinc-400 font-medium">
+                        Place #{placement}
                       </span>
-                      </div>
-
-                      </div>
                     </div>
 
-                    {/* Players List */}
-                    <div className="space-y-3">
+                    {/* Players List - No Container Border */}
+                    <div className="space-y-2">
                       {players.map((participant) => {
                         const isPlayer = participant.puuid === summonerPuuid;
                         
@@ -354,28 +341,28 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                         return (
                           <div
                             key={participant.puuid}
-                            className={`p-3 rounded-xl shadow-lg transition-all duration-200 border-2 ${
+                            className={`p-3 transition-all duration-200 ${
                               isPlayer
-                                ? 'bg-linear-to-r from-orange-950/40 to-orange-900/20 border-orange-600/60 hover:border-orange-500'
-                                : 'bg-zinc-800/50 border-zinc-700/50 hover:bg-zinc-800/70 hover:border-zinc-600'
+                                ? 'bg-gradient-to-r from-orange-500/10 to-transparent border-l-2 border-orange-500' 
+                                : 'hover:bg-zinc-800/30'
                             }`}
                           >
                             {/* Player Header */}
-                            <div className="flex items-center gap-3 mb-3 pb-3 border-b border-zinc-700/50">
+                            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-zinc-700/30">
                               <div className="relative group">
-                          <span className="text-[9px] text-white absolute bottom-0 left-0 bg-zinc-900 rounded p-0.5 ">{participant.champLevel}</span>
-                              <img
-                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
-                                alt={participant.championName}
-                                className="w-12 h-12 rounded-lg border-2 border-zinc-600 shrink-0 shadow-md"
-                              />
+                                <span className="text-[10px] text-white absolute bottom-0.5 left-0.5 bg-zinc-900/90 rounded px-1 py-0.5 font-bold shadow-sm">{participant.champLevel}</span>
+                                <img
+                                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+                                  alt={participant.championName}
+                                  className="w-14 h-14 rounded-lg border-2 border-zinc-600 shrink-0 shadow-md"
+                                />
                               </div>
                               
                               <div className="flex flex-col gap-1 shrink-0">
                                 {[participant.summoner1Id, participant.summoner2Id].map((spellId, idx) => (
                                   <div 
                                     key={idx} 
-                                    className="group relative w-5 h-5 rounded border-2 border-zinc-600 overflow-hidden hover:border-orange-500 transition-colors"
+                                    className="group relative w-6 h-6 rounded border border-zinc-600 overflow-hidden hover:border-orange-500 transition-colors shadow-sm"
                                     title={getSummonerSpellName(spellId)}
                                   >
                                     <img
@@ -389,7 +376,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                               <div className="flex-1 min-w-0">
                                 <button
                                   onClick={() => onPlayerClick(participant.riotIdGameName, participant.riotIdTagline)}
-                                  className="text-sm font-bold text-white truncate hover:text-orange-400 transition-colors cursor-pointer text-left w-full"
+                                  className="text-sm font-bold text-white truncate hover:text-orange-400 transition-colors cursor-pointer text-left w-full mb-1"
                                   title={`${participant.riotIdGameName}`}
                                 >
                                   {participant.riotIdGameName}
@@ -408,9 +395,8 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {/* Augments */}
                               <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Star className="w-4 h-4 text-purple-400" />
-                                  <p className="text-xs font-bold text-purple-300 uppercase tracking-wide">Augments</p>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                  <p className="text-xs font-bold text-white uppercase tracking-wide">Augments</p>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {augmentIds.map((augmentId, idx) => {
@@ -421,10 +407,10 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                     return (
                                       <div
                                         key={`augment-${idx}`}
-                                        className={`group relative w-9 h-9 rounded-lg overflow-hidden transition-all duration-200 ${
+                                        className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
                                           hasAugment
-                                            ? 'bg-purple-900/40 border-2 border-purple-700 hover:border-purple-400 hover:scale-110 shadow-md hover:shadow-purple-500/30'
-                                            : 'bg-zinc-700/30 border-2 border-dashed border-zinc-600/50'
+                                            ? 'bg-purple-900/50 border border-purple-700 hover:border-purple-400 hover:scale-110 hover:shadow-purple-500/30'
+                                            : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
                                         }`}
                                         title={hasAugment ? augmentName : 'Empty Augment Slot'}
                                       >
@@ -451,9 +437,8 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
 
                               {/* Items */}
                               <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <FlameIcon className="w-4 h-4 text-orange-400" />
-                                  <p className="text-xs font-bold text-orange-300 uppercase tracking-wide">Items</p>
+                                <div className="flex items-center gap-2 mb-2.5">
+                                  <p className="text-xs font-bold text-white uppercase tracking-wide">Items</p>
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {normalizedItems.map((itemId, idx) => {
@@ -463,10 +448,10 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                     return (
                                       <div
                                         key={`item-${idx}`}
-                                        className={`group relative w-9 h-9 rounded-lg overflow-hidden transition-all duration-200 ${
+                                        className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
                                           isEmpty
-                                            ? 'bg-zinc-700/30 border-2 border-dashed border-zinc-600/50'
-                                            : 'bg-zinc-700 border-2 border-zinc-600 hover:border-orange-500 hover:scale-110 shadow-md hover:shadow-orange-500/30'
+                                            ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                            : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
                                         }`}
                                         title={itemName}
                                       >
@@ -483,10 +468,10 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
 
                                   {/* Trinket */}
                                   <div 
-                                    className={`group relative w-9 h-9 rounded-lg overflow-hidden transition-all duration-200 ${
+                                    className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
                                       participant.item6 && participant.item6 !== 0
-                                        ? 'bg-zinc-700 border-2 border-amber-600 hover:border-amber-400 hover:scale-110 shadow-md hover:shadow-amber-500/30'
-                                        : 'bg-zinc-700/30 border-2 border-dashed border-zinc-600/50'
+                                        ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
+                                        : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
                                     }`}
                                     title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${getItemDescription(participant.item6.toString())}` : 'Empty Trinket Slot'}
                                   >
@@ -516,54 +501,63 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
     return (
       <div className="grid md:grid-cols-2 gap-6">
         {[
-          { team: team1, name: "Blue Team" },
-          { team: team2, name: "Red Team" }
-        ].map(({ team, name }) => (
-          <div key={name} className="overflow-visible">
-          <div className={`group relative mb-4 overflow-hidden rounded-xl border transition-all duration-300 hover:scale-[1.01] ${
-          team[0]?.win
-              ? 'border-emerald-500/40 bg-linear-to-r from-emerald-950/80 via-emerald-900/20 to-zinc-950 shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)]'
-              : 'border-rose-500/40 bg-linear-to-r from-red-950/80 via-red-900/20 to-zinc-950 shadow-[0_0_20px_-5px_rgba(244,63,94,0.2)]'
-          }`}>
-          
-          {/* Subtle Shine Effect on Hover */}
-          <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-
-          <div className="relative flex items-center justify-between p-5">
-              {/* Left: Icon & Status */}
-              <div className="flex items-center gap-4">
-              {/* Icon Circle Container */}
-              <div className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-inner backdrop-blur-sm ${
-                  team[0]?.win
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20'
-                  : 'border-rose-500/30 bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20'
-              }`}>
-                  {team[0]?.win ? <Trophy className="h-6 w-6 drop-shadow-md" /> : <Flag className="h-6 w-6 drop-shadow-md" />}
-              </div>
-
-              {/* Text Hierarchy */}
-              <div>
-                  <h3 className={`text-2xl font-black uppercase italic tracking-widest ${
-                  team[0]?.win 
-                      ? 'text-transparent bg-clip-text bg-linear-to-r from-emerald-200 to-emerald-600' 
-                      : 'text-transparent bg-clip-text bg-linear-to-r from-rose-200 to-rose-600'
+          { team: team1, name: "Blue Team", color: "white" },
+          { team: team2, name: "Red Team", color: "white" }
+        ].map(({ team, name, color }) => (
+          <div key={name} className="space-y-2">
+             {/* Team Header*/}
+            <div className="px-4 py-3 border-b border-zinc-800 bg-gradient-to-t from-zinc-900/40 to-transparent">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs font-semibold uppercase tracking-tight ${
+                    color === 'white' ? 'text-white' : 'text-red-400'
                   }`}>
-                  {team[0]?.win ? 'Victory' : 'Defeat'}
-                  </h3>
-                  <div className={`h-0.5 w-full rounded-full mt-1 ${team[0]?.win ? 'bg-emerald-500/30' : 'bg-rose-500/30'}`} />
+                    {name}
+                  </span>
+                  <span className={`text-xs font-semibold uppercase tracking-tight ${
+                    team[0]?.win 
+                      ? 'text-emerald-400' 
+                      : 'text-rose-400'
+                  }`}>
+                    {team[0]?.win ? 'Won' : 'Lost'}
+                  </span>
+                </div>
               </div>
-              </div>
-
-              {/* Right: Player Info & Surrender Tag */}
-              <div className="text-right">
-              <p className="text-lg font-bold text-white drop-shadow-sm tracking-tight">{name}</p>
               
+              <div className="flex items-center text-sm text-zinc-400 font-medium gap-1.5 flex-wrap">
+                <div className="flex items-center">
+                  <span>{team.reduce((sum, p) => sum + p.kills, 0)}/</span>
+                  <span>{team.reduce((sum, p) => sum + p.deaths, 0)}/</span>
+                  <span>{team.reduce((sum, p) => sum + p.assists, 0)}</span>
+                </div>
+                <div className="w-px h-4 bg-zinc-700 mx-1 hidden sm:block"></div>
+                <div className="flex items-center gap-0.5" title="Team gold earned">
+                  <SvgIcon size={14} type="gold" className="text-zinc-400" />
+                  <span>{(team.reduce((sum, p) => sum + p.goldEarned, 0) / 1000).toFixed(1)}k</span>
+                </div>
+                <div className="w-px h-4 bg-zinc-700 mx-1 hidden sm:block"></div>
+                <div className="flex items-center gap-0.5" title="Turrets destroyed">
+                  <SvgIcon size={14} type="tower" className="text-zinc-400" />
+                  <span>{team.reduce((sum, p) => sum + (p.turretKills || 0), 0)}</span>
+                </div>
+                <div className="flex items-center gap-0.5" title="Inhibitors destroyed">
+                  <SvgIcon size={14} type="mr" className="text-zinc-400" />
+                  <span>{team.reduce((sum, p) => sum + (p.inhibitorKills || 0), 0)}</span>
+                </div>
+                <div className="flex items-center gap-0.5" title="Dragon kills">
+                  <SvgIcon size={14} type="dragon" className="text-zinc-400" />
+                  <span>{team.reduce((sum, p) => sum + (p.dragonKills || 0), 0)}</span>
+                </div>
+                <div className="flex items-center gap-0.5"  title="Baron Nashor kills">
+                  <SvgIcon size={14} type="baron" className="text-zinc-400" />
+                  <span>{team.reduce((sum, p) => sum + (p.baronKills || 0), 0)}</span>
+                </div>
 
               </div>
-          </div>
-          </div>
+            </div>
             
-            <div className="space-y-3 overflow-visible">
+            {/* Players List - No container borders */}
+            <div className="space-y-2">
               {team.map((participant: any) => {
                 const participantCSDisplay = formatCSDisplay(match, participant);
                 const participantPrimaryKeystone = participant.perks?.styles?.[0]?.selections?.[0]?.perk;
@@ -571,157 +565,235 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 const damageDealtPercent = (participant.totalDamageDealtToChampions / highestDamageDealt) * 100;
                 const damageTakenPercent = (participant.totalDamageTaken / highestDamageTaken) * 100;
                 const itemIds = [
-                          participant.item0,
-                          participant.item1,
-                          participant.item2,
-                          participant.item3,
-                          participant.item4,
-                          participant.item5,
-                        ];
+                  participant.item0,
+                  participant.item1,
+                  participant.item2,
+                  participant.item3,
+                  participant.item4,
+                  participant.item5,
+                ];
+                const isPlayer = participant.puuid === summonerPuuid;
                 
                 return (
+                  <div className="border-b border-zinc-800" key={participant.puuid}>
                   <div 
                     key={participant.puuid}
-                    className={`px-3 rounded-xl transition-all duration-200 overflow-visible border-2 shadow-md ${
-                      participant.puuid === summonerPuuid 
-                        ? 'bg-linear-to-r from-orange-950/40 to-orange-900/20 border-orange-600/60 hover:border-orange-500 hover:shadow-orange-900/30' 
-                        : 'bg-zinc-800/40 border-zinc-700/50 hover:bg-zinc-800/60 hover:border-zinc-600 hover:shadow-lg'
+                    className={`p-3 transition-all duration-300 relative group ${
+                      isPlayer
+                        ? name === 'Blue Team' ? 'border-l-2 border-orange-500 bg-gradient-to-r from-orange-500/5 to-transparent' : 'border-r-2 border-orange-500 bg-gradient-to-l from-orange-500/5 to-transparent'
+                        : ''
                     }`}
                   >
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* Champion + Spells + Runes + Rank */}
-                      <div className="flex items-center gap-0.5 overflow-visible shrink-0">
-                        <div className="relative group pr-1.5">
-                          <span className="text-[9px] text-white absolute bottom-0 left-0 bg-zinc-900 rounded p-0.5 ">{participant.champLevel}</span>
-                          <img
-                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
-                            alt={participant.championName}
-                            className="w-14 h-14 rounded-lg border border-zinc-600 group-hover:border-orange-500 shadow-md transition-all"
-                            title={participant.championName}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <div className="w-6 h-6 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner1Id)}>
-                            <img src={getSummonerSpellIcon(participant.summoner1Id)} alt={getSummonerSpellName(participant.summoner1Id)} className="w-full h-full object-cover" />
-                          </div>
-                          <div className="w-6 h-6 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner2Id)}>
-                            <img src={getSummonerSpellIcon(participant.summoner2Id)} alt={getSummonerSpellName(participant.summoner2Id)} className="w-full h-full object-cover" />
-                          </div>
-                        </div>
-                        {!arena && participantPrimaryKeystone && (
-                          <div className="flex flex-col gap-1 overflow-visible">
-                            <div className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-visible flex items-center justify-center group relative hover:z-9999 hover:border-orange-500 transition-colors shadow-sm" title={getRuneName(participantPrimaryKeystone)}>
-                              <img src={getRuneIcon(participantPrimaryKeystone)} onError={(e) => { e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png"; }} alt={getRuneName(participantPrimaryKeystone)} className="w-4 h-4 object-contain" />
-                              <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-9999 w-64 p-3 bg-zinc-900 border-2 border-orange-500/60 rounded-xl shadow-2xl pointer-events-none">
-                                <p className="text-sm font-bold text-orange-400 mb-1.5">{getRuneName(participantPrimaryKeystone)}</p>
-                                <p className="text-xs text-zinc-300 leading-relaxed">{getRuneDescription(participantPrimaryKeystone)}</p>
-                              </div>
-                            </div>
-                            {participantSecondaryTree && (
-                              <div className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-hidden flex items-center justify-center hover:border-orange-500 transition-colors shadow-sm" title={getRuneTreeName(participantSecondaryTree)}>
-                                <img src={getRuneTreeIcon(participantSecondaryTree)} alt={getRuneTreeName(participantSecondaryTree)} className="w-3.5 h-3.5 object-contain" />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Player Name & KDA */}
-                      <div className="flex-1 min-w-[120px]">
-                        <button onClick={() => onPlayerClick(participant.riotIdGameName, participant.riotIdTagline)} className="text-sm font-bold text-white truncate hover:text-orange-400 transition-colors cursor-pointer text-left w-full mb-1">
-                          {participant.riotIdGameName}
-                        </button>
-                        
-                        <div className="flex items-center gap-2">
-                          <RankedIcon rankedData={rankedDataMap[participant.puuid]} isLoading={isLoadingRanked} />
-                          <p className="text-xs font-bold whitespace-nowrap">
-                            <span className="text-green-400">{participant.kills}</span>
-                            <span className="text-zinc-500"> / </span>
-                            <span className="text-red-400">{participant.deaths}</span>
-                            <span className="text-zinc-500"> / </span>
-                            <span className="text-blue-400">{participant.assists}</span>
-                          </p>
-                          
-                        </div>
-                      </div>
-
-                      <div className="w-full sm:w-auto sm:min-w-[110px] shrink-0 mt-2 sm:mt-0">
-                        <div>
-                        <div className="mb-2">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <Swords className="w-4 h-4 text-red-400" />
-                              <p className="text-xs font-semibold text-zinc-300">Dealt</p>
-                            </div>
-                            <p className="text-xs font-bold text-white">{(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k</p>
-                          </div>
-                          <div className="w-full h-2 bg-zinc-700/50 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-linear-to-r from-red-600 via-red-500 to-red-700 rounded-full transition-all duration-300 shadow-md" style={{ width: `${damageDealtPercent}%` }} />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <Shield className="w-4 h-4 text-orange-400" />
-                              <p className="text-xs font-semibold text-zinc-300">Taken</p>
-                            </div>
-                            <p className="text-xs font-bold text-white">{(participant.totalDamageTaken / 1000).toFixed(1)}k</p>
-                          </div>
-                          <div className="w-full h-2 bg-zinc-700/50 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-linear-to-r from-orange-600 via-orange-500 to-orange-400 rounded-full transition-all duration-300 shadow-md" style={{ width: `${damageTakenPercent}%` }} />
-                          </div>
-                        </div>
-                    </div>
-                        <div className="flex flex-row pt-2">
-                        <span className="text-xs text-zinc-400 font-medium mr-1">{participantCSDisplay.totalCS} CS</span>
-                          <p className="flex items-center text-[10px]" title="Gold earned">
-                              <span className="border-l pl-1 text-xs text-zinc-400 font-medium mr-1">{participant.goldEarned} </span>
-                              <SvgIcon size={12} type="gold" className="text-amber-400" />
-                          </p>
-                        </div>
-                      </div>
-                        <div className="flex flex-wrap gap-1.5 shrink-0">
-                        {itemIds.map((itemId, idx) => {
-                          const itemName = itemId && itemId !== 0 ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
-                          return (
-                            <div
-                              key={`item-${idx}`}
-                              className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 ${
-                                !itemId || itemId === 0
-                                  ? 'bg-zinc-700/30 border-2 border-dashed border-zinc-600/50'
-                                  : 'bg-zinc-700 border-2 border-zinc-600 hover:border-orange-500 hover:scale-110 shadow-md hover:shadow-orange-500/30'
-                              }`}
-                              title={itemName}
-                            >
-                              {itemId && itemId !== 0 ? (
-                                <img
-                                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
-                                  alt={itemName}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                        {/* Trinket */}
-                        <div
-                          className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 ${
-                            participant.item6 && participant.item6 !== 0
-                              ? 'bg-zinc-700 border-2 border-amber-600 hover:border-amber-400 hover:scale-110 shadow-md hover:shadow-amber-500/30'
-                              : 'bg-zinc-700/30 border-2 border-dashed border-zinc-600/50'
-                          }`}
-                          title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${getItemDescription(participant.item6.toString())}` : 'Empty Trinket Slot'}
-                        >
-                          {participant.item6 && participant.item6 !== 0 ? (
+                    {/* Hover gradient effect - left to right for blue team, right to left for red team */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                      name === 'Blue Team'
+                        ? 'bg-gradient-to-r from-orange-500/10 to-transparent' 
+                        : 'bg-gradient-to-l from-orange-500/10 to-transparent'
+                    }`}></div>
+                    
+                    <div className="relative flex flex-col gap-3">
+                      {/* Top Row: Champion + Spells + Runes + Player Info + Stats (including gold) */}
+                      <div className="flex items-center gap-2.5">
+                        {/* Champion + Spells + Runes */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <div className="relative group">
+                            <span className="text-[10px] text-white absolute bottom-0.5 left-0.5 bg-zinc-900/90 rounded px-1 py-0.5 font-bold shadow-sm z-10">
+                              {participant.champLevel}
+                            </span>
                             <img
-                              src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(participant.item6.toString())}`}
-                              alt={`Trinket ${participant.item6}`}
-                              className="w-full h-full object-cover"
+                              src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+                              alt={participant.championName}
+                              className="w-12 h-12 rounded-lg border border-zinc-600 group-hover:border-orange-500 shadow-md transition-all"
+                              title={participant.championName}
                             />
-                          ) : null}
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner1Id)}>
+                              <img src={getSummonerSpellIcon(participant.summoner1Id)} alt={getSummonerSpellName(participant.summoner1Id)} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner2Id)}>
+                              <img src={getSummonerSpellIcon(participant.summoner2Id)} alt={getSummonerSpellName(participant.summoner2Id)} className="w-full h-full object-cover" />
+                            </div>
+                          </div>
+                          {!arena && participantPrimaryKeystone && (
+                            <div className="flex flex-col gap-0.5">
+                              <div 
+                                className="w-6 h-6 flex items-center justify-center relative " 
+                                title={getRuneName(participantPrimaryKeystone)}
+                                onMouseEnter={(e) => {
+                                  const tooltip = e.currentTarget.querySelector('.rune-tooltip');
+                                  if (tooltip) {
+                                    tooltip.classList.remove('opacity-0', 'invisible');
+                                    tooltip.classList.add('opacity-100', 'visible');
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  const tooltip = e.currentTarget.querySelector('.rune-tooltip');
+                                  if (tooltip) {
+                                    tooltip.classList.remove('opacity-100', 'visible');
+                                    tooltip.classList.add('opacity-0', 'invisible');
+                                  }
+                                }}
+                              >
+                                <img src={getRuneIcon(participantPrimaryKeystone)} onError={(e) => { e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png"; }} alt={getRuneName(participantPrimaryKeystone)} className="w-4 h-4 object-contain" />
+                                <div className="rune-tooltip absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 invisible transition-opacity duration-200 z-50 w-64 p-3 bg-zinc-900 border border-orange-500/60 rounded-lg shadow-2xl pointer-events-none">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                    <p className="text-xs font-black text-white uppercase tracking-wider">{getRuneName(participantPrimaryKeystone)}</p>
+                                  </div>
+                                  <p className="text-xs text-zinc-300 leading-relaxed">{getRuneDescription(participantPrimaryKeystone)}</p>
+                                </div>
+                              </div>
+                              {participantSecondaryTree && (
+                                <div className="w-6 h-6 flex items-center justify-center" title={getRuneTreeName(participantSecondaryTree)}>
+                                  <img src={getRuneTreeIcon(participantSecondaryTree)} alt={getRuneTreeName(participantSecondaryTree)} className="w-3.5 h-3.5 object-contain" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Player Name + Rank + KDA + CS + KP + Gold */}
+                        <div className="flex-1 min-w-0 flex items-center justify-between gap-3 flex-wrap">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <RankedIcon size={25} rankedData={rankedDataMap[participant.puuid]} isLoading={isLoadingRanked} />
+                              <button onClick={() => onPlayerClick(participant.riotIdGameName, participant.riotIdTagline)} className="text-sm font-semibold text-white hover:text-orange-400 transition-colors cursor-pointer max-w-32 truncate">
+                                {participant.riotIdGameName}
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-bold whitespace-nowrap border-r border-zinc-700 pr-2">
+                                <span className="text-white">{participant.kills}</span>
+                                <span className="text-zinc-500"> / </span>
+                                <span className="text-red-500">{participant.deaths}</span>
+                                <span className="text-zinc-500"> / </span>
+                                <span className="text-white">{participant.assists}</span>
+                              </p>
+                              <span className="text-xs text-orange-500 font-medium">
+                                {participant.challenges?.killParticipation 
+                                  ? `${(participant.challenges.killParticipation * 100).toFixed(0)}% KP`
+                                  : '0% KP'
+                                }
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-400 font-medium border-r border-zinc-700 pr-2" title="Creep Score">
+                              {participantCSDisplay.totalCS} ({participantCSDisplay.csPerMin}) CS
+                            </span>
+                            <div className="flex items-center gap-1 text-xs border-r border-zinc-700 pr-2" title="Gold earned">
+                              <span className="text-zinc-400 font-medium">{participant.goldEarned}</span>
+                              <SvgIcon size={12} type="gold" className="text-amber-400" />
+                            </div>
+                            <div className="flex items-center gap-1 text-xs" title="Vision Score">
+                              <span className="text-zinc-400 font-medium">{participant.visionScore}</span>
+                              <SvgIcon size={12} type="support" className="text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Middle Row: Damage Stats */}
+                      <div className="flex items-center gap-3">
+                        <div className="grid grid-cols-2 gap-4 flex-1 max-w-md">
+                          <div>
+                            <div className="flex items-center justify-between gap-1.5 mb-1">
+                              <div className="flex items-center gap-1">
+                                <Swords className="w-3.5 h-3.5 text-red-400" />
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase">Dealt</p>
+                              </div>
+                              <p className="text-xs font-bold text-white">{(participant.totalDamageDealtToChampions / 1000).toFixed(1)}k</p>
+                            </div>
+                            <div className="w-full h-1.5 bg-zinc-700/60 rounded-full overflow-hidden shadow-inner">
+                              <div className="h-full bg-gradient-to-r from-red-600 to-red-500 rounded-full transition-all duration-300" style={{ width: `${damageDealtPercent}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between gap-1.5 mb-1">
+                              <div className="flex items-center gap-1">
+                                <Shield className="w-3.5 h-3.5 text-orange-400" />
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase">Taken</p>
+                              </div>
+                              <p className="text-xs font-bold text-white">{(participant.totalDamageTaken / 1000).toFixed(1)}k</p>
+                            </div>
+                            <div className="w-full h-1.5 bg-zinc-700/60 rounded-full overflow-hidden shadow-inner">
+                              <div className="h-full bg-gradient-to-r from-orange-600 to-orange-500 rounded-full transition-all duration-300" style={{ width: `${damageTakenPercent}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Items */}
+                      <div className={`flex items-center gap-3 ${name === 'Blue Team' ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`flex flex-wrap gap-1 ${name === 'Red Team' ? 'flex-row-reverse' : ''}`}>
+                          {name === 'Red Team' ? [...itemIds].reverse().map((itemId, idx) => {
+                            const originalIndex = itemIds.length - 1 - idx;
+                            const itemName = itemId && itemId !== 0 ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
+                            return (
+                              <div
+                                key={`item-${originalIndex}`}
+                                className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                                  !itemId || itemId === 0
+                                    ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                    : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                                }`}
+                                title={itemName}
+                              >
+                                {itemId && itemId !== 0 ? (
+                                  <img
+                                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                                    alt={itemName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : null}
+                              </div>
+                            );
+                          }) : itemIds.map((itemId, idx) => {
+                            const itemName = itemId && itemId !== 0 ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
+                            return (
+                              <div
+                                key={`item-${idx}`}
+                                className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                                  !itemId || itemId === 0
+                                    ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                    : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                                }`}
+                                title={itemName}
+                              >
+                                {itemId && itemId !== 0 ? (
+                                  <img
+                                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                                    alt={itemName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                          {/* Trinket */}
+                          <div
+                            className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                              participant.item6 && participant.item6 !== 0
+                                ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
+                                : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                            }`}
+                            title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${getItemDescription(participant.item6.toString())}` : 'Empty Trinket Slot'}
+                          >
+                            {participant.item6 && participant.item6 !== 0 ? (
+                              <img
+                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(participant.item6.toString())}`}
+                                alt={`Trinket ${participant.item6}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
+                  </div>
                   </div>
                 );
               })}
@@ -732,3 +804,5 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
     );
   }
 }
+
+

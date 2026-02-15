@@ -94,8 +94,10 @@ export function MatchHistoryTab({
       const player = match.info.participants.find(p => p.puuid === summonerPuuid);
       if (!player) return;
       
-      const role = determineRole(player as any);
-      rolesMap.set(role, (rolesMap.get(role) || 0) + 1);
+      const role = determineRole(player as any, match.info.queueId);
+      if (role) { // Only add if role is not null (game mode has roles)
+        rolesMap.set(role, (rolesMap.get(role) || 0) + 1);
+      }
     });
     
     return Array.from(rolesMap.entries())
@@ -107,7 +109,7 @@ export function MatchHistoryTab({
       .sort((a, b) => b.count - a.count);
   }, [matches, summonerPuuid]);
 
-  const topChampions = useMemo(() => {
+   const topChampions = useMemo(() => {
     const champMap = new Map<string, ChampionStats>();
     
     matches.forEach((match) => {
@@ -117,7 +119,7 @@ export function MatchHistoryTab({
       const key = player.championName;
       const existing = champMap.get(key);
       
-      const role = determineRole(player as any);
+      const role = determineRole(player as any, match.info.queueId);
       
       if (existing) {
         existing.games += 1;
@@ -125,10 +127,14 @@ export function MatchHistoryTab({
         existing.kills += player.kills;
         existing.deaths += player.deaths;
         existing.assists += player.assists;
-        existing.roles.set(role, (existing.roles.get(role) || 0) + 1);
+        if (role) { // Only add role if it's not null
+          existing.roles.set(role, (existing.roles.get(role) || 0) + 1);
+        }
       } else {
         const rolesMap = new Map<string, number>();
-        rolesMap.set(role, 1);
+        if (role) { // Only add role if it's not null
+          rolesMap.set(role, 1);
+        }
         champMap.set(key, {
           championName: player.championName,
           championId: player.championId,
@@ -193,11 +199,11 @@ export function MatchHistoryTab({
       });
     }
     
-    if (filterRole) {
+     if (filterRole) {
       filtered = filtered.filter(match => {
         const player = match.info.participants.find(p => p.puuid === summonerPuuid);
         if (!player) return false;
-        return determineRole(player as any) === filterRole;
+        return determineRole(player as any, match.info.queueId) === filterRole;
       });
     }
     
@@ -217,8 +223,8 @@ export function MatchHistoryTab({
       filtered.sort((a, b) => {
         const playerA = a.info.participants.find(p => p.puuid === summonerPuuid);
         const playerB = b.info.participants.find(p => p.puuid === summonerPuuid);
-        const roleA = determineRole(playerA as any);
-        const roleB = determineRole(playerB as any);
+        const roleA = determineRole(playerA as any, a.info.queueId) || "";
+        const roleB = determineRole(playerB as any, b.info.queueId) || "";
         return roleA.localeCompare(roleB);
       });
     }
@@ -378,7 +384,7 @@ export function MatchHistoryTab({
                         </div>
                       </div>
                       
-                      {hasRankedGames && primaryRole && (
+                      {hasRankedGames && primaryRole && primaryRole[0] && (
                         <img
                           src={getRoleIcon(primaryRole[0])}
                           alt={primaryRole[0]}

@@ -7364,7 +7364,7 @@ export function getItemName(id: string): string | undefined {
 export function getItemImage(id: string): string | undefined {
   const item = items.find(i => i.id === id);
   // console.log("id", id, "item", item?.name);
-  return item?.image;
+  return item?.image || "im";
 }
 
 export function getItemDescription(id: string): string | undefined {

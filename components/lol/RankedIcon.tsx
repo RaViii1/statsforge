@@ -6,22 +6,25 @@ import { RankedEntry } from "@/app/types/lolInterfaces";
 interface RankedIconProps {
   rankedData: RankedEntry | null | undefined;
   isLoading?: boolean;
+  size?: number; // Size in pixels, defaulting to 24 (w-6 h-6)
 }
 
-export function RankedIcon({ rankedData, isLoading = false }: RankedIconProps) {
+export function RankedIcon({ rankedData, isLoading = false, size = 24 }: RankedIconProps) {
   if (isLoading) {
     return (
-      <div className="w-6 h-6 rounded bg-zinc-800 border border-zinc-700 animate-pulse" >
+      <div 
+        style={{ width: `${size}px`, height: `${size}px` }}
+        className="rounded bg-zinc-800 border border-zinc-700 animate-pulse"
+      >
         <img
-        src={"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png"}
-        alt={"ranked icon loading"}
-        className="w-full h-full object-contain"
-        onError={(e) => {
-          e.currentTarget.src = getRankIcon(undefined);
-        }}
-      />
-        </div>
-
+          src={"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png"}
+          alt={"ranked icon loading"}
+          className="w-full h-full object-contain"
+          onError={(e) => {
+            e.currentTarget.src = getRankIcon(undefined);
+          }}
+        />
+      </div>
     );
   }
 
@@ -32,7 +35,8 @@ export function RankedIcon({ rankedData, isLoading = false }: RankedIconProps) {
 
   return (
     <div
-      className="w-8 h-8 rounded overflow-hidden hover:opacity-70 transition-opacity duration-200 group relative"
+      style={{ width: `${size}px`, height: `${size}px` }}
+      className="rounded overflow-hidden hover:opacity-70 transition-opacity duration-200 group relative"
       title={rankText}
     >
       <img

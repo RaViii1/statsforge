@@ -38,6 +38,8 @@ export interface MatchParticipant {
   neutralMinionsKilled: number;
   firstBloodKill?: boolean;
   lane: string;
+  individualPosition?: string;
+  teamPosition?: string;
   multikills?: number;
   pentaKills?: number;
   quadraKills?: number;
@@ -56,7 +58,12 @@ export interface MatchParticipant {
   item6: number;
   totalDamageDealtToChampions: number;
   totalDamageTaken: number;
+  playedChampSelectPosition: string;
   visionScore: number;
+  visionWardsBoughtInGame?: number;
+  stealthWardsPlaced?: number;
+  controlWardsPlaced?: number;
+  wardsKilled?: number;
   perks?: {
     styles: Array<{
       selections: Array<{
@@ -76,6 +83,19 @@ export interface MatchParticipant {
   playerAugment5?: number;
   playerSubteamId?: number;
   subteamPlacement?: number;
+  turretKills?: number;
+  dragonKills?: number;
+  inhibitorKills?: number;
+  baronKills?: number;
+  voidMonsterKill?: number;
+    objectives?: {
+    tower?: number;
+    dragon?: number;
+    baron?: number;
+    inhibitor?: number;
+    riftHerald?: number;
+    horde?: number;
+  };
 }
 
 export interface MatchInfo {
@@ -123,3 +143,4 @@ export interface RankedEntry {
   losses: number;
   hotStreak: boolean;
 }
+

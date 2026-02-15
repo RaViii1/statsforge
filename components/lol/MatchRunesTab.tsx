@@ -21,45 +21,71 @@ export function MatchRunesTab({ primaryStyle, secondaryStyle, statPerks }: Match
   ];
 
   return (
-    <div className="overflow-visible flex md:flex-row flex-col items-center md:items-stretch md:justify-evenly gap-6">
+    <div className="grid md:grid-cols-2 gap-6">
       {/* Primary Rune Tree */}
-      <div className="p-4  rounded-lg overflow-visible min-w-1/3 max-w-1/2 h-max">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
           <img
             src={getRuneTreeIcon(primaryStyle.style)}
             alt={getRuneTreeName(primaryStyle.style)}
-            className="w-8 h-8 object-contain"
+            className="w-7 h-7 object-contain"
           />
-          <h4 className="text-lg text-center font-medium text-orange-400">
-            {getRuneTreeName(primaryStyle.style)} (Primary)
+          <h4 className="text-sm font-semibold text-white uppercase tracking-tight">
+            {getRuneTreeName(primaryStyle.style)}
           </h4>
+          <span className="text-xs text-zinc-500 font-medium">Primary</span>
         </div>
-        <div className="grid gap-6 overflow-visible ">
+
+        {/* Rune Rows */}
+        <div className="space-y-6 px-4">
           {getRunesForTree(primaryStyle.style).map((row, rowIdx) => (
-            
-            <div key={rowIdx} className={`flex items-center justify-center gap-4 overflow-visible ${rowIdx === 0 ? 'border-b border-zinc-700 py-6' : ''}`}>
+            <div 
+              key={rowIdx} 
+              className={`flex items-center justify-center gap-4 ${rowIdx === 0 ? 'pb-6 border-b border-zinc-800' : ''}`}
+            >
               {row.map((runeId) => {
                 const isSelected = allSelectedRunes.includes(runeId);
+                const isKeystone = rowIdx === 0;
                 return (
                   <div
                     key={runeId}
-                    className={`group relative flex items-center justify-center  w-${rowIdx === 0 ? '14 ' : '10'} h-${rowIdx === 0 ? '14' : '10'} rounded-full bg-zinc-900 transition-all overflow-visible hover:z-100000 ${
-                      isSelected
-                        ? 'border-2 border-orange-500 shadow-lg shadow-orange-500/50 scale-110 '
-                        : 'border-2 border-zinc-700 opacity-40 hover:opacity-100'
-                    }`}
+                    className="group relative"
                   >
-                    <img
-                      src={getRuneIcon(runeId)}
-                      onError={(e) => {
-                        e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
-                      }}
-                      alt={getRuneName(runeId)}
-                      className={rowIdx === 0 ? "w-12 h-12 object-contain" : "w-8 h-8 object-contain"}
-                    />
-                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
-                      <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(runeId)}</p>
-                      <p className="text-xs text-zinc-300">{getRuneDescription(runeId)}</p>
+                    {/* Rune Container - opacity applied here only */}
+                    <div
+                      className={`flex items-center justify-center transition-opacity ${
+                        isKeystone ? 'w-16 h-16' : 'w-12 h-12'
+                      } ${
+                        isSelected
+                          ? 'opacity-100'
+                          : 'opacity-30 group-hover:opacity-60'
+                      }`}
+                    >
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <div className={`absolute inset-0 border-2 border-orange-500 rounded-lg`}></div>
+                      )}
+                      
+                      <img
+                        src={getRuneIcon(runeId)}
+                        onError={(e) => {
+                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                        }}
+                        alt={getRuneName(runeId)}
+                        className={`object-contain ${isKeystone ? 'w-14 h-14' : 'w-10 h-10'}`}
+                      />
+                    </div>
+                    
+                    {/* Tooltip - outside opacity container */}
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                      <div className="w-64 p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                          <p className="text-xs font-bold text-white uppercase tracking-wider">{getRuneName(runeId)}</p>
+                        </div>
+                        <p className="text-xs text-zinc-400 leading-relaxed">{getRuneDescription(runeId)}</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -67,46 +93,66 @@ export function MatchRunesTab({ primaryStyle, secondaryStyle, statPerks }: Match
             </div>
           ))}
         </div>
-
       </div>
 
-      {/* Secondary Rune Tree */}
-      <div className="p-4 rounded-lg overflow-visible min-w-1/3 max-w-1/2">
-        <div className="flex items-center gap-3 mb-4">
+      {/* Secondary Rune Tree + Stat Shards */}
+      <div className="space-y-4">
+        {/* Secondary Tree Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
           <img
             src={getRuneTreeIcon(secondaryStyle.style)}
             alt={getRuneTreeName(secondaryStyle.style)}
-            className="w-8 h-8 object-contain"
+            className="w-7 h-7 object-contain"
           />
-          <h4 className="text-lg text-center font-medium text-orange-400">
-            {getRuneTreeName(secondaryStyle.style)} (Secondary)
+          <h4 className="text-sm font-semibold text-white uppercase tracking-tight">
+            {getRuneTreeName(secondaryStyle.style)}
           </h4>
+          <span className="text-xs text-zinc-500 font-medium">Secondary</span>
         </div>
-        <div className="grid gap-6 overflow-visible">
+
+
+        <div className="space-y-6 px-4">
           {getRunesForTree(secondaryStyle.style).slice(1).map((row, rowIdx) => (
-            <div key={rowIdx} className="flex items-center justify-center gap-4 overflow-visible">
+            <div key={rowIdx} className="flex items-center justify-center gap-4">
               {row.map((runeId) => {
                 const isSelected = allSelectedRunes.includes(runeId);
                 return (
                   <div
                     key={runeId}
-                    className={`group relative flex items-center justify-center w-10 h-10 rounded-full bg-zinc-900 transition-all overflow-visible hover:z-10000 ${
-                      isSelected
-                        ? 'border-2 border-orange-500 shadow-lg shadow-orange-500/50 scale-110'
-                        : 'border-2 border-zinc-700 opacity-40 hover:opacity-100'
-                    }`}
+                    className="group relative"
                   >
-                    <img
-                      src={getRuneIcon(runeId)}
-                      onError={(e) => {
-                        e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
-                      }}
-                      alt={getRuneName(runeId)}
-                      className="w-8 h-8 object-contain"
-                    />
-                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
-                      <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(runeId)}</p>
-                      <p className="text-xs text-zinc-300">{getRuneDescription(runeId)}</p>
+                    {/* Rune Container - opacity applied here only */}
+                    <div
+                      className={`flex items-center justify-center w-12 h-12 transition-opacity ${
+                        isSelected
+                          ? 'opacity-100'
+                          : 'opacity-30 group-hover:opacity-60'
+                      }`}
+                    >
+                      {/* Selection indicator */}
+                      {isSelected && (
+                        <div className="absolute inset-0 border-2 border-orange-500 rounded-lg"></div>
+                      )}
+                      
+                      <img
+                        src={getRuneIcon(runeId)}
+                        onError={(e) => {
+                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                        }}
+                        alt={getRuneName(runeId)}
+                        className="w-10 h-10 object-contain"
+                      />
+                    </div>
+                    
+                    
+                    <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                      <div className="w-64 p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                          <p className="text-xs font-bold text-white uppercase tracking-wider">{getRuneName(runeId)}</p>
+                        </div>
+                        <p className="text-xs text-zinc-400 leading-relaxed">{getRuneDescription(runeId)}</p>
+                      </div>
                     </div>
                   </div>
                 );
@@ -115,33 +161,53 @@ export function MatchRunesTab({ primaryStyle, secondaryStyle, statPerks }: Match
           ))}
         </div>
         
-        {/* Stat Shards */}
-        <div className="mt-6 pt-6 border-t border-zinc-700 z-10">
-          <div className="space-y-2">
+        {/* Stat Shards Section */}
+        <div className="pt-6 border-t border-zinc-800">
+          <div className="px-4 mb-4">
+            <h5 className="text-xs font-semibold text-white uppercase tracking-tight">Stat Shards</h5>
+          </div>
+          <div className="px-4 space-y-3">
             {STAT_SHARDS_GRID.map((row, rowIdx) => (
-              <div key={rowIdx} className="flex justify-center gap-6">
+              <div key={rowIdx} className="flex justify-center gap-4">
                 {row.map((shardId) => {
                   const isSelected = selectedStatPerksByRow[rowIdx] === shardId;
                   return (
                     <div
                       key={shardId}
-                      className={`group relative w-8 h-8 rounded flex items-center justify-center transition-all ${
-                        isSelected
-                          ? 'border-2 border-orange-500 bg-orange-950/30 scale-105 z-10'
-                          : 'border border-zinc-700 bg-zinc-900 opacity-40 hover:opacity-100 z-10'
-                      }`}
+                      className="group relative"
                     >
-                      <img
-                        src={getRuneIcon(shardId)}
-                        onError={(e) => {
-                          e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
-                        }}
-                        alt={getRuneName(shardId)}
-                        className="w-5 h-5 object-contain"
-                      />
-                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-99999 w-64 p-3 bg-zinc-900 border border-orange-500/50 rounded-lg shadow-2xl pointer-events-none">
-                        <p className="text-sm font-bold text-orange-400 mb-1">{getRuneName(shardId)}</p>
-                        <p className="text-xs text-zinc-300">{getRuneDescription(shardId)}</p>
+                      {/* Shard Container - opacity applied here only */}
+                      <div
+                        className={`w-10 h-10 flex items-center justify-center transition-opacity ${
+                          isSelected
+                            ? 'opacity-100'
+                            : 'opacity-30 group-hover:opacity-60'
+                        }`}
+                      >
+                        {/* Selection indicator */}
+                        {isSelected && (
+                          <div className="absolute inset-0 border-2 border-orange-500 rounded"></div>
+                        )}
+                        
+                        <img
+                          src={getRuneIcon(shardId)}
+                          onError={(e) => {
+                            e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
+                          }}
+                          alt={getRuneName(shardId)}
+                          className="w-6 h-6 object-contain"
+                        />
+                      </div>
+                      
+                      {/* Tooltip - outside opacity container */}
+                      <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+                        <div className="w-64 p-3 bg-zinc-900 border border-orange-500/30 rounded-lg shadow-xl">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
+                            <p className="text-xs font-bold text-white uppercase tracking-wider">{getRuneName(shardId)}</p>
+                          </div>
+                          <p className="text-xs text-zinc-400 leading-relaxed">{getRuneDescription(shardId)}</p>
+                        </div>
                       </div>
                     </div>
                   );

@@ -83,13 +83,12 @@ export function PlayedWithComponent({
 
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 mb-8">
-      <h2 className="text-md font-bold text-white mb-4 flex  gap-2 items-end">
-        <Users className="w-5 h-5 text-orange-500 " />
-        Recent teammates
-        <span className="ml-4 text-xs text-zinc-500 font-medium">last {matchesLoaded} matches</span>
-      </h2>
-      
-
+       <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2 border-l-2 border-orange-500 px-2">
+          Recent teammates
+          <span className="ml-4 text-xs text-zinc-500 font-medium">last {matchesLoaded} matches</span>
+        </h2>
+     </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>

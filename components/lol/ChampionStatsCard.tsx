@@ -321,8 +321,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
       <div className="p-4 border-b border-zinc-800">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-orange-500" />
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 border-l-2 border-orange-500 px-2">
               Champion Stats
             </h2>
             {totalGamesDisplayed > 0 && (

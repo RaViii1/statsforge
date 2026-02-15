@@ -74,9 +74,14 @@ export const getRoleIcon = (role: string): string => {
   return baseUrl + (roleMap[role] || roleMap.unknown);
 }
 
-export const determineRole = (player: any): string => {
-  const lane = player.lane || player.teamPosition || "";
-  const position = player.teamPosition || player.individualPosition || "";
+export const determineRole = (player: any, queueId: number): string | null => {
+  // Check if game mode has no roles
+  if (isGamemodeWithoutRoles(queueId)) {
+    return null;
+  }
+  
+  const position = player.playedChampSelectPosition || player.individualPosition || player.teamPosition || "";
+  const lane = player.teamPosition || "";
   
   // Map API positions to role names
   if (position === "TOP" || lane === "TOP") return "top";

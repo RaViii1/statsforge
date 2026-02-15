@@ -13,8 +13,7 @@ export function RankedStatsSection({ rankedData }: RankedStatsSectionProps) {
 
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 h-fit">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-orange-500" />
+      <h3 className="text-lg font-bold text-white flex items-center gap-2 border-l-2 px-2 border-orange-500">
         Ranked Stats
       </h3>
       <div className="space-y-3">
@@ -23,7 +22,7 @@ export function RankedStatsSection({ rankedData }: RankedStatsSectionProps) {
           return (
             <div
               key={ranked.queueType}
-              className="p-4 bg-zinc-800/50 border border-zinc-700/50 rounded-lg hover:border-orange-900/50 hover:bg-zinc-800 transition-all"
+              className="p-4 rounded-lg "
             >
               {ranked.hotStreak && (
                 <div className="flex items-center justify-end gap-1 text-xs text-orange-400 mb-2">
