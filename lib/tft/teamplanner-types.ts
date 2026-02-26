@@ -116,6 +116,8 @@ export interface TooltipState {
   item?: TFTItem;
   allItems?: TFTItem[];
   trait?: TFTTrait;
+  champion?: any;
+  setNumber?: number;
 }
 
 export const generatePatchesForSet = (setNumber: number): string[] => {
@@ -146,3 +148,4 @@ export const DEFAULT_LEVELING: LevelingStep[] = [
 export const UNITS_PER_PAGE = 16;
 export const GRID_ROWS = 4;
 export const GRID_COLS = 7;
+

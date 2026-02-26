@@ -42,8 +42,16 @@ export const MainCarryTray = ({
 
 
   return (
+    <>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-4 w-1 bg-orange-500 rounded-full" />
+        <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+          Main Carries
+        </h3>
+         <span className="text-[10px] font-medium text-white/30 hidden sm:inline tracking-normal normal-case">Your main carry champions</span>
+    </div>
     <div 
-      className="p-4 sm:p-6 bg-white/2 rounded-3xl border border-white/5 relative group/tray"
+      className="p-4 sm:p-6 bg-white/2 rounded-2xl  relative group/tray"
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -62,11 +70,7 @@ export const MainCarryTray = ({
         setDraggedFromBoard(null);
       }}
     >
-      <div className="flex items-center justify-between mb-4 px-2">
-        <div className="flex items-center gap-2">
-          <Crown className="w-4 h-4 text-orange-400" />
-          <h3 className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Main Carry</h3>
-        </div>
+      <div className="flex items-center justify-end mb-4 px-2">
         <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">{mainCarryIds.length} / 3</span>
       </div>
 
@@ -94,12 +98,22 @@ export const MainCarryTray = ({
                   <>
                       <div className="relative shrink-0">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl border-2 border-orange-500/40 overflow-hidden">
-                          <img 
-                            src={champ.image_path || '/images/nochampionimage.jpg'} 
-                            alt={champ.name} 
-                            className="w-full h-full object-cover" 
-                            onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
-                          />
+                           <img 
+                              src={champ.image_path || '/images/nochampionimage.jpg'} 
+                              alt={champ.name} 
+                              className="w-full h-full object-cover" 
+                              onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
+                              onMouseEnter={(e) => setTooltip({
+                                visible: true,
+                                title: champ.name,
+                                description: champ.ability?.description?.active || champ.ability?.description?.passive || "",
+                                x: e.clientX,
+                                y: e.clientY,
+                                champion: champ,
+                                setNumber: CurrentSetNumber
+                              })}
+                              onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                            />
                         </div>
 
                       {canEdit && <button onClick={(e) => { e.stopPropagation(); onToggleCarry(champ.id); }} className="absolute -top-2 -right-2 p-1.5 bg-zinc-900 border border-white/10 rounded-lg hover:bg-red-900/40 text-white/20 hover:text-red-500 hover:border-red-500 transition-all"><X className="w-3 h-3" /></button>}
@@ -148,5 +162,7 @@ export const MainCarryTray = ({
         })}
       </div>
     </div>
+    </>
   );
+  
 };

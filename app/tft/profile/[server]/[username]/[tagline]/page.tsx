@@ -9,6 +9,7 @@ import { TftRankedStatsSection } from "@/components/tft/TftRankedStatsSection";
 import { TftTeamPlanner } from "@/components/tft/TftTeamPlanner";
 import { AlertCircle, Gamepad2, Loader2, Anvil, Clock, Award, Target } from 'lucide-react';
 import NavbarTft from '@/components/NavbarTft';
+import { TFTChampion } from '@/lib/tft/champions';
 
 export default function TftProfilePage() {
   const params = useParams();
@@ -26,6 +27,8 @@ export default function TftProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [items, setItems] = useState<any[]>([]);
+  const [traits, setTraits] = useState<any[]>([]);
+  const [units, setUnits] = useState<TFTChampion[]>([]);
   const offsetRef = useRef(0);
 
   const fetchRankedData = async (puuid: string) => {
@@ -92,11 +95,13 @@ export default function TftProfilePage() {
         const data = await response.json();
         setProfile(data);
 
-        // Parallel fetch matches, ranked data, and items (13 = 10 + 3 extra rows)
-        await Promise.all([
+         // Parallel fetch matches, ranked data, items, and traits (13 = 10 + 3 extra rows)
+         await Promise.all([
           fetchMatches(data.puuid, 0, 13, false),
           fetchRankedData(data.puuid),
           fetch('/api/tft/items').then(res => res.json()).then(data => setItems(data)),
+          fetch('/api/tft/champions').then(res => res.json()).then(data => setUnits(data)),
+          fetch('/api/tft/traits').then(res => res.json()).then(data => setTraits(data)),
         ]);
       } catch (err: any) {
         setError(err.message || "An error occurred");
@@ -263,9 +268,9 @@ export default function TftProfilePage() {
                 </div>
               ) : (
                 <>
-                   {matches.map((match) => (
-                    <TftMatchItem key={match.metadata.match_id} match={match} puuid={profile.puuid} items={items} />
-                  ))}
+                     {matches.map((match) => (
+                      <TftMatchItem key={match.metadata.match_id} match={match} puuid={profile.puuid} items={items} traits={traits} units={units} />
+                    ))}
                   
                   {hasMore && (
                     <button

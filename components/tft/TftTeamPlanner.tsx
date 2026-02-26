@@ -38,7 +38,9 @@ import {
   UnitDetails,
   UnitSelector
 } from './planner';
+import { UnitTooltip } from './UnitTooltip';
 import SetPicker from './planner/SetPicker';
+
 
 interface TftTeamPlannerProps {
   editId?: string | null;
@@ -613,6 +615,15 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       </div>
       <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500">
         <CustomTooltip {...tooltip} />
+        <UnitTooltip
+          visible={tooltip.visible && !!tooltip.champion}
+          title={tooltip.title}
+          description={tooltip.description}
+          x={tooltip.x}
+          y={tooltip.y}
+          champion={tooltip.champion}
+          setNumber={tooltip.setNumber}
+        />
         <div className="flex items-center gap-4 justify-between px-6 py-4 bg-white/2 border-b border-white/5">
           <span className="text-[11px] font-black text-orange-500 tracking-[0.2em]">
             {isEditMode ? 'EDITING' : 'NEW COMP'}
@@ -681,16 +692,16 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                 <div className="w-full md:w-80 group relative">
                   <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest py-2">Teamcomp Description</h3>
                   {isEditingDesc && canEdit ? (
-                    <textarea autoFocus value={currentTeam.description} onChange={(e) => updateTeam({ description: e.target.value })} onBlur={() => setIsEditingDesc(false)} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-24 focus:outline-none focus:border-orange-500/50 text-xs resize-none" />
+                    <textarea autoFocus value={currentTeam.description} onChange={(e) => updateTeam({ description: e.target.value })} onBlur={() => setIsEditingDesc(false)} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-24 max-h-64 overflow-y-auto focus:outline-none focus:border-orange-500/50 text-xs resize-none" />
                   ) : (
                     <div className={`flex gap-4 p-4 bg-white/2 rounded-2xl border border-white/5 items-start ${canEdit ? 'cursor-pointer hover:bg-white/4' : ''} transition-colors`} onClick={() => canEdit && setIsEditingDesc(true)}>
-                      <p className="text-white/40 text-[11px] font-medium leading-relaxed italic flex-1">"{currentTeam.description}"</p>
+                      <p className="text-white/40 text-[11px] font-medium leading-relaxed italic flex-1 max-h-64 truncate">"{currentTeam.description}"</p>
                       {canEdit && <Edit3 className="w-3 h-3 opacity-0 group-hover:opacity-40 text-white" />}
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-end gap-3">
                   <div className="flex p-1 bg-white/4 border border-white/5 rounded-2xl shadow-inner">
                     {(['early', 'mid', 'final'] as PhaseKey[]).map(phase => (
                       <button 
@@ -705,16 +716,20 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
                 </div>
                 
                 <div className="w-full space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Phase Strategy Notes</span>
-                  </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-4 w-1 bg-orange-500 rounded-full" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                    Phase Notes
+                  </h3>
+                  <span className="text-[10px] font-medium text-white/30 hidden sm:inline tracking-normal normal-case">Add notes specific to each game phase</span>
+                </div>
                   <textarea 
                     key={activePhase}
                     value={currentPhaseData.notes} 
                     onChange={(e) => updateCurrentPhase({ notes: e.target.value })} 
                     disabled={!canEdit}
                     placeholder={`Add specific notes for the ${activePhase} game phase...`}
-                    className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-32 focus:outline-none focus:border-orange-500/50 text-[11px] resize-none leading-relaxed italic disabled:cursor-not-allowed"
+                    className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white/60 w-full h-32 max-h-64 overflow-y-auto focus:outline-none focus:border-orange-500/50 text-[11px] resize-none leading-relaxed italic disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -855,4 +870,5 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
     </>
   );
 };
+
 

@@ -111,7 +111,7 @@ export const UnitSelector = ({
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-black text-orange-500 group-hover:text-white truncate uppercase tracking-widest">{c.name}</p>
                 <div className="flex gap-1 mt-0.5">
-                  {c.traits.map(t => (
+                  {c.traits?.map(t => (
                     <span key={t} className="text-[9px] font-bold text-white/30 uppercase">{t}</span>
                   ))}
                 </div>

@@ -65,7 +65,7 @@ export const UnitDetails = ({
             <div className="space-y-1">
               <h3 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{champ?.name || 'Unknown Champion'}</h3>
               <div className="flex flex-wrap gap-1">
-                {champ?.traits.map(t => (
+                {champ?.traits?.map(t => (
                   <span key={t} className="text-[8px] font-black text-white/40 uppercase tracking-widest">{t}</span>
                 ))}
               </div>

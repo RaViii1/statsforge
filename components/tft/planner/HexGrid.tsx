@@ -48,7 +48,7 @@ export const HexGrid = ({
 }: HexGridProps) => {
   return (
     <div className="flex flex-col items-center gap-10">
-      <TraitTooltip 
+      <TraitTooltip
         visible={tooltip.visible && !!tooltip.trait}
         title={tooltip.title}
         description={tooltip.description}
@@ -180,7 +180,21 @@ export const HexGrid = ({
                             y="3.7" 
                             clipPath={`url(#clip-${row}-${col})`} 
                             preserveAspectRatio="xMidYMid slice" 
-                            className="opacity-95"
+                            className="opacity-95 cursor-pointer"
+                            onMouseEnter={(e) => {
+                              if (champ) {
+                                setTooltip({
+                                  visible: true,
+                                  title: champ.name,
+                                  description: champ.ability?.description?.active || champ.ability?.description?.passive || "",
+                                  x: e.clientX,
+                                  y: e.clientY,
+                                  champion: champ,
+                                  setNumber: CurrentSetNumber
+                                });
+                              }
+                            }}
+                            onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                           />
                         </>
                       )}

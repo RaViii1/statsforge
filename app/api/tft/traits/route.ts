@@ -29,17 +29,27 @@ export async function GET(request: Request) {
     }
 
      const { data: traits, error } = await supabase
-      .from("tft_traits")
-      .select("*, tft_trait_tiers(*)")
-      .eq("set_id", targetSetId)
-      .order("name", { ascending: true });
+       .from("tft_traits")
+       .select("*, tft_trait_tiers(*)")
+       .eq("set_id", targetSetId)
+       .order("name", { ascending: true });
+
+     // Ensure all traits have riot_api_name field (generate if missing)
+     const traitsWithRiotApiName = traits?.map(trait => {
+       if (!trait.riot_api_name && trait.name) {
+         const setNumber = trait.set_number || 0;
+         const riotApiName = `TFT${setNumber}_${trait.name.replace(/[\s_]+/g, '_').split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
+         return { ...trait, riot_api_name: riotApiName };
+       }
+       return trait;
+     }) || [];
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     // Filter out duplicates by name
-    const uniqueTraits = traits.filter((trait, index, self) =>
+    const uniqueTraits = traitsWithRiotApiName.filter((trait, index, self) =>
       index === self.findIndex((t) => t.name === trait.name)
     );
 

@@ -27,6 +27,7 @@ import { CurrentSetNumber, getChampionCost, getCostBorderColor, SET_16_CHAMPIONS
 import { HexGrid } from '@/components/tft/planner'; 
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { CustomTooltip } from '@/components/tft/planner';
+import { UnitTooltip } from '@/components/tft/UnitTooltip';
 import { getDifficultyConfig, DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
 import NavbarTft from '@/components/NavbarTft';
 import { useAuth } from '@/contexts/AuthContext';
@@ -174,7 +175,19 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
   return (
     <>
     
-      {tooltip.visible && !tooltip.trait && (
+      {tooltip.visible && tooltip.champion && (
+        <UnitTooltip
+          visible={tooltip.visible}
+          title={tooltip.title}
+          description={tooltip.description}
+          x={tooltip.x}
+          y={tooltip.y}
+          champion={tooltip.champion}
+          setNumber={tooltip.setNumber}
+        />
+      )}
+
+      {tooltip.visible && !tooltip.trait && !tooltip.champion && (
         <CustomTooltip 
           visible={tooltip.visible}
           title={tooltip.title}
@@ -222,13 +235,29 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                   const champ = champions.find(c => c.id === unit.characterId);
                   return (
                     <div key={i} className="relative">
-                      <div className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)}`}>
-                        <img 
-                          src={champ?.image_path || '/images/nochampionimage.jpg'} 
-                          alt={unit.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                       <div 
+                         className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} cursor-pointer`}
+                         onMouseEnter={(e) => {
+                           if (champ) {
+                             setTooltip({
+                               visible: true,
+                               title: champ.name,
+                               description: champ.ability?.description?.active || champ.ability?.description?.passive || "",
+                               x: e.clientX,
+                               y: e.clientY,
+                               champion: champ,
+                               setNumber: CurrentSetNumber
+                             });
+                           }
+                         }}
+                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                       >
+                         <img 
+                           src={champ?.image_path || '/images/nochampionimage.jpg'} 
+                           alt={unit.name}
+                           className="w-full h-full object-cover"
+                         />
+                       </div>
                        {unit.items.length > 0 && (
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                           {unit.items.slice(0, 3).map((item, idx) => {
@@ -275,13 +304,29 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                 
                 return (
                   <div key={i} className="relative shrink-0 py-1">
-                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''}`}>
-                      <img 
-                        src={champ?.image_path || '/images/nochampionimage.jpg'} 
-                        alt={unit.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                     <div 
+                        className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''} cursor-pointer`}
+                        onMouseEnter={(e) => {
+                          if (champ) {
+                            setTooltip({
+                              visible: true,
+                              title: champ.name,
+                              description: champ.ability?.description?.active || champ.ability?.description?.passive || "",
+                              x: e.clientX,
+                              y: e.clientY,
+                              champion: champ,
+                              setNumber: CurrentSetNumber
+                            });
+                          }
+                        }}
+                        onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                      >
+                        <img 
+                          src={champ?.image_path || '/images/nochampionimage.jpg'} 
+                          alt={unit.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                      {unit.items.length > 0 && (
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
                           {unit.items.slice(0, 3).map((item, idx) => {

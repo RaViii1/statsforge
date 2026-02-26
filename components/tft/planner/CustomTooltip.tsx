@@ -18,7 +18,7 @@ export const CustomTooltip = ({
   item,
   allItems = []
 }: CustomTooltipProps) => {
-  if (!visible) return null;
+  if (!visible || !item) return null;
 
   // Check if item is artifact, seasonal, or radiant
   const isSpecialItem = item?.is_artifact || item?.is_seasonal || item?.is_radiant;

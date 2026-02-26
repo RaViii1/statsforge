@@ -38,7 +38,8 @@ export default function TraitForm({ sets }: TraitFormProps) {
     description: "",
     tiers: [],
     champions: [],
-    is_Hero: false
+    is_Hero: false,
+    riot_api_name: ""
   });
 
   useEffect(() => {
@@ -87,10 +88,19 @@ export default function TraitForm({ sets }: TraitFormProps) {
         return getTierOrder(a.tier) - getTierOrder(b.tier);
       });
       
+      // Generate riot_api_name if it doesn't exist
+      let riotApiName = trait.riot_api_name;
+      if (!riotApiName && trait.name) {
+        // Get set data directly from trait's relation (tft_sets) which has set_number
+        const setNumber = trait.tft_sets?.set_number || 0;
+        riotApiName = `TFT${setNumber}_${trait.name.replace(/[\s_]+/g, '_').split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
+      }
+
       setFormData({
         ...trait,
         tiers: sortedTiers,
-        champions: champions
+        champions: champions,
+        riot_api_name: riotApiName
       });
     };
 
@@ -271,9 +281,6 @@ export default function TraitForm({ sets }: TraitFormProps) {
       return;
     }
 
-    console.log('Form data being submitted:', formData);
-
-    // No tier validation - traits can be saved without tiers
     const validTiers = formData.tiers || [];
 
     setLoading(true);
@@ -312,7 +319,9 @@ export default function TraitForm({ sets }: TraitFormProps) {
         icon_path: "",
         description: "",
         tiers: [],
-        champions: []
+        champions: [],
+        is_Hero: false,
+        riot_api_name: ""
       });
 
       setIsHeroTrait(false);
@@ -365,14 +374,16 @@ export default function TraitForm({ sets }: TraitFormProps) {
             type="button"
             onClick={() => {
               setIsEditing(false);
-              setFormData({
-                name: "",
-                set_id: sets[0]?.id || 0,
-                icon_path: "",
-                description: "",
-                tiers: [],
-                champions: []
-              });
+      setFormData({
+        name: "",
+        set_id: sets[0]?.id || 0,
+        icon_path: "",
+        description: "",
+        tiers: [],
+        champions: [],
+        is_Hero: false,
+        riot_api_name: ""
+      });
               setIsHeroTrait(false);
             }}
             className="text-zinc-500 hover:text-white transition-colors text-sm"
@@ -404,7 +415,18 @@ export default function TraitForm({ sets }: TraitFormProps) {
             <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Name</label>
             <input 
               value={formData.name}
-              onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={e => {
+                const newName = e.target.value;
+                // Generate Riot API name
+                const selectedSet = sets.find(s => s.id === formData.set_id);
+                const setNumber = selectedSet?.set_number || 0;
+                const riotApiName = `TFT${setNumber}_${newName.replace(/[\s_]+/g, '_').split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
+                setFormData(prev => ({ 
+                  ...prev, 
+                  name: newName, 
+                  riot_api_name: riotApiName 
+                }));
+              }}
               required 
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-purple-500/50 outline-none" 
               placeholder="e.g. Chembaron" 
@@ -425,7 +447,16 @@ export default function TraitForm({ sets }: TraitFormProps) {
           </div>
         </div>
 
-        
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Riot API Name</label>
+          <input 
+            value={formData.riot_api_name}
+            onChange={e => setFormData(prev => ({ ...prev, riot_api_name: e.target.value }))}
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:ring-2 focus:ring-purple-500/50 outline-none" 
+            placeholder="e.g. TFT16_Chembaron" 
+          />
+        </div>
+       
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Icon URL</label>
             <input 

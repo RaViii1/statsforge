@@ -40,13 +40,19 @@ export async function POST(request: Request) {
     // Ensure traitId is always a string
     const traitId = String(id || `${setNumber}_${name.toLowerCase().replace(/\s+/g, "_")}`);
 
+    let riotApiName = body.riot_api_name;
+    if (!riotApiName) {
+      riotApiName = `TFT${setNumber}_${name.replace(/[\s_]+/g, '_').split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
+    }
+
     const dbData = {
       id: traitId,
       name,
       set_id,
       icon_path,
       description,
-      is_Hero: body.is_Hero || false
+      is_Hero: body.is_Hero || false,
+      riot_api_name: riotApiName
     };
 
     // Upsert trait

@@ -19,6 +19,8 @@ export interface TFTTrait {
   set_id?: number;
   champions?: any[];
   is_Hero?: boolean;
+  riot_api_name?: string;
+  tft_trait_tiers?: TFTTraitTier[];
 }
 
 export interface TFTTraitTier {
@@ -114,7 +116,7 @@ export const getChampionAbility = (characterId: string, champions?: TFTChampion[
 export const getCostColor = (cost: number): string => {
   switch (cost) {
     case 1: return '#94a3b8';
-    case 2: return '#10b981';
+    case 2: return '#108f6d';
     case 3: return '#3b82f6';
     case 4: return '#a855f7';
     case 5: return '#eab308';

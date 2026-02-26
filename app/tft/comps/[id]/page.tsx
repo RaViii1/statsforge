@@ -24,6 +24,7 @@ import { copyToClipboard, getTierBorderColor, getTierColor } from '@/lib/tft/tft
 import { TeamComp, DifficultyLevel, UnitPosition, PhaseKey, META_TIER_CONFIG, MetaTier } from '@/lib/tft/teamplanner-types';
 import { CustomTooltip } from '@/components/tft/planner';
 import { TraitTooltip } from '@/components/tft/planner/TraitTooltip';
+import { UnitTooltip } from '@/components/tft/UnitTooltip';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Footer from '@/components/Footer';
@@ -117,13 +118,24 @@ const ReadOnlyHexGrid = ({
   return (
     <div className="flex flex-col items-center gap-8">
       {/* Trait Tooltip */}
-      <TraitTooltip 
+      <TraitTooltip
         visible={tooltip.visible && !!tooltip.trait}
         title={tooltip.title}
         description={tooltip.description}
         x={tooltip.x}
         y={tooltip.y}
         trait={tooltip.trait}
+      />
+
+      {/* Unit Tooltip */}
+      <UnitTooltip
+        visible={tooltip.visible && !!tooltip.champion}
+        title={tooltip.title}
+        description={tooltip.description}
+        x={tooltip.x}
+        y={tooltip.y}
+        champion={tooltip.champion}
+        setNumber={tooltip.setNumber}
       />
       {/* Active Traits Display */}
       <div className="flex flex-wrap justify-center gap-2">
@@ -225,6 +237,20 @@ const ReadOnlyHexGrid = ({
                           y="3.7" 
                           clipPath={`url(#clip-${phase}-${row}-${col})`} 
                           preserveAspectRatio="xMidYMid slice" 
+                          onMouseEnter={(e) => {
+                            if (champ) {
+                              setTooltip({
+                                visible: true,
+                                title: champ.name,
+                                description: champ.ability?.description?.active || champ.ability?.description?.passive || "",
+                                x: e.clientX,
+                                y: e.clientY,
+                                champion: champ,
+                                setNumber: CurrentSetNumber
+                              });
+                            }
+                          }}
+                          onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                         />
                       </>
                     )}

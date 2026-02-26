@@ -292,11 +292,22 @@ export const getQueueDisplayName = (queueType: string) => {
 export const getTierColor = (tier: string) => {
   const baseTier = tier.split('_')[0];
   switch (baseTier) {
-    case 'bronze': return 'bg-orange-500/60 text-orange-400';
-    case 'silver': return 'bg-gray-500/60 text-gray-400';
-    case 'gold': return 'bg-yellow-500/60 text-yellow-400';
-    case 'prismatic': return 'bg-purple-500/60 text-purple-400';
-    default: return 'bg-orange-500/60 text-orange-400';
+    case 'bronze': return 'bg-orange-500/40 text-orange-400';
+    case 'silver': return 'bg-gray-500/40 text-gray-400';
+    case 'gold': return 'bg-yellow-500/40 text-yellow-400';
+    case 'prismatic': return 'bg-purple-500/40 text-purple-400';
+    default: return 'bg-orange-500/40 text-orange-400';
+  }
+};
+
+export const getTierColorOpaque = (tier: string) => {
+  const baseTier = tier.split('_')[0];
+  switch (baseTier) {
+    case 'bronze': return 'bg-orange-500/10 text-orange-400';
+    case 'silver': return 'bg-gray-500/10 text-gray-400';
+    case 'gold': return 'bg-yellow-500/10 text-yellow-400';
+    case 'prismatic': return 'bg-purple-500/10 text-purple-400';
+    default: return 'bg-orange-500/10 text-orange-400';
   }
 };
 
