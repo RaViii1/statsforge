@@ -226,3 +226,11 @@ export function formatGamenametoNameandTagline(gamename?: string | "noname") {
     };
     return names[queueType] || queueType;
   };
+
+  export const getChampionImage = (championId: string) => {
+    if (championId === null || !championId) {
+      return '/images/nochampionimage.jpg';
+    }
+    else return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/lol_champion_icons/${championId}.png`;
+}
+

@@ -6,7 +6,8 @@ import { SummonerData } from "@/app/types/lolInterfaces";
 import { 
   getQueueName, 
   isArena,
-  formatGamenametoNameandTagline 
+  formatGamenametoNameandTagline, 
+  getChampionImage
 } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName, getChampionNameById } from "@/lib/champion-data";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
@@ -220,7 +221,7 @@ export function LiveGameTab({
                         >
                           <div className="flex items-center gap-3">
                             <img
-                              src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${getChampionIdByName(championName)}.png`}
+                              src={getChampionImage(getChampionIdByName(championName)?.toString() || "images/nochampionimage.jpg")}
                               alt={championName}
                               className="w-12 h-12 rounded-lg border border-zinc-800"
                             />

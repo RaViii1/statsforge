@@ -17,7 +17,7 @@ export function RankedIcon({ rankedData, isLoading = false, size = 24 }: RankedI
         className="rounded bg-zinc-800 border border-zinc-700 animate-pulse"
       >
         <img
-          src={"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png"}
+          src="/images/ranks/unranked.png"
           alt={"ranked icon loading"}
           className="w-full h-full object-contain"
           onError={(e) => {

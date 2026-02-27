@@ -317,7 +317,8 @@ export function MatchTimeline({ server, matchId, participantId, puuid }: MatchTi
                 {/* Item image */}
                 <div className="group relative w-12 h-12 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all hover:scale-105">
                   <img
-                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(item.itemId.toString())}`}
+                    src={getItemImage(item.itemId.toString())}
+
                     alt={getItemDescription(item.itemId.toString())}
                     className="w-full h-full object-cover"
                   />

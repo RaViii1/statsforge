@@ -13,7 +13,8 @@ import {
   getTeamIcon,
   getRoleIcon,
   determineRole,
-  isGamemodeWithoutRoles
+  isGamemodeWithoutRoles,
+  getChampionImage
 } from "@/lib/lol/lolfunctions";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
 import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon } from "@/lib/runes";
@@ -140,9 +141,12 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                   {playerData.champLevel}
                 </span>
                 <img
-                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${playerData.championId}.png`}
+                  src={getChampionImage(playerData.championId.toString() || "images/nochampionimage.jpg")}
                   alt={playerData.championName}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "images/nochampionimage.jpg";
+                  }}
                 />
               </div>
 
@@ -224,7 +228,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                 >
                   {itemId !== 0 && (
                     <img
-                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                      src={getItemImage(itemId.toString())}
                       alt={`Item ${itemId}`}
                       className="w-full h-full object-cover"
                     />
@@ -239,7 +243,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                 >
                   {itemId !== 0 && (
                     <img
-                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                      src={getItemImage(itemId.toString())}
                       alt={`Item ${itemId}`}
                       className="w-full h-full object-cover"
                     />
@@ -318,7 +322,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                 {playerData.champLevel}
               </span>
               <img
-                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${playerData.championId}.png`}
+                src={getChampionImage(playerData.championId.toString())}
                 alt={playerData.championName}
                 className="w-full h-full object-cover"
               />
@@ -405,7 +409,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                 >
                   {itemId !== 0 && (
                     <img
-                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                      src={getItemImage(itemId.toString())}
                       alt={`Item ${itemId}`}
                       className="w-full h-full object-cover"
                     />
@@ -420,7 +424,7 @@ export function MatchCard({ match, summonerPuuid, server, rankedData, onPlayerCl
                 >
                   {itemId !== 0 && (
                     <img
-                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                      src={getItemImage(itemId.toString())}
                       alt={`Item ${itemId}`}
                       className="w-full h-full object-cover"
                     />

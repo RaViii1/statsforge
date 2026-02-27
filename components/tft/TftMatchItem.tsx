@@ -19,7 +19,6 @@ import {
   getTierColorOpaque,
   getTierBorderColor,
 } from "@/lib/tft/tftfunctions";
-import TftTraitIcon from "./TftTraitIcon";
 import { TFTChampion, TFTTrait } from "@/lib/tft/champions";
 import { TraitTooltip } from "./planner/TraitTooltip";
 import { CustomTooltip } from "./planner/CustomTooltip";
@@ -333,12 +332,12 @@ export default function TFTMatchCard({ match, puuid, items, traits, units }: TFT
                       onMouseLeave={() => setTooltip({ visible: false })}
                     >
                       <div className="w-3.5 h-3.5 shrink-0">
-                        <TftTraitIcon
-                          traitId={matchedTrait?.name ?? trait.name}
-                          setNumber={match.info.tft_set_number}
-                          tierStyle={trait.style}
-                          className="w-full h-full object-contain"
-                        />
+                      <img 
+                        src={matchedTrait?.icon_path || "/images/notfound.png"} 
+                        alt={matchedTrait?.name || trait.name} 
+                        className="w-3.5 h-3.5 object-contain" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/images/notfound.png"; }}
+                      />
                       </div>
                       <span className="opacity-90">{matchedTrait?.name ?? trait.name}</span>
                       <span className="opacity-60 ml-0.5">{trait.num_units}</span>
@@ -561,11 +560,11 @@ export default function TFTMatchCard({ match, puuid, items, traits, units }: TFT
                                   }
                                   onMouseLeave={() => setTooltip({ visible: false })}
                                 >
-                                  <TftTraitIcon
-                                    traitId={matchedTrait?.name ?? trait.name}
-                                    setNumber={match.info.tft_set_number}
-                                    tierStyle={trait.style}
-                                    className="w-3.5 h-3.5 object-contain"
+                                  <img 
+                                    src={matchedTrait?.icon_path || "/images/notfound.png"} 
+                                    alt={matchedTrait?.name || trait.name} 
+                                    className="w-3.5 h-3.5 object-contain" 
+                                    onError={(e) => { (e.target as HTMLImageElement).src = "/images/notfound.png"; }}
                                   />
                                 </div>
                               );

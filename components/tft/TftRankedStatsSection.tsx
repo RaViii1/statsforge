@@ -56,7 +56,7 @@ export function TftRankedStatsSection({ rankedData = [] }: TftRankedStatsSection
                   alt={`${tier} ${rank}`}
                   className="w-14 h-14 object-contain"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/unranked.png';
+                    e.currentTarget.src = '/images/ranks/unranked.png';
                   }}
                 />
                 <div className="flex-1 min-w-0">

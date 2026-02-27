@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Trophy, Wheat, Loader2, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { getChampionImage } from "@/lib/lol/lolfunctions";
 
 type QueueType = "all" | "solo" | "flex";
 type SortField = "champion" | "games" | "winrate" | "kda" | "cs";
@@ -306,7 +307,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
   };
 
   const getChampionImageUrl = (championId: number) =>
-    `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
+    `${getChampionImage(championId.toString())}`;
     
 
   const displayedChampions = isExpanded ? filteredChampionStats : filteredChampionStats.slice(0, 5);
@@ -406,7 +407,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
                       alt={stat.champion}
                       className="w-10 h-10 rounded border border-zinc-700 shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/40?text=" + stat.champion.charAt(0);
+                        e.currentTarget.src = "images/nochampionimage.jpg";
                       }}
                     />
                     <div className="min-w-0">

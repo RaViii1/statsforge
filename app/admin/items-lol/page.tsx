@@ -1,16 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
-import { ArrowLeft, Box } from "lucide-react";
-import Link from "next/link";
-import SetsList from "./SetList";
-import SetForm from "./SetForm";
+import { ArrowLeft, Swords } from "lucide-react";
+import ItemsLoLForm from "./ItemsLoLForm";
+import ItemsLoLList from "./ItemsLoLList";
 
-export default async function AdminSetsPage() {
+import Link from "next/link";
+
+export default async function ItemsLoLPage() {
   const supabase = await createClient();
-  
-  const { data: sets } = await supabase
-    .from("tft_sets")
+
+  const { data: items, error } = await supabase
+    .from("items_lol")
     .select("*")
-    .order("set_number", { ascending: false });
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching LoL items:", error);
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] pb-24">
@@ -26,7 +31,7 @@ export default async function AdminSetsPage() {
           </Link>
           <span className="text-white/10 text-lg font-thin">/</span>
           <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-orange-400">
-            Sets
+            LoL Items
           </span>
         </div>
       </div>
@@ -36,26 +41,27 @@ export default async function AdminSetsPage() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-              <Box className="w-5 h-5 text-orange-400" />
+              <Swords className="w-5 h-5 text-orange-400" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">
-                Set Management
+                Items Management
               </h1>
               <p className="text-sm text-zinc-500 mt-0.5">
-                Configure TFT sets, numbers, and active status
+                League of Legends — items, stats &amp; game modes
               </p>
             </div>
           </div>
+
         </div>
 
         {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
           <div className="sticky top-20">
-            <SetForm />
+            <ItemsLoLForm />
           </div>
           <div>
-            <SetsList initialSets={sets || []} />
+            <ItemsLoLList initialItems={items || []} />
           </div>
         </div>
       </div>

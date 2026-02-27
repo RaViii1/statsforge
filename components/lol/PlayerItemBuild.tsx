@@ -52,7 +52,7 @@ export const PlayerItemBuild: React.FC<PlayerItemBuildProps> = ({
               {!isEmpty && (
                 <img
                   // Pass the string ID to getItemImage
-                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemID_str)}`}
+                  src={getItemImage(itemID_str)}
                   alt={`Item ${itemID_str}`}
                   className="w-full h-full object-cover"
                 />
@@ -68,7 +68,7 @@ export const PlayerItemBuild: React.FC<PlayerItemBuildProps> = ({
         {!isSlotEmpty(displayTrinketId) && (
           <img
             // Pass the string ID to getItemImage and getItemDescription
-            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(displayTrinketId!)}`}
+            src={getItemImage(displayTrinketId!)}
             alt={`Trinket ${displayTrinketId}`}
             className="w-full h-full object-cover"
             title={getItemDescription(displayTrinketId!)}

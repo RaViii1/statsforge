@@ -27,33 +27,53 @@ export default async function AdminItemsPage() {
     .order("name", { ascending: true });
 
   return (
-    <div className="space-y-8 pb-20">
-        <div className="flex items-center gap-4 py-4">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-all group uppercase text-[10px] font-black tracking-widest">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Admin Panel
+    <div className="min-h-screen bg-[#0a0a0b] pb-24">
+      {/* Top bar */}
+      <div className="border-b border-white/[0.06] bg-[#0d0d0f]/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center gap-6">
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors text-[11px] font-semibold tracking-[0.12em] uppercase group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Admin Panel
           </Link>
+          <span className="text-white/10 text-lg font-thin">/</span>
+          <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-orange-400">
+            Items
+          </span>
         </div>
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-          <Box className="text-green-500" />
-          Item Management
-        </h1>
-        <p className="text-zinc-400">Configure TFT items, stats, and artifact status</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-1">
-          <div className="sticky top-8">
+      <div className="max-w-[1600px] mx-auto px-6 pt-10 space-y-10">
+        {/* Page header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+              <Box className="w-5 h-5 text-orange-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">
+                Item Management
+              </h1>
+              <p className="text-sm text-zinc-500 mt-0.5">
+                Configure TFT items, stats, and artifact status
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main layout */}
+        <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
+          <div className="sticky top-20">
             <ItemForm 
               sets={(sets as (TFTSet & { id: number })[]) || []} 
               components={(components as TFTItem[]) || []}
             />
           </div>
-        </div>
-
-        <div className="xl:col-span-2">
-          <ItemList initialItems={items || []} />
+          <div>
+            <ItemList initialItems={items || []} />
+          </div>
         </div>
       </div>
     </div>

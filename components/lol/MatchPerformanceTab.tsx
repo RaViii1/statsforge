@@ -1,6 +1,7 @@
 "use client";
 
 import { Match, MatchParticipant } from "@/app/types/lolInterfaces";
+import { getChampionImage } from "@/lib/lol/lolfunctions";
 
 interface MatchPerformanceTabProps {
   match: Match;
@@ -41,9 +42,12 @@ export function MatchPerformanceTab({ match, summonerPuuid }: MatchPerformanceTa
       return (
         <div className="flex items-center gap-2 mb-2">
           <img
-            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+            src={getChampionImage(participant.championId.toString() || "images/nochampionimage.jpg")}
             alt={participant.championName}
             className="w-6 h-6 rounded-full flex-shrink-0"
+            onError={(e) => {
+              e.currentTarget.src = "images/nochampionimage.jpg";
+            }}
           />
           <span className={`text-xs font-bold w-16 text-right ${isPlayer ? 'text-orange-400' : 'text-zinc-400'}`}>
             {value.toLocaleString()}
@@ -70,9 +74,12 @@ export function MatchPerformanceTab({ match, summonerPuuid }: MatchPerformanceTa
           {value.toLocaleString()}
         </span>
         <img
-          src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+          src={getChampionImage(participant.championId.toString() || "images/nochampionimage.jpg")}
           alt={participant.championName}
           className="w-6 h-6 rounded-full flex-shrink-0"
+          onError={(e) => {
+            e.currentTarget.src = "images/nochampionimage.jpg";
+          }}
         />
       </div>
     );

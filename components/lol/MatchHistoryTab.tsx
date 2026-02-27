@@ -4,7 +4,7 @@ import { Clock, Loader2, Search, ChevronDown, Filter, X } from "lucide-react";
 import { Match } from "@/app/types/lolInterfaces";
 import { MatchCard } from "./MatchCard";
 import { useMemo, useState } from "react";
-import { determineRole, getQueueName, getRoleIcon } from "@/lib/lol/lolfunctions";
+import { determineRole, getChampionImage, getQueueName, getRoleIcon } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName } from "@/lib/champion-data";
 
 interface MatchHistoryTabProps {
@@ -369,9 +369,12 @@ export function MatchHistoryTab({
                       className="relative flex items-center gap-2 px-2 py-1.5 bg-zinc-800/60 border border-zinc-700 rounded-lg hover:border-orange-500/30 transition-colors"
                     >
                       <img
-                        src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${getChampionIdByName(champ.championName)}.png`}
+                        src={getChampionImage(getChampionIdByName(champ.championName)?.toString() || "noimages/nochampionimage.jpg")}
                         alt={champ.championName}
                         className="w-7 h-7 rounded-full shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.src = "images/nochampionimage.jpg";
+                        }}
                       />
                       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                         <span className="text-xs font-semibold text-white truncate">{champ.championName}</span>
@@ -441,9 +444,12 @@ export function MatchHistoryTab({
                         className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 transition-colors flex items-center gap-2"
                       >
                         <img
-                          src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${getChampionIdByName(champ)}.png`}
+                          src={getChampionImage(getChampionIdByName(champ)?.toString() || "images/nochampionimage.jpg")}
                           alt={champ}
                           className="w-6 h-6 rounded"
+                          onError={(e) => {
+                            e.currentTarget.src = "images/nochampionimage.jpg";
+                          }}
                         />
                         {champ}
                       </button>

@@ -8,7 +8,8 @@ import {
   formatCSDisplay,
   getTeamIcon, 
   getArenaTeamName,
-  isRemake
+  isRemake,
+  getChampionImage
 } from "@/lib/lol/lolfunctions";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
 import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon } from "@/lib/runes";
@@ -352,9 +353,12 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                               <div className="relative group">
                                 <span className="text-[10px] text-white absolute bottom-0.5 left-0.5 bg-zinc-900/90 rounded px-1 py-0.5 font-bold shadow-sm">{participant.champLevel}</span>
                                 <img
-                                  src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+                                  src={getChampionImage(participant.championId.toString())}
                                   alt={participant.championName}
                                   className="w-14 h-14 rounded-lg border-2 border-zinc-600 shrink-0 shadow-md"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "images/nochampionimage.jpg";
+                                  }}
                                 />
                               </div>
                               
@@ -457,9 +461,12 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                       >
                                         {itemId && (
                                           <img
-                                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                                            src={getItemImage(itemId.toString())}
                                             alt={itemName}
                                             className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              e.currentTarget.src = "images/nochampionimage.jpg";
+                                            }}
                                           />
                                         )}
                                       </div>
@@ -477,7 +484,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                   >
                                     {participant.item6 && participant.item6 !== 0 && (
                                       <img
-                                        src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(participant.item6.toString())}`}
+                                        src={getItemImage(participant.item6.toString())}
                                         alt={`Trinket ${participant.item6}`}
                                         className="w-full h-full object-cover"
                                       />
@@ -601,10 +608,13 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                               {participant.champLevel}
                             </span>
                             <img
-                              src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${participant.championId}.png`}
+                              src={getChampionImage(participant.championId.toString() || "images/nochampionimage.jpg")}
                               alt={participant.championName}
                               className="w-12 h-12 rounded-lg border border-zinc-600 group-hover:border-orange-500 shadow-md transition-all"
                               title={participant.championName}
+                              onError={(e) => {
+                                e.currentTarget.src = "images/nochampionimage.jpg";
+                              }}
                             />
                           </div>
                           <div className="flex flex-col gap-1">
@@ -744,7 +754,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                               >
                                 {itemId && itemId !== 0 ? (
                                   <img
-                                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                                    src={getItemImage(itemId.toString())}
                                     alt={itemName}
                                     className="w-full h-full object-cover"
                                   />
@@ -765,7 +775,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                               >
                                 {itemId && itemId !== 0 ? (
                                   <img
-                                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(itemId.toString())}`}
+                                    src={getItemImage(itemId.toString())}
                                     alt={itemName}
                                     className="w-full h-full object-cover"
                                   />
@@ -784,7 +794,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                           >
                             {participant.item6 && participant.item6 !== 0 ? (
                               <img
-                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${getItemImage(participant.item6.toString())}`}
+                                src={getItemImage(participant.item6.toString())}
                                 alt={`Trinket ${participant.item6}`}
                                 className="w-full h-full object-cover"
                               />
