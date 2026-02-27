@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Sparkles, Target, Star, Search, X, Box } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { TFTChampion, TFTSet } from "@/lib/tft/champions";
+import { TFTChampion, TFTSet, TFTTrait } from "@/lib/tft/champions";
 import SvgIcon from "@/components/SvgIcon";
 import { createClient } from "@/lib/supabase/client";
 import { color } from "framer-motion";
@@ -76,7 +76,7 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
         .select("trait_id")
         .eq("champion_id", champ.id);
       
-      const traitIds = traitData?.map(t => t.trait_id) || [];
+      const traitIds = traitData?.map((t: TFTTrait) => t.id) || [];
 
       const { data: itemData } = await supabase
         .from("tft_champion_best_items")
@@ -84,7 +84,7 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
         .eq("champion_id", champ.id)
         .order("priority", { ascending: true });
       
-      const bestItems = itemData?.map(i => i.tft_items) || [];
+      const bestItems = itemData?.map((i: any) => i.tft_items) || [];
 
       setFormData({
         ...champ,
