@@ -2,7 +2,7 @@
 
 import { Search, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTChampion, SET_16_CHAMPIONS, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
+import { TFTChampion, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
 import { getTFTUnitIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';

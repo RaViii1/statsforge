@@ -2,7 +2,7 @@
 
 import { Search, Trash2, Crown, Star, Plus, Backpack } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTChampion, getCostColor, getChampionCost, CurrentSetNumber } from '@/lib/tft/champions';
+import { TFTChampion, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
 import SvgIcon from '@/components/SvgIcon';
