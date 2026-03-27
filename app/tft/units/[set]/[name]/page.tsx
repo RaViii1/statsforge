@@ -2,28 +2,75 @@
 
 import { use, useMemo, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2, Eye, ArrowRightIcon } from "lucide-react";
 import Footer from "@/components/Footer";
-import { CurrentSetNumber, getCostBorderColor } from "@/lib/tft/champions";
-import { getTFTUnitIcon, getTFTItemIcon, getTFTTraitIcon, getTFTUnitSplash } from "@/lib/tft/tftfunctions";
-import { TRAIT_DESCRIPTIONS } from "@/lib/tft/tftTraits";
+import { getCostBorderColor } from "@/lib/tft/champions";
 import SvgIcon from "@/components/SvgIcon";
 import { TFTChampion } from "@/lib/tft/champions";
-import Navbar from "@/components/Navbar";
 import NavbarTft from "@/components/NavbarTft";
+import { UnitTooltip } from "@/components/tft/UnitTooltip";
+import { TraitTooltip } from "@/components/tft/planner/TraitTooltip";
+import { CustomTooltip } from "@/components/tft/planner/CustomTooltip";
+import { TooltipState, META_TIER_CONFIG, MetaTier, DifficultyLevel } from "@/lib/tft/teamplanner-types";
+import { getDifficultyConfig } from "@/lib/tft/difficulty";
+import { li } from "framer-motion/client";
+import { highlightNumbers, parseTextWithIcons, formatText } from "@/lib/highlightNumbers";
 
-type SvgIconType = 'ap' | 'dmg' | 'health' | 'armor' | 'mr' | 'crit' | 'attackspeed' | 'mana' | 'dps' | 'gold';
+const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
+  if (!tier) return null;
+  const config = META_TIER_CONFIG[tier];
+  return (
+    <div className="inline-flex items-center gap-2">
+      <div className={`w-0.5 h-6 bg-linear-to-b ${config.gradient} rounded-full`}></div>
+      <span className={`text-sm font-bold ${config.color}`}>{tier}</span>
+      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">TIER</span>
+      <div className={`w-0.5 h-6 bg-linear-to-b ${config.gradient} rounded-full`}></div>
+    </div>
+  );
+};
 
+type SvgIconType =  'mr' | 'health' | 'mana' | 'armor' | 'dps' | 'dmg' | 'crit' | 'attackspeed' | 'ap' | 'gold' | 'dmgamp' | 'lifesteal';
+  
 const STAT_ICON_MAP: Record<string, { type: SvgIconType; color: string }> = {
-  'AP': { type: 'ap', color: 'text-cyan-200' },
-  'AD': { type: 'dmg', color: 'text-orange-500' },
-  'Health': { type: 'health', color: 'text-emerald-500' },
-  'Armor': { type: 'armor', color: 'text-orange-500' },
-  'MR': { type: 'mr', color: 'text-purple-500' },
-  'Crit': { type: 'crit', color: 'text-red-400' },
-  'AS': { type: 'attackspeed', color: 'text-[#F4C452]' },
-  'Mana': { type: 'mana', color: 'text-[#26c2f4]' },
+  'AP':      { type: 'ap',           color: 'text-blue-400' },
+  'AD':      { type: 'dmg',          color: 'text-orange-400' },
+  'Hp':      { type: 'health',       color: 'text-emerald-500' },
+  'Armor':   { type: 'armor',        color: 'text-orange-400' },
+  'MR':      { type: 'mr',           color: 'text-purple-500' },
+  'Crit':    { type: 'crit',         color: 'text-red-500' },
+  'AS':      { type: 'attackspeed',  color: 'text-yellow-300' },
+  'Mana':    { type: 'mana',         color: 'text-cyan-400' },
+  'DmgAmp':  { type: 'dmgamp',       color: 'text-white' },
+  'Lifesteal': { type: 'lifesteal',    color: 'text-red-600' },
+  'CritDmg': { type: 'crit',      color: 'text-white' },
+  'Healing': { type: 'health',      color: 'text-green-400' },
+  'Shield':  { type: 'armor',       color: 'text-white' },
 } as const;
+
+const COST_BG: Record<number, string> = {
+  1: 'bg-zinc-400',
+  2: 'bg-emerald-400',
+  3: 'bg-blue-400',
+  4: 'bg-purple-400',
+  5: 'bg-[#F4C452]',
+};
+const COST_TEXT: Record<number, string> = {
+  1: 'text-zinc-400',
+  2: 'text-emerald-400',
+  3: 'text-blue-400',
+  4: 'text-purple-400',
+  5: 'text-[#F4C452]',
+};
+
+
+// Unified section heading — orange left border, no icon decoration
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="border-l-2 border-orange-500 pl-3 text-[11px] font-black text-zinc-300 uppercase tracking-[0.3em] leading-none mb-6">
+      {children}
+    </h2>
+  );
+}
 
 interface StatTextProps {
   text?: any;
@@ -32,15 +79,14 @@ interface StatTextProps {
 
 export function StatText({ text, className = "" }: StatTextProps) {
   if (!text) return null;
-  
+
   let segments: string[] = [];
   if (typeof text === 'string') {
-    segments = text.split(',').map(segment => segment.trim());
+    segments = text.split(',').map(s => s.trim());
   } else if (typeof text === 'object') {
-    // If it's an object (like the JSONB from DB), convert to segments
     segments = Object.entries(text as any)
-      .filter(([_, value]) => value !== null && value !== undefined)
-      .map(([key, value]) => `${value} ${key.toUpperCase()}`);
+      .filter(([_, v]) => v !== null && v !== undefined && v !== 0 && v !== '0')
+      .map(([k, v]) => `${v} ${k.toUpperCase()}`);
   }
 
   if (segments.length === 0) return null;
@@ -48,16 +94,16 @@ export function StatText({ text, className = "" }: StatTextProps) {
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {segments.map((segment, index) => {
-        const statEntry = Object.entries(STAT_ICON_MAP).find(([keyword]) => 
+        const statEntry = Object.entries(STAT_ICON_MAP).find(([keyword]) =>
           segment.toUpperCase().includes(keyword.toUpperCase())
         );
-        if (!statEntry) return <span key={index} className="text-xs text-zinc-400">{segment}</span>;
+        if (!statEntry) return <span key={index} className="text-xs text-zinc-500">{segment}</span>;
         const [keyword, { type, color }] = statEntry;
         const value = segment.toUpperCase().replace(keyword.toUpperCase(), '').trim();
         return (
           <div key={index} className="flex items-center gap-1">
             <span className={`text-xs font-bold ${color}`}>{value}</span>
-            <SvgIcon type={type} size={14} className={color} />
+            <SvgIcon type={type} size={13} className={color} />
           </div>
         );
       })}
@@ -72,25 +118,26 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
 
   const [champion, setChampion] = useState<TFTChampion | null>(null);
   const [allChampions, setAllChampions] = useState<TFTChampion[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [traits, setTraits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
+  const [selectedStarLevel, setSelectedStarLevel] = useState(0);
+  const [showAllTeamComps, setShowAllTeamComps] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [champRes, allChampsRes] = await Promise.all([
+        const [champRes, allChampsRes, itemsRes, traitsRes] = await Promise.all([
           fetch(`/api/tft/champions?name=${unitName}&set=${setNumber}`),
-          fetch(`/api/tft/champions?set=${setNumber}`)
+          fetch(`/api/tft/champions?set=${setNumber}`),
+          fetch(`/api/tft/items`),
+          fetch(`/api/tft/traits`)
         ]);
-
-        if (champRes.ok) {
-          const data = await champRes.json();
-          setChampion(data);
-        }
-
-        if (allChampsRes.ok) {
-          const data = await allChampsRes.json();
-          setAllChampions(data);
-        }
+        if (champRes.ok) setChampion(await champRes.json());
+        if (allChampsRes.ok) setAllChampions(await allChampsRes.json());
+        if (itemsRes.ok) setItems(await itemsRes.json());
+        if (traitsRes.ok) setTraits(await traitsRes.json());
       } catch (error) {
         console.error("Error fetching champion details:", error);
       } finally {
@@ -112,9 +159,8 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
-        <p className="text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading Unit Details...</p>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-zinc-800 border-t-orange-500 animate-spin" />
       </div>
     );
   }
@@ -122,9 +168,12 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
   if (!champion) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-black text-white mb-2">Unit Not Found</h2>
-          <Link href="/tft/units" className="text-orange-500 hover:underline font-bold">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 text-zinc-700 mx-auto animate-pulse" />
+          <h2 className="text-xl font-black text-white tracking-tighter uppercase">Unit not found</h2>
+          <p className="text-zinc-500 text-sm max-w-xs mx-auto">This unit could not be retrieved.</p>
+          <Link href="/tft/units" className="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-400 text-white rounded-lg font-black uppercase text-xs tracking-widest transition-colors">
+            <ChevronLeft className="w-3.5 h-3.5" />
             Back to Units
           </Link>
         </div>
@@ -132,101 +181,158 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
     );
   }
 
-  const stats = champion.stats?.stars?.[0] || { hp: 0, dmg: 0, ap: 0, armor: 0, mr: 0, crit: 0 };
-  const speed = champion.stats?.speed || 0;
-  const mana = champion.stats?.mana || 0;
-  const range = champion.stats?.range || 1;
-  const ability = champion.ability || { name: "Unknown Ability", description: { active: "Details unavailable." } };
-  const bestItems = champion.tft_champion_best_items || [];
+  const allStarsStats = champion.stats?.stars || [
+    { hp: 0, dmg: 0, ap: 0, armor: 0, mr: 0, crit: 0 },
+    { hp: 0, dmg: 0, ap: 0, armor: 0, mr: 0, crit: 0 },
+    { hp: 0, dmg: 0, ap: 0, armor: 0, mr: 0, crit: 0 },
+  ];
+  const speed  = champion.stats?.speed || 0;
+  const mana   = champion.stats?.mana  || 0;
+  const range  = champion.stats?.range || 1;
+  const ability    = champion.ability || { name: "Unknown Ability", description: { active: "Details unavailable." } };
+  const bestItems  = champion.tft_champion_best_items || [];
+  const stats      = allStarsStats[selectedStarLevel];
 
-  const RangeIndicator = ({ range }: { range: number }) => (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div
-          key={i}
-          className={`w-2 h-5 rounded-sm ${i <= range ? "bg-orange-500" : "bg-zinc-700"}`}
-        />
-      ))}
-    </div>
-  );
+  const showTooltip = (e: React.MouseEvent, data: Partial<TooltipState>) =>
+    setTooltip({ visible: true, title: '', description: '', x: e.clientX, y: e.clientY, ...data });
+  const hideTooltip = () => setTooltip(p => ({ ...p, visible: false }));
+
+  const buildTraitTooltip = (trait: any): TooltipState['trait'] => ({
+    id: trait.name, name: trait.name,
+    description: trait.description || '',
+    icon_path: trait.icon_path || '',
+    tiers: trait.tft_trait_tiers?.map((t: any) => ({
+      id: t.id, trait_id: t.trait_id, tier: t.tier,
+      units_required: t.units_required, description: t.description, stats: t.stats,
+    })) || trait.tiers || [],
+    is_Hero: trait.is_Hero || false,
+  });
+
+  const statRows: { label: string; value: string | number; icon: SvgIconType; color: string }[] = [
+    { label: 'Health',        value: stats.hp,         icon: 'health',       color: 'text-emerald-400' },
+    { label: 'Attack Damage', value: stats.dmg,        icon: 'dmg',          color: 'text-orange-400'  },
+    { label: 'Ability Power', value: stats.ap,         icon: 'ap',           color: 'text-blue-400'    },
+    { label: 'Armor',         value: stats.armor,      icon: 'armor',        color: 'text-orange-400'  },
+    { label: 'Magic Resist',  value: stats.mr,         icon: 'mr',           color: 'text-purple-500'  },
+    { label: 'Crit Chance',   value: `${stats.crit}%`, icon: 'crit',         color: 'text-red-500'     },
+    { label: 'Attack Speed',  value: speed,            icon: 'attackspeed',  color: 'text-yellow-300'   },
+    { label: 'Mana',          value: mana,             icon: 'mana',         color: 'text-cyan-400'   },
+  ];
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
-      </div>
-      <NavbarTft/>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500/30">
 
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
+      {/* Ambient glows — atmosphere, not structure */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-orange-600/5 rounded-full blur-[140px]" />
+        <div className="absolute top-1/3 -right-40 w-[400px] h-[500px] bg-blue-600/4 rounded-full blur-[140px]" />
+        <div className="absolute -bottom-40 left-1/3 w-[500px] h-[400px] bg-purple-600/4 rounded-full blur-[140px]" />
+      </div>
+
+      <NavbarTft />
+
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12">
+
+        <UnitTooltip
+          visible={tooltip.visible && !!tooltip.champion}
+          title={tooltip.title} description={tooltip.description}
+          x={tooltip.x} y={tooltip.y}
+          champion={tooltip.champion} setNumber={setNumber}
+        />
+        <TraitTooltip
+          visible={tooltip.visible && !!tooltip.trait}
+          title={tooltip.title} description={tooltip.description}
+          x={tooltip.x} y={tooltip.y} trait={tooltip.trait}
+        />
+        <CustomTooltip
+          visible={tooltip.visible && !tooltip.champion && !tooltip.trait}
+          title={tooltip.title} description={tooltip.description}
+          x={tooltip.x} y={tooltip.y}
+          item={items.find(it => it.name === tooltip.title)}
+          allItems={items}
+        />
+
         <Link
           href="/tft/units"
-          className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-500 transition-colors mb-8 group"
+          className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-zinc-300 mb-10 transition-colors group uppercase text-[10px] font-black tracking-widest"
         >
-          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-bold uppercase tracking-widest">Back to Units</span>
+          <ChevronLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          Units
         </Link>
 
-        <div className="grid lg:grid-cols-[380px_1fr] gap-8">
-          <div className="space-y-6">
-            <div className={`relative rounded-3xl overflow-hidden border-2 ${getCostBorderColor(champion.cost)} bg-zinc-900/50 backdrop-blur-xl`}>
-              <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-transparent to-transparent z-10"></div>
-              <img
-                src={champion.image_path || "images/nochampionimage.png"}
-                alt={champion.name}
-                className="w-full aspect-square object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = `images/nochampionimage.png`;
-                }}
-              />
-              <div className="absolute bottom-0 left-0 right-0 p-6 z-20">
-                <div className="flex items-center gap-3 mb-3">
-                  {champion.traits.map((trait) => (
-                    <div key={trait} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/80 backdrop-blur border border-zinc-700 rounded-full text-xs text-zinc-200 font-bold">
-                      <img src={getTFTTraitIcon(trait)} alt={trait} className="w-4 h-4" />
-                      {trait}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-end justify-between">
-                  <h1 className="text-4xl font-black text-white italic uppercase tracking-tight">{champion.name}</h1>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg`}>
-                    <span className="text-white font-black text-xl">{champion.cost}</span>
-                    <SvgIcon type="gold" size={24} className={`ml-1 text-amber-400`} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">Recommended Items</h3>
-              <div className="space-y-3">
-                {bestItems.map((item, idx) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-2xl border border-zinc-700/50 transition-all group">
-                    <div className="relative">
-                      <div className="w-14 h-14 rounded-xl border-2 border-zinc-600 overflow-hidden bg-zinc-800 shrink-0 group-hover:border-orange-500/50 transition-colors">
-                        <img src={item.image_path || "images/noitemimage.png"} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="absolute -top-1 -left-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center text-[10px] font-black text-white">
-                        {idx + 1}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-orange-400 font-bold truncate pb-1">{item.name}</p>
-                      <StatText text={item.stats} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="relative rounded-2xl bg-zinc-900/50 shadow-xl shadow-black/40 overflow-hidden mb-8">
+          {/* Faint splash art wash */}
+          <div className="absolute inset-0 opacity-[0.08]">
+            <img src={champion.image_path || "/images/nochampionimage.jpg"} alt="" aria-hidden
+              className="w-full h-full object-cover object-top scale-110 blur-sm" />
+            <div className="absolute inset-0 bg-linear-to-r from-zinc-900 via-zinc-900/80 to-transparent" />
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">Ability</h3>
-              <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-800 border-2 border-zinc-600 flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="relative z-10 flex items-start justify-between flex-wrap gap-8 p-8 md:p-10">
+            <div className="space-y-4 flex-1 min-w-0">
+
+              {/* Meta row */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Set {setNumber}</span>
+                <span className="text-zinc-700">·</span>
+                <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] ${COST_TEXT[champion.cost] || 'text-zinc-400'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${COST_BG[champion.cost] || 'bg-zinc-400'}`} />
+                  {champion.cost} Gold
+                </span>
+              </div>
+
+              {/* Trait pills */}
+              {(champion.trait_details ?? []).length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {(champion.trait_details ?? []).map((trait: any) => (
+                    <button
+                      key={trait.name}
+                      className="flex items-center gap-1.5 pl-1.5 pr-3 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-default"
+                      onMouseEnter={(e) => showTooltip(e, { title: trait.name, description: trait.description || '', trait: buildTraitTooltip(trait) })}
+                      onMouseLeave={hideTooltip}
+                    >
+                      <div className="w-4 h-4 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
+                        {trait.icon_path
+                          ? <img src={trait.icon_path} alt="" className="w-3 h-3 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          : <span className="text-[8px] font-black text-orange-400">{trait.name[0]}</span>}
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-zinc-200">{trait.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none italic">
+                {champion.name}
+              </h1>
+
+              <p className="text-zinc-400 max-w-xl text-sm leading-relaxed">
+                {formatText(champion.ability?.description?.passive || champion.ability?.description?.active || "Unit details unavailable")}
+              </p>
+            </div>
+
+            <div className="w-44 h-44 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 shrink-0">
+              <img
+                src={champion.image_path || "/images/nochampionimage.jpg"}
+                alt={champion.name}
+                className="w-full h-full object-cover"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
+                onMouseEnter={(e) => showTooltip(e, { title: champion.name, description: champion.ability?.description?.active || champion.ability?.description?.passive || '', champion, setNumber })}
+                onMouseLeave={hideTooltip}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-12 gap-6 mb-24">
+
+          <div className="lg:col-span-8 space-y-6">
+
+            <section className="rounded-2xl bg-zinc-900/50 p-8 shadow-lg shadow-black/30">
+              <SectionHeading>Ability</SectionHeading>
+
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-xl overflow-hidden bg-zinc-800/80 shrink-0 shadow-md shadow-black/40">
                   <img
                     src={`https://raw.communitydragon.org/latest/game/assets/characters/${champion.id.toLowerCase()}/hud/${champion.id.toLowerCase()}_square.tft_set${setNumber}.png`}
                     alt={ability.name}
@@ -234,146 +340,338 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-xl font-black text-white italic">{ability.name}</h4>
+
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-white italic mb-3">{ability.name}</h3>
+
                   {ability.description?.passive && (
-                    <div className="mt-2">
-                      <h4 className="text-orange-500 font-black text-xs">Passive:</h4>
-                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">{ability.description.passive}</p>
+                    <div className="mb-3">
+                      <span className="text-[10px] font-black text-orange-500 uppercase tracking-wider">Passive</span>
+                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">
+                        {formatText(ability.description.passive)}
+                      </p>
                     </div>
                   )}
                   {ability.description?.active && (
-                    <div className="mt-2">
-                      <h4 className="text-orange-500 font-black text-xs">Active:</h4>
-                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">{ability.description.active}</p>
+                    <div className="mb-3">
+                      <span className="text-[10px] font-black text-orange-500 uppercase tracking-wider">Active</span>
+                      <p className="text-sm text-zinc-400 leading-relaxed mt-1">
+                        {formatText(ability.description.active)}
+                      </p>
                     </div>
                   )}
-                </div>
-              </div>
-              {(ability.heal || ability.damage || ability.shield || ability.stun || ability.special) && (
-                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-zinc-800">
-                  {ability.damage && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Damage</p>
-                      <p className="text-lg text-orange-400 font-black">{ability.damage}</p>
-                    </div>
-                  )}
-                  {ability.heal && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Healing</p>
-                      <p className="text-lg text-emerald-400 font-black">{ability.heal}</p>
-                    </div>
-                  )}
-                  {ability.shield && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Shield</p>
-                      <p className="text-lg text-blue-400 font-black">{ability.shield}</p>
-                    </div>
-                  )}
-                  {ability.stun && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Stun Duration</p>
-                      <p className="text-lg text-yellow-400 font-black">{ability.stun}</p>
-                    </div>
-                  )}
-                  {ability.special && (
-                    <div className="bg-zinc-800/50 rounded-2xl p-4">
-                      <p className="text-xs text-zinc-500 font-bold uppercase mb-1">Special Effect</p>
-                      <p className="text-lg text-purple-400 font-black">{ability.special}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-5">{champion.name} Stats (1-Star)</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Health</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="health" size={14} className="text-emerald-500" />
-                    <p className="text-sm text-emerald-400 font-black">{stats.hp}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Damage</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="dmg" size={14} className="text-orange-500" />
-                    <p className="text-sm text-orange-400 font-black">{stats.dmg}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Armor</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="armor" size={14} className="text-orange-500" />
-                    <p className="text-sm text-orange-500 font-black">{stats.armor}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">MR</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="mr" size={14} className="text-purple-500" />
-                    <p className="text-sm text-purple-400 font-black">{stats.mr}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Speed</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="attackspeed" size={14} className="text-[#F4C452]" />
-                    <p className="text-sm text-[#F4C452] font-black">{speed}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Mana</span>
-                  <div className="flex items-center gap-2">
-                    <SvgIcon type="mana" size={14} className="text-[#26c2f4]" />
-                    <p className="text-sm text-[#26c2f4] font-black">{mana}</p>
-                  </div>
-                </div>
-                <div className="rounded-2xl p-4 border border-zinc-700/30">
-                  <span className="text-xs text-zinc-500 font-bold uppercase block mb-2">Range</span>
-                  <RangeIndicator range={range} />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 backdrop-blur-xl">
-              <h3 className="text-sm font-black text-orange-500 uppercase tracking-wider mb-6">{champion.name} Synergies</h3>
-              <div className="space-y-8">
-                {champion.traits.map((trait) => {
-                  const traitDesc = TRAIT_DESCRIPTIONS[trait];
-                  const championsWithTrait = traitChampions[trait] || [];
-                  return (
-                    <div key={trait} className="space-y-4">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
-                          <img src={getTFTTraitIcon(trait)} alt={trait} className="w-8 h-8" />
+                  {(ability.damage || ability.heal || ability.shield || ability.stun || ability.special) && (
+                    <div className="flex flex-wrap gap-6 pt-3 mt-2 border-t border-zinc-800/60">
+                      {[
+                        { label: 'Damage',  value: ability.damage, },
+                        { label: 'Healing', value: ability.heal,},
+                        { label: 'Shield',  value: ability.shield,},
+                        { label: 'Stun',    value: ability.stun,},
+                        { label: 'Special', value: ability.special,},
+                      ].filter(s => s.value).map(({ label, value }) => (
+                        <div key={label}>
+                          <p className="text-[10px] text-zinc-600 font-bold uppercase mb-0.5">{label}</p>
+                          <p className={`text-sm font-black`}>{parseTextWithIcons(value || '0')}</p>
                         </div>
-                        <div className="flex-1">
-                          <h4 className="text-lg font-black text-white italic">{trait}</h4>
-                          <p className="text-sm text-zinc-400 mt-1 leading-relaxed">{traitDesc?.description || "Trait description unavailable."}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Stats */}
+            <section className="rounded-2xl bg-zinc-900/50 p-8 shadow-lg shadow-black/30">
+              <SectionHeading>Base Statistics</SectionHeading>
+
+              <div className="flex items-center gap-1 mb-6 bg-zinc-800/40 rounded-xl p-1 w-fit">
+                {[0, 1, 2].map((starIndex) => (
+                  <button
+                    key={starIndex}
+                    onClick={() => setSelectedStarLevel(starIndex)}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black transition-all ${
+                      selectedStarLevel === starIndex
+                        ? 'bg-zinc-700 text-white shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    <span className="flex gap-px">
+                      {[...Array(starIndex + 1)].map((_, i) => (
+                        <span key={i} className="text-[#F4C452] text-[10px]">★</span>
+                      ))}
+                    </span>
+                    <span>{starIndex + 1} Star</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-xl overflow-hidden">
+                {statRows.map(({ label, value, icon, color }, i) => (
+                  <div
+                    key={label}
+                    className={`flex items-center justify-between px-4 py-3 ${i % 2 === 0 ? 'bg-zinc-800/30' : 'bg-transparent'} hover:bg-zinc-800/50 transition-colors`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <SvgIcon type={icon} size={15} className={`${color} opacity-70`} />
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide">{label}</span>
+                    </div>
+                    <span className={`text-sm font-black tabular-nums ${color}`}>{value}</span>
+                  </div>
+                ))}
+
+                <div className={`flex items-center justify-between px-4 py-3 ${statRows.length % 2 === 0 ? 'bg-zinc-800/30' : 'bg-transparent'} hover:bg-zinc-800/50 transition-colors`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-[15px] h-[15px] flex items-center justify-center opacity-70">
+                      <div className="w-2 h-2 rounded-full bg-orange-500" />
+                    </div>
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide">Range</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div key={i} className={`rounded-full transition-all ${i <= range ? 'w-1 h-5 bg-orange-500' : 'w-1 h-5 bg-zinc-700'}`} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="lg:col-span-4 space-y-6">
+
+            <section className="rounded-2xl bg-zinc-900/50 p-6 shadow-lg shadow-black/30">
+              <SectionHeading>Recommended Items</SectionHeading>
+
+              <div className="space-y-1">
+                {bestItems.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-zinc-800/50 transition-colors group"
+                  >
+                    <span className="text-[10px] font-black text-zinc-700 w-4 text-right shrink-0 tabular-nums">{idx + 1}</span>
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-zinc-800 shrink-0 shadow-md shadow-black/50">
+                      <img src={item.image_path || "/images/noitem.png"} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-zinc-200 truncate mb-0.5 group-hover:text-orange-400 transition-colors">{item.name}</p>
+                      <StatText text={item.stats} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Synergies */}
+            <section className="rounded-2xl bg-zinc-900/50 p-6 shadow-lg shadow-black/30">
+              <SectionHeading>{champion.name} Synergies</SectionHeading>
+
+              <div className="space-y-7">
+                {champion.trait_details?.map((trait: any) => {
+                  const traitDesc = traits.find((t) => t.name === trait.name)?.description || 'No description found';
+                  const championsWithTrait = traitChampions[trait.name] || [];
+                  return (
+                    <div key={trait.name}>
+                      <div className="flex items-start gap-3 mb-3">
+                        <div
+                          className="w-9 h-9 rounded-lg bg-zinc-800/80 flex items-center justify-center shrink-0 cursor-default"
+                          onMouseEnter={(e) => showTooltip(e, { title: trait.name, description: trait.description || '', trait: buildTraitTooltip(trait) })}
+                          onMouseLeave={hideTooltip}
+                        >
+                          <img src={trait.icon_path || "/images/notraitimage.png"} alt={trait.name} className="w-5 h-5 object-contain" />
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <h4 className="text-sm font-black text-white italic leading-none mb-1">{trait.name}</h4>
+                          <p className="text-[11px] text-zinc-500 leading-relaxed line-clamp-4">
+                            {trait.description || traitDesc?.description || "Trait description unavailable."}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2 pl-16">
-                        {championsWithTrait.map((c) => (
-                          <Link
-                            key={c.id}
-                            href={`/tft/units/${setNumber}/${c.name.toLowerCase().replace(/\s+/g, '-')}`}
-                            className={`relative w-12 h-12 rounded-xl border-2 ${getCostBorderColor(c.cost)} overflow-hidden hover:scale-110 hover:z-10 transition-all duration-200 ${c.id === champion.id ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-zinc-950' : ''}`}
-                          >
-                            <img src={getTFTUnitIcon(c.id, setNumber)} alt={c.name} className="w-full h-full object-cover" />
-                          </Link>
-                        ))}
+
+                      <div className="flex flex-wrap gap-1.5 pl-12">
+                        {championsWithTrait.map((c) => {
+                          const isActive = c.id === champion.id;
+                          return (
+                            <Link
+                              key={c.id}
+                              href={`/tft/units/${setNumber}/${c.name.toLowerCase().replace(/\s+/g, '-')}`}
+                              className={`relative w-9 h-9 rounded-lg overflow-hidden transition-all duration-150 border-2 ${
+                                isActive
+                                  ? 'border-orange-500 scale-110 shadow-lg shadow-orange-500/20 opacity-100'
+                                  : `${getCostBorderColor(c.cost) || 'border-zinc-600'} opacity-50 hover:opacity-90 hover:scale-105`
+                              }`}
+                            >
+                              <img
+                                src={c.image_path || "/images/nochampionimage.jpg"}
+                                alt={c.name}
+                                className="w-full h-full object-cover"
+                                onMouseEnter={(e) => showTooltip(e, { title: c.name, description: c.ability?.description?.active || c.ability?.description?.passive || '', champion: c, setNumber })}
+                                onMouseLeave={hideTooltip}
+                              />
+                            </Link>
+                          );
+                        })}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+            </section>
+
+            
           </div>
         </div>
+            <section className="rounded-2xl bg-zinc-900/50 p-8 shadow-lg shadow-black/30">
+              <SectionHeading>Popular {champion.name} teamcomps</SectionHeading>
+              
+              {champion.teamcomps && champion.teamcomps.length > 0 ? (
+                <div className="space-y-4">
+                  {champion.teamcomps.slice(0, showAllTeamComps ? champion.teamcomps.length : 5).map((teamcomp) => {
+                    // Get final phase units
+                    const finalUnits = teamcomp.phases?.final?.units || [];
+                    // Get carries
+                    const carries = teamcomp.mainCarryIds?.map(id => {
+                      const unit = finalUnits.find(u => u.characterId === id);
+                      const champ = allChampions.find(c => c.id === id);
+                      return unit ? { unit, cost: champ?.cost || 1 } : null;
+                    }).filter(Boolean) as any[];
+                    
+                    return (
+                      <Link
+                        key={teamcomp.id}
+                        href={`/tft/comps/${teamcomp.id}`}
+                        className="block bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all"
+                      >
+                        <div className="p-5">
+                          <div className="flex items-center gap-6">
+                            <div className="shrink-0 min-w-[180px]">
+                              <h3 className="text-lg font-bold text-white mb-2">
+                                {teamcomp.name}
+                              </h3>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {teamcomp.tier && <MetaTierBadge tier={teamcomp.tier as MetaTier} />}
+                                {teamcomp.difficulty && (
+                                  <span
+                                    className="px-2.5 py-1 text-xs font-bold rounded border"
+                                    style={{ 
+                                      backgroundColor: getDifficultyConfig(teamcomp.difficulty as DifficultyLevel).bgColor, 
+                                      color: getDifficultyConfig(teamcomp.difficulty as DifficultyLevel).color, 
+                                      borderColor: getDifficultyConfig(teamcomp.difficulty as DifficultyLevel).borderColor 
+                                    }}
+                                  >
+                                    {getDifficultyConfig(teamcomp.difficulty as DifficultyLevel).label}
+                                  </span>
+                                )}
+                                {teamcomp.patch && (
+                                  <span className="px-2.5 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-xs font-bold rounded">
+                                    {teamcomp.patch}
+                                  </span>
+                                )}
+
+                              </div>
+                            </div>
+
+                            {carries.length > 0 && (
+                              <div className="shrink-0 flex items-center gap-1 border-r border-r-orange-500/40 pr-4">
+                                {carries.map(({ unit, cost }, i) => {
+                                  const champ = allChampions.find(c => c.id === unit.characterId);
+                                  return (
+                                    <div key={i} className="relative">
+                                      <div
+                                        className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} cursor-pointer`}
+                                        onMouseEnter={(e) => {
+                                          if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber });
+                                        }}
+                                        onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                                      >
+                                        <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" />
+                                      </div>
+                                      {unit.items.length > 0 && (
+                                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                          {unit.items.slice(0, 3).map((item: any, idx: number) => {
+                                            const itemObj = items.find(it => it.name === item);
+                                            return (
+                                              <div key={idx} className="w-4 h-4 rounded bg-zinc-800 border border-zinc-600 overflow-hidden"
+                                                onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
+                                                onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                                              >
+                                                <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            <div className="flex-1 flex items-center gap-2 overflow-hidden p-2">
+                              {finalUnits.map((unit, i) => {
+                                const champ = allChampions.find(c => c.id === unit.characterId);
+                                const cost = champ?.cost || 1;
+                                const isCarry = teamcomp.mainCarryIds?.includes(unit.characterId);
+                                return (
+                                  <div key={i} className="relative shrink-0 py-1">
+                                    <div
+                                      className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''} cursor-pointer`}
+                                      onMouseEnter={(e) => {
+                                        if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber });
+                                      }}
+                                      onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                                    >
+                                      <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    {unit.items.length > 0 && (
+                                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
+                                        {unit.items.slice(0, 3).map((item: any, idx: number) => {
+                                          const itemObj = items.find(it => it.name === item);
+                                          return (
+                                            <div key={idx} className="w-3.5 h-3.5 rounded-sm bg-zinc-800 border border-zinc-600 overflow-hidden"
+                                              onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
+                                              onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                                            >
+                                              <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-500 flex items-center justify-center transition-colors">
+                                <ArrowRightIcon className="w-5 h-5 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  
+                  {champion.teamcomps.length > 5 && (
+                    <div className="text-center">
+                      <button
+                        onClick={() => setShowAllTeamComps(!showAllTeamComps)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {showAllTeamComps ? 'Show Less' : 'Show More'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-zinc-500">
+                  <p className="text-sm">No team comps found for {champion.name}</p>
+                </div>
+              )}
+            </section>
       </main>
+
       <Footer />
     </div>
   );

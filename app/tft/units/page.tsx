@@ -1,310 +1,472 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Search, ChevronLeft, Users, Filter, X, Loader2 } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { Search, ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
 import Footer from "@/components/Footer";
-import { getCostBorderColor, getCostColor, CurrentSetNumber } from "@/lib/tft/champions";
-import { getTFTUnitSplash } from "@/lib/tft/tftfunctions";
+import { getCostColor, getCostBorderColor, CurrentSetNumber } from "@/lib/tft/champions";
 import { TFTChampion } from "@/lib/tft/champions";
 import NavbarTft from "@/components/NavbarTft";
+import { UnitTooltip } from "@/components/tft/UnitTooltip";
+import { TraitTooltip } from "@/components/tft/planner/TraitTooltip";
+import { TooltipState } from "@/lib/tft/teamplanner-types";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
-const COST_FILTERS = [
-  { value: 0, label: "All", color: "bg-zinc-700" },
-  { value: 1, label: "1", color: "#94a3b8" },
-  { value: 2, label: "2", color: "#10b981" },
-  { value: 3, label: "3", color: "#3b82f6" },
-  { value: 4, label: "4", color: "#a855f7" },
-  { value: 5, label: "5", color: "#eab308" },
-  { value: 6, label: "6", color: "#ef4444" },
-  { value: 7, label: "7", color: "#f97316" },
-];
+const COSTS = [1, 2, 3, 4, 5, 6, 7];
 
-const COST_BG_COLORS: Record<number, string> = {
-  1: "from-zinc-600/20 to-zinc-800/40",
-  2: "from-emerald-600/20 to-emerald-900/40",
-  3: "from-blue-600/20 to-blue-900/40",
-  4: "from-purple-600/20 to-purple-900/40",
-  5: "from-yellow-600/20 to-yellow-900/40",
-  6: "from-red-600/20 to-red-900/40",
-  7: "from-orange-600/20 to-orange-900/40",
-};
+function SkeletonCard() {
+  return (
+    <div className="rounded-xl overflow-hidden bg-zinc-900 animate-pulse">
+      <div className="aspect-[3/4] bg-zinc-800" />
+      <div className="p-2.5 space-y-1.5">
+        <div className="h-2 bg-zinc-800 rounded w-3/4" />
+        <div className="flex gap-1">
+          <div className="h-4 w-10 bg-zinc-800 rounded" />
+          <div className="h-4 w-12 bg-zinc-800 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-const COST_ICON_BG: Record<number, string> = {
-  1: "bg-zinc-500",
-  2: "bg-emerald-500",
-  3: "bg-blue-500",
-  4: "bg-purple-500",
-  5: "bg-yellow-500",
-  6: "bg-orange-500",
-  7: "bg-orange-500",
-};
+interface ChampionCardProps {
+  champion: TFTChampion;
+  setNumber: number;
+  index: number;
+  onShowTooltip: (e: React.MouseEvent, data: Partial<TooltipState>) => void;
+  onHideTooltip: () => void;
+  buildTraitPayload: (trait: any) => any;
+  prefersReduced: boolean | null;
+}
+
+function ChampionCard({ champion, setNumber, index, onShowTooltip, onHideTooltip, buildTraitPayload, prefersReduced }: ChampionCardProps) {
+  const costColor = getCostColor(champion.cost);
+  const borderClass = getCostBorderColor(champion.cost);
+
+  return (
+    <motion.div
+      initial={prefersReduced ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.4), ease: [0.25, 0.46, 0.45, 0.94] }}
+      layout
+    >
+      <Link
+        href={`/tft/units/${setNumber}/${champion.name.toLowerCase().replace(/\s+/g, "-")}`}
+        className="group block"
+      >
+        <motion.div
+          className={`relative rounded-xl overflow-hidden bg-zinc-900 border-b-2 ${borderClass} shadow-lg shadow-black/50`}
+          whileHover={prefersReduced ? {} : { y: -4, transition: { duration: 0.15 } }}
+          style={{ "--cost": costColor } as React.CSSProperties}
+        >
+          {/* Hover glow */}
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"
+            style={{ boxShadow: `0 8px 32px ${costColor}22, 0 0 0 1px ${costColor}15` }}
+          />
+
+          <div className="aspect-[3/4] relative overflow-hidden">
+            <img
+              src={champion.image_path || "/images/nochampionimage.jpg"}
+              alt={champion.name}
+              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/images/nochampionimage.jpg"; }}
+              onMouseEnter={(e) => onShowTooltip(e, {
+                title: champion.name,
+                description: champion.ability?.description?.active || champion.ability?.description?.passive || "",
+                champion,
+                setNumber,
+              })}
+              onMouseLeave={onHideTooltip}
+            />
+
+            <div className="absolute inset-x-0 bottom-0 h-2/5 pointer-events-none bg-linear-to-t from-(--cost)/15 to-transparent" />
+
+            <div className="absolute inset-0 bg-linear-to-t from-zinc-950/95 via-zinc-950/20 to-transparent" />
+
+            <div className="absolute top-0 left-0 right-0 px-2.5 pt-2.5 flex items-start justify-between gap-1">
+              <p className="text-xs font-black text-white italic uppercase tracking-tight truncate leading-none drop-shadow-md">
+                {champion.name}
+              </p>
+
+              <div
+                className="shrink-0 w-5 h-5 rounded flex items-center justify-center font-black text-[10px] leading-none"
+                style={{
+                  backgroundColor: `${costColor}25`,
+                  color: costColor,
+                  border: `1px solid ${costColor}50`,
+                }}
+              >
+                {champion.cost}
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2.5">
+              <div className="flex flex-wrap gap-1">
+                {(champion.trait_details ?? []).slice(0, 3).map((trait: any) => (
+                  <span
+                    key={trait.name}
+                    className="flex items-center gap-1 px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[9px] font-bold text-zinc-300 uppercase tracking-wider cursor-default"
+                    onMouseEnter={(e) => { e.stopPropagation(); onShowTooltip(e, { title: trait.name, description: trait.description || "", trait: buildTraitPayload(trait) }); }}
+                    onMouseLeave={onHideTooltip}
+                  >
+                    {trait.icon_path && (
+                      <img src={trait.icon_path} alt={trait.name} className="w-3 h-3 object-contain shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    )}
+                    {trait.name}
+                  </span>
+                ))}
+                {champion.traits.length > 3 && (
+                  <span className="px-1.5 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[9px] font-bold text-zinc-600">
+                    +{champion.traits.length - 3}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </Link>
+    </motion.div>
+  );
+}
 
 export default function TFTUnitsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCost, setSelectedCost] = useState(0);
   const [selectedTrait, setSelectedTrait] = useState("");
   const [champions, setChampions] = useState<TFTChampion[]>([]);
-  const [allTraits, setAllTraits] = useState<string[]>([]);
+  const [allTraits, setAllTraits] = useState<any[]>([]);
+  const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: "", description: "", x: 0, y: 0 });
   const [loading, setLoading] = useState(true);
+  const prefersReduced = useReducedMotion();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(val), 200);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const [champsRes, traitsRes] = await Promise.all([
           fetch("/api/tft/champions"),
-          fetch("/api/tft/traits")
+          fetch("/api/tft/traits"),
         ]);
-
-        if (champsRes.ok) {
-          const champsData = await champsRes.json();
-          setChampions(champsData);
-        }
-
-        if (traitsRes.ok) {
-          const traitsData = await traitsRes.json();
-          setAllTraits(traitsData.map((t: any) => t.name));
-        }
-      } catch (error) {
-        console.error("Error fetching TFT data:", error);
+        if (champsRes.ok) setChampions(await champsRes.json());
+        if (traitsRes.ok) setAllTraits(await traitsRes.json());
+      } catch (err) {
+        console.error("Error fetching TFT data:", err);
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  const filteredChampions = useMemo(() => {
-    return champions.filter((champion) => {
-      const matchesSearch = champion.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCost = selectedCost === 0 || champion.cost === selectedCost;
-      const matchesTrait = !selectedTrait || champion.traits.includes(selectedTrait);
+  const filteredChampions = useMemo(() =>
+    champions.filter((c) => {
+      const matchesSearch = c.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchesCost   = selectedCost === 0 || c.cost === selectedCost;
+      const matchesTrait  = !selectedTrait || c.traits.includes(selectedTrait);
       return matchesSearch && matchesCost && matchesTrait;
-    });
-  }, [searchQuery, selectedCost, selectedTrait, champions]);
+    }),
+  [debouncedSearch, selectedCost, selectedTrait, champions]);
 
   const groupedBySection = useMemo(() => {
-    const grouped: Record<number, typeof champions> = {};
-    filteredChampions.forEach((champ) => {
-      if (!grouped[champ.cost]) grouped[champ.cost] = [];
-      grouped[champ.cost].push(champ);
+    const grouped: Record<number, TFTChampion[]> = {};
+    filteredChampions.forEach((c) => {
+      if (!grouped[c.cost]) grouped[c.cost] = [];
+      grouped[c.cost].push(c);
     });
     return grouped;
   }, [filteredChampions]);
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedCost(0);
-    setSelectedTrait("");
-  };
+  const clearFilters = () => { setSearchQuery(""); setDebouncedSearch(""); setSelectedCost(0); setSelectedTrait(""); };
+  const hasActiveFilters = debouncedSearch || selectedCost !== 0 || selectedTrait;
 
-  const hasActiveFilters = searchQuery || selectedCost !== 0 || selectedTrait;
+  const showTooltip = (e: React.MouseEvent, data: Partial<TooltipState>) =>
+    setTooltip({ visible: true, title: "", description: "", x: e.clientX, y: e.clientY, ...data });
+  const hideTooltip = () => setTooltip((p) => ({ ...p, visible: false }));
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center">
-        <Loader2 className="w-12 h-12 text-orange-500 animate-spin mb-4" />
-        <p className="text-zinc-500 font-bold uppercase tracking-widest animate-pulse">Loading Units...</p>
-      </div>
-    );
-  }
+  const buildTraitPayload = (trait: any) => ({
+    id: trait.name, name: trait.name,
+    description: trait.description || "",
+    icon_path: trait.icon_path || "",
+    tiers: trait.tft_trait_tiers?.map((t: any) => ({
+      id: t.id, trait_id: t.trait_id, tier: t.tier,
+      units_required: t.units_required, description: t.description, stats: t.stats,
+    })) || trait.tiers || [],
+    is_Hero: trait.is_Hero || false,
+  });
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
-      </div>
-      <NavbarTft />
-      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
-        <div className="mb-12">
-          <Link
-            href="/tft"
-            className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-500 transition-colors mb-6 group"
-          >
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-bold uppercase tracking-widest">Back to TFT Hub</span>
-          </Link>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,700&display=swap');
+        .font-bebas { font-family: 'Bebas Neue', sans-serif; }
+        body { font-family: 'DM Sans', sans-serif; }
+      `}</style>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 bg-orange-950/30 border border-orange-900/30 rounded-full">
-                <Users className="w-4 h-4 text-orange-500" />
-                <span className="text-orange-600 text-xs font-bold uppercase tracking-wider">Set {CurrentSetNumber} Champions</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-white italic uppercase tracking-tighter">
-                Explore <span className="text-orange-500">Units</span>
-              </h1>
-              <p className="text-zinc-400 mt-2 max-w-xl">
-                Research all there is to know about champs from their cost and abilities to their recommended items and synergies.
-              </p>
-            </div>
-          </div>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-orange-500/30">
+
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 right-0 w-[700px] h-[500px] bg-orange-500/[0.03] rounded-full blur-[180px]" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-purple-600/[0.03] rounded-full blur-[160px]" />
         </div>
 
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 mb-10 backdrop-blur-xl">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="relative flex-2">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+        <NavbarTft />
+
+        <UnitTooltip
+          visible={tooltip.visible && !!tooltip.champion}
+          title={tooltip.title} description={tooltip.description}
+          x={tooltip.x} y={tooltip.y}
+          champion={tooltip.champion} setNumber={CurrentSetNumber}
+        />
+        <TraitTooltip
+          visible={tooltip.visible && !!tooltip.trait}
+          title={tooltip.title} description={tooltip.description}
+          x={tooltip.x} y={tooltip.y} trait={tooltip.trait}
+        />
+
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6">
+
+          {/* ── Header ────────────────────────────────────────────── */}
+          <div className="pt-10 pb-8 border-b border-zinc-900">
+            <Link
+              href="/tft"
+              className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
+            >
+              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+              TFT Hub
+            </Link>
+
+            <div className="flex items-end justify-between gap-6 flex-wrap">
+              <div>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">Set {CurrentSetNumber}</p>
+                <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide">UNITS</h1>
+                <p className="text-zinc-500 text-sm mt-2 max-w-md">
+                  Every champion — costs, abilities, synergies, and optimal items.
+                </p>
+              </div>
+
+              <div className="text-right">
+                <motion.p
+                  key={filteredChampions.length}
+                  initial={prefersReduced ? false : { opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="font-bebas text-5xl text-white tabular-nums leading-none"
+                >
+                  {loading ? "—" : filteredChampions.length}
+                </motion.p>
+                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em]">
+                  {filteredChampions.length === champions.length ? "champions" : `of ${champions.length}`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Filters ───────────────────────────────────────────── */}
+          <div className="py-5 border-b border-zinc-900 flex flex-wrap gap-4 items-center">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search champions by name..."
-                className="w-full pl-12 pr-4 py-4 bg-zinc-800/50 border border-zinc-700 rounded-2xl text-white placeholder-zinc-500 focus:outline-none focus:border-orange-600/50 focus:ring-2 focus:ring-orange-600/10 transition-all text-lg font-medium"
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search..."
+                aria-label="Search champions"
+                className="pl-9 pr-8 py-2 bg-zinc-900 rounded-lg text-sm text-white placeholder-zinc-600 focus:outline-none focus:bg-zinc-800 transition-colors w-44"
               />
+              <AnimatePresence>
+                {searchQuery && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={() => handleSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3 h-3" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 text-zinc-400 text-sm font-bold uppercase tracking-wider">
-                <Filter className="w-4 h-4" />
-                Cost:
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {COST_FILTERS.map((cost) => (
-                  <button
-                    key={cost.value}
-                    onClick={() => setSelectedCost(cost.value)}
-                    className={`w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center transition-all ${
-                      selectedCost === cost.value
-                        ? `${typeof cost.color === 'string' && cost.color.startsWith('#') ? '' : cost.color} text-white shadow-lg scale-110`
-                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
-                    }`}
-                    style={typeof cost.color === 'string' && cost.color.startsWith('#') && selectedCost === cost.value ? { backgroundColor: cost.color } : {}}
+            <div className="flex items-center gap-1" role="group" aria-label="Filter by cost">
+              <button
+                onClick={() => setSelectedCost(0)}
+                aria-pressed={selectedCost === 0}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-150 ${
+                  selectedCost === 0
+                    ? "bg-zinc-300 text-zinc-950 shadow-md"
+                    : "bg-zinc-900 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+                }`}
+              >
+                All
+              </button>
+
+              {COSTS.map((cost) => {
+                const color    = getCostColor(cost);
+                const isActive = selectedCost === cost;
+                return (
+                  <motion.button
+                    key={cost}
+                    onClick={() => setSelectedCost(cost)}
+                    aria-pressed={isActive}
+                    aria-label={`${cost} gold`}
+                    className="relative px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-colors duration-150"
+                    animate={isActive ? { scale: 1.05 } : { scale: 1 }}
+                    style={isActive
+                      ? { backgroundColor: color, color: "#0c0c0e", boxShadow: `0 4px 16px ${color}40` }
+                      : { backgroundColor: "#18181b", color: "#71717a" }
+                    }
+                    whileHover={prefersReduced ? {} : { backgroundColor: isActive ? color : "#27272a" }}
                   >
-                    {cost.label}
-                  </button>
+                    {cost}G
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <div className="w-px h-5 bg-zinc-800" />
+
+            <div className="relative">
+              <select
+                value={selectedTrait}
+                onChange={(e) => setSelectedTrait(e.target.value)}
+                aria-label="Filter by trait"
+                className="appearance-none pl-3 pr-7 py-2 bg-zinc-900 rounded-lg text-xs text-zinc-400 focus:outline-none focus:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <option value="">All Traits</option>
+                {allTraits.map((t) => (
+                  <option key={t.name} value={t.name}>{t.name}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-zinc-600">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {hasActiveFilters && (
+                <motion.button
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  onClick={clearFilters}
+                  className="flex items-center gap-1 text-[10px] font-black text-orange-600 hover:text-orange-400 uppercase tracking-widest transition-colors"
+                  aria-label="Clear all filters"
+                >
+                  <X className="w-3 h-3" />
+                  Clear
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Grid ──────────────────────────────────────────────── */}
+          <div className="py-10">
+
+            {loading && (
+              <div className="space-y-14">
+                {[1, 2, 3].map((tier) => (
+                  <div key={tier}>
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-0.5 h-5 bg-zinc-800 rounded-full" />
+                      <div className="h-3 w-16 bg-zinc-800 rounded animate-pulse" />
+                      <div className="flex-1 h-px bg-zinc-900" />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                      {Array.from({ length: tier === 1 ? 6 : tier === 2 ? 8 : 10 }).map((_, i) => (
+                        <SkeletonCard key={i} />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-          </div>
+            )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-zinc-400 text-sm font-bold uppercase tracking-wider">
-              Trait:
-            </div>
-            <select
-              value={selectedTrait}
-              onChange={(e) => setSelectedTrait(e.target.value)}
-              className="px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-xl text-white focus:outline-none focus:border-orange-600/50 focus:bg-zinc-800 transition-all cursor-pointer"
-            >
-              <option value="">All Traits</option>
-              {allTraits.map((trait) => (
-                <option key={trait} value={trait}>
-                  {trait}
-                </option>
-              ))}
-            </select>
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all text-sm font-bold"
+            {!loading && Object.keys(groupedBySection).length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-24 space-y-3"
               >
-                <X className="w-4 h-4" />
-                Clear Filters
-              </button>
+                <p className="font-bebas text-3xl text-zinc-700 tracking-wide">No units found</p>
+                <button onClick={clearFilters} className="text-xs text-orange-500 hover:text-orange-400 font-black uppercase tracking-widest transition-colors">
+                  Clear filters
+                </button>
+              </motion.div>
+            )}
+
+            {!loading && (
+              <div className="space-y-14">
+                {COSTS.map((cost) => {
+                  const champs = groupedBySection[cost];
+                  if (!champs || champs.length === 0) return null;
+                  const costColor = getCostColor(cost);
+
+                  return (
+                    <motion.div
+                      key={cost}
+                      initial={prefersReduced ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="relative p-0 pb-5">
+                        {/* Section header */}
+                        <div className="flex items-center gap-4 mb-5">
+                          <div className="w-0.5 h-5 rounded-full shrink-0" style={{ backgroundColor: costColor }} />
+                          <h2
+                            className="font-bebas text-lg tracking-[0.15em] leading-none"
+                            style={{ color: costColor }}
+                          >
+                            {cost} Gold
+                          </h2>
+                          <div className="flex-1 h-px" style={{ backgroundColor: `${costColor}20` }} />
+                          <span className="text-[10px] font-black uppercase tracking-widest tabular-nums" style={{ color: `${costColor}60` }}>
+                            {champs.length}
+                          </span>
+                        </div>
+
+                        {/* Cards */}
+                        <motion.div
+                          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+                          layout
+                        >
+                          <AnimatePresence mode="popLayout">
+                            {champs.map((champion, index) => (
+                              <ChampionCard
+                                key={champion.id}
+                                champion={champion}
+                                setNumber={CurrentSetNumber}
+                                index={index}
+                                onShowTooltip={showTooltip}
+                                onHideTooltip={hideTooltip}
+                                buildTraitPayload={buildTraitPayload}
+                                prefersReduced={prefersReduced}
+                              />
+                            ))}
+                          </AnimatePresence>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             )}
           </div>
+        </main>
 
-          <div className="mt-4 text-sm text-zinc-500">
-            Showing <span className="text-orange-500 font-bold">{filteredChampions.length}</span> of{" "}
-            <span className="font-bold">{champions.length}</span> champions
-          </div>
-        </div>
-
-        {Object.keys(groupedBySection).length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <Users className="w-10 h-10 text-zinc-700" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">No Champions Found</h3>
-            <p className="text-zinc-500">Try adjusting your filters or search query</p>
-          </div>
-        ) : (
-          <div className="space-y-12">
-            {[1, 2, 3, 4, 5, 6, 7].map((cost) => {
-              const champs = groupedBySection[cost];
-              if (!champs || champs.length === 0) return null;
-
-              return (
-                <div key={cost}>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div 
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
-                      style={{ backgroundColor: getCostColor(cost) }}
-                    >
-                      <span className="text-white font-black">{cost}</span>
-                    </div>
-                    <h2 className="text-2xl font-black text-white italic uppercase tracking-tight">
-                      {cost}-Cost Champions
-                    </h2>
-                    <div className="flex-1 h-px bg-zinc-800"></div>
-                    <span className="text-zinc-500 text-sm font-bold">{champs.length} units</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {champs.map((champion) => (
-                      <Link href={`/tft/units/${CurrentSetNumber}/${champion.name.toLowerCase().replace(/\s+/g, '-')}`}
-                        key={champion.id}>
-                      <div
-                        className={`group relative bg-linear-to-br ${COST_BG_COLORS[champion.cost] || "from-zinc-600/20 to-zinc-800/40"} border-2 ${getCostBorderColor(champion.cost)} rounded-2xl overflow-hidden hover:scale-105 transition-all duration-300 cursor-pointer h-full`}
-                      >
-                        <div className="absolute top-3 right-3 z-10">
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg border border-white/20"
-                            style={{ backgroundColor: getCostColor(champion.cost) }}
-                          >
-                            <span className="text-white font-black text-xs">{champion.cost}</span>
-                          </div>
-                        </div>
-
-                        <div className="aspect-square relative overflow-hidden">
-                          <img
-                            src={champion.image_path || "/images/nochampionimage.jpg"}
-                            alt={champion.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "/images/nochampionimage.jpg";
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent"></div>
-                        </div>
-
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {champion.traits.slice(0, 3).map((trait) => (
-                              <span
-                                key={trait}
-                                className="px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[10px] font-bold text-zinc-300 uppercase tracking-wider border border-white/10"
-                              >
-                                {trait}
-                              </span>
-                            ))}
-                            {champion.traits.length > 3 && (
-                              <span className="px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded text-[10px] font-bold text-zinc-500 uppercase tracking-wider border border-white/10">
-                                +{champion.traits.length - 3}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-lg font-black text-white italic uppercase tracking-tight truncate">
-                            {champion.name}
-                          </h3>
-                        </div>
-                      </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </>
   );
 }

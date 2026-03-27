@@ -26,7 +26,7 @@ import { CustomTooltip } from '@/components/tft/planner';
 import { TraitTooltip } from '@/components/tft/planner/TraitTooltip';
 import { UnitTooltip } from '@/components/tft/UnitTooltip';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import { CurrentSetNumber, getChampionById, getChampionCost, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
+import { CurrentSetNumber, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
 import Footer from '@/components/Footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
@@ -199,8 +199,8 @@ const ReadOnlyHexGrid = ({
             const unit = units.find(u => u.row === row && u.col === col);
             const isOffset = row % 2 !== 0;
             const isCarry = unit && mainCarryIds.includes(unit.characterId);
-            const cost = unit ? getChampionCost(unit.characterId, champions) : 1;
             const champ = unit ? champions.find(c => c.id === unit.characterId) : null;
+            const cost = unit ? champ?.cost || 1 : 1;
             
             return (
               <div 
@@ -420,10 +420,11 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
   const presetName = getPresetName(comp.activePresetId);
 
   const finalUnits = comp.phases.final.units;
-     const carries = comp.mainCarryIds
+      const carries = comp.mainCarryIds
       .map(id => {
         const unit = finalUnits.find(u => u.characterId === id);
-        return unit ? { unit, cost: getChampionCost(id, champions) } : null;
+        const champ = champions.find(c => c.id === id);
+        return unit ? { unit, cost: champ?.cost || 1 } : null;
       })
       .filter(Boolean) as { unit: UnitPosition; cost: number }[];
 

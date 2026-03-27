@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const setId = searchParams.get('set_id');
+  const championId = searchParams.get('champion_id');
   
   const supabase = await createClient();
   
@@ -26,14 +27,24 @@ export async function GET(request: Request) {
     query = query.eq('set_id', parseInt(setId));
   }
 
-  const { data: comps, error } = await query;
+  const { data: allComps, error: fetchError } = await query;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (fetchError) {
+    return NextResponse.json({ error: fetchError.message }, { status: 500 });
+  }
+
+  // Filter team comps by champion_id if provided
+  let filteredComps = allComps;
+  if (championId) {
+    filteredComps = allComps.filter(comp => {
+      return comp.tft_team_comp_phases?.some((phase: any) => {
+        return phase.tft_unit_positions?.some((unit: any) => unit.champion_id === championId);
+      });
+    });
   }
 
   // Transform to match the frontend expectations
-  const transformedComps = comps.map(comp => {
+  const transformedComps = filteredComps.map(comp => {
     const phases: any = {
       early: { units: [], notes: '' },
       mid: { units: [], notes: '' },

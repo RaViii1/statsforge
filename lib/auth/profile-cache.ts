@@ -1,4 +1,4 @@
-type Profile = { role: string; username: string }
+type Profile = { role: string; username: string; premium_user: boolean }
 
 const cache = new Map<string, Profile>()
 

@@ -9,25 +9,7 @@ import NavbarLoL from "@/components/NavbarLol";
 import Footer from "@/components/Footer";
 import { getRankIcon } from "@/lib/lol/lolfunctions";
 import { toast } from "sonner";
-
-const SERVERS = [
-  { value: "na1", label: "NA" },
-  { value: "euw1", label: "EUW" },
-  { value: "eun1", label: "EUNE" },
-  { value: "kr", label: "KR" },
-  { value: "br1", label: "BR" },
-  { value: "la1", label: "LAN" },
-  { value: "la2", label: "LAS" },
-  { value: "oc1", label: "OCE" },
-  { value: "ru", label: "RU" },
-  { value: "tr1", label: "TR" },
-  { value: "jp1", label: "JP" },
-  { value: "ph2", label: "PH" },
-  { value: "sg2", label: "SG" },
-  { value: "th2", label: "TH" },
-  { value: "tw2", label: "TW" },
-  { value: "vn2", label: "VN" },
-];
+import  { SERVERS } from "@/lib/utils";
 
 const QUEUES = [
   { value: "RANKED_SOLO_5x5", label: "Ranked Solo/Duo" },
@@ -268,9 +250,12 @@ const LeaderboardContent = () => {
                           <div className="w-full h-full rounded-full overflow-hidden border-4 border-black bg-zinc-900 relative">
                             {firstPlayer.profileIconId !== undefined ? (
                               <img
-                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${firstPlayer.profileIconId}.jpg`}
+                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${firstPlayer.profileIconId}.jpg` || "/images/nochampionimage.jpg"}
                                 alt="Profile Icon"
                                 className="w-full h-full object-cover scale-105"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/images/nochampionimage.jpg";
+                                }}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-zinc-700">
@@ -373,9 +358,12 @@ const LeaderboardContent = () => {
                           <div className="w-14 h-14 rounded-xl overflow-hidden border border-zinc-800 group-hover:border-orange-500/50 transition-colors p-0.5 bg-black/40">
                             {player.profileIconId !== undefined ? (
                               <img
-                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.profileIconId}.jpg`}
+                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.profileIconId}.jpg` || "/images/nochampionimage.jpg"}
                                 alt="Profile Icon"
                                 className="w-full h-full object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/images/nochampionimage.jpg";
+                                }}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-zinc-700">
@@ -445,9 +433,12 @@ const LeaderboardContent = () => {
                                 <div className="w-10 h-10 rounded-xl overflow-hidden border border-zinc-800 group-hover/player:border-orange-500/50 transition-colors bg-zinc-900 p-0.5">
                                   {player.profileIconId !== undefined ? (
                                     <img
-                                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.profileIconId}.jpg`}
+                                      src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/${player.profileIconId}.jpg` || "/images/nochampionimage.jpg"}
                                       alt="Profile Icon"
                                       className="w-full h-full object-cover rounded-lg"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/images/nochampionimage.jpg";
+                                      }}
                                     />
                                   ) : (
                                     <div className="w-full h-full flex items-center justify-center text-zinc-700 bg-zinc-950 rounded-lg">

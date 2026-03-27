@@ -2,7 +2,7 @@
 
 import { Plus, Star, Crown } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
+import { getCostColor, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
 import { getTFTUnitIcon, getTFTItemIcon, getTierBorderColor, getTierColor } from '@/lib/tft/tftfunctions';
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { TraitTooltip } from './TraitTooltip';
@@ -115,7 +115,7 @@ export const HexGrid = ({
           {[0, 1, 2, 3].map(row => [0, 1, 2, 3, 4, 5, 6].map(col => {
             const unit = units.find(u => u.row === row && u.col === col);
             const champ = unit ? champions.find(c => c.id === unit.characterId) : undefined;
-            const cost = unit ? getChampionCost(unit.characterId, champions) : 1;
+            const cost = unit ? champ?.cost || 1 : 1;
             
             // Debug logs
             // if (unit) {

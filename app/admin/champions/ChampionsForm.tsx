@@ -76,7 +76,7 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
         .select("trait_id")
         .eq("champion_id", champ.id);
       
-      const traitIds = traitData?.map((t: TFTTrait) => t.id) || [];
+       const traitIds = traitData ? [...new Set(traitData.map((t: any) => t.trait_id))] : [];
 
       const { data: itemData } = await supabase
         .from("tft_champion_best_items")
@@ -387,10 +387,17 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
             <label className="text-[10px] uppercase tracking-widest font-black text-zinc-500 ml-1">Traits</label>
             <div className="flex flex-wrap gap-2 mb-2 min-h-[30px] p-2 bg-zinc-950/50 rounded-xl border border-dashed border-zinc-800">
               {formData.traits?.length === 0 && <span className="text-zinc-600 text-[10px] italic">No traits added</span>}
-              {formData.traits?.map(traitId => {
+              {formData.traits?.map((traitId, index) => {
                 const trait = availableTraits.find(t => t.id === traitId);
                 return (
-                  <span key={traitId} className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 group">
+                  <span key={`${traitId}-${index}`} className="bg-orange-500/10 border border-orange-500/30 text-orange-500 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 group">
+                    <div className="w-4 h-4 bg-zinc-800 rounded flex items-center justify-center overflow-hidden">
+                      {trait?.icon_path ? (
+                        <img src={trait.icon_path} alt="" className="w-3 h-3 object-contain" />
+                      ) : (
+                        <Box className="w-2.5 h-2.5 text-zinc-600" />
+                      )}
+                    </div>
                     {trait?.name || traitId}
                     <button type="button" onClick={() => removeTrait(traitId)} className="hover:text-white transition-colors">
                       <X className="w-3 h-3" />

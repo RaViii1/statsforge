@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   Trash2, 
   Edit3,
@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-import { ALL_TRAITS, TFTChampion, TFTSet } from '@/lib/tft/champions';
+import { TFTChampion, TFTSet } from '@/lib/tft/champions';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import { 
   TeamComp, 
@@ -101,8 +101,12 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   const [allTraits, setAllTraits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load initial data (sets + items only)
+  const initDoneRef = useRef(false);
+
   useEffect(() => {
+    if (initDoneRef.current) return;
+    initDoneRef.current = true;
+
     async function init() {
       if (user) {
         const { data: profileData } = await supabase
@@ -113,26 +117,47 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
         setProfile(profileData);
       }
 
-      // Fetch active sets
-      const setsRes = await fetch("/api/tft/active-sets");
-      if (setsRes.ok) {
-        const setsData = await setsRes.json();
-        setActiveSets(setsData);
-        if (setsData.length > 0 && !editId) {
-          setSelectedSetId(setsData[0].id);
+      try {
+        // Fetch active sets and items in parallel
+        const [setsRes, itemsRes] = await Promise.all([
+          fetch("/api/tft/active-sets"),
+          fetch("/api/tft/items"),
+        ]);
+
+        let fetchedSets: TFTSet[] = [];
+        if (setsRes.ok) {
+          fetchedSets = await setsRes.json();
+          setActiveSets(fetchedSets);
+          if (fetchedSets.length > 0 && !editId) {
+            setSelectedSetId(fetchedSets[0].id);
+          }
+        } else {
+          console.error('Failed to fetch active sets:', setsRes.status);
         }
-      }
 
-      // Always fetch items (set-agnostic)
-      const itemsRes = await fetch("/api/tft/items");
-      if (itemsRes.ok) {
-        const itemsData = await itemsRes.json();
-        setItems(itemsData);
-      }
+        if (itemsRes.ok) {
+          const itemsData = await itemsRes.json();
+          setItems(itemsData);
+        } else {
+          console.error('Failed to fetch items:', itemsRes.status);
+        }
 
-      setLoading(false);
+        // If no sets came back and we are not in edit mode, still create an
+        // empty team so the planner renders instead of hanging on the spinner.
+        if (fetchedSets.length === 0 && !editId) {
+          setCurrentTeam(createEmptyTeam(0, 16));
+        }
+      } catch (err) {
+        console.error('Error during planner init:', err);
+        // Ensure the planner always exits the loading state even on network error.
+        if (!editId) {
+          setCurrentTeam(createEmptyTeam(0, 16));
+        }
+      } finally {
+        setLoading(false);
+      }
     }
-    
+
     init();
   }, [user]);
 
@@ -269,6 +294,8 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
   };
 
   useEffect(() => {
+    if (loading) return;
+
     if (editId) {
       const load = async () => {
         const team = await fetchTeamComp(editId);
@@ -290,7 +317,7 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
       }
       setIsEditMode(false);
     }
-  }, [editId, selectedSetId, activeSets]);
+  }, [editId, selectedSetId, activeSets, loading]);
 
   const canEdit = useMemo(() => {
     if (!currentTeam) return false;

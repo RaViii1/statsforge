@@ -298,7 +298,7 @@ export default function CS2ProfilePage() {
           Back to Search
         </Link>
 
-        <div className="relative rounded-2xl overflow-hidden border border-zinc-800/50 bg-gradient-to-br from-zinc-900/80 via-zinc-900/50 to-zinc-900/80 backdrop-blur-xl">
+        <div className="relative rounded-2xl overflow-hidden border border-zinc-800/50 bg-linear-to-br from-zinc-900/80 via-zinc-900/50 to-zinc-900/80 backdrop-blur-xl">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMjIiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
           
           <div className="relative h-40 bg-gradient-to-r from-amber-950/40 via-zinc-900/60 to-amber-950/40 border-b border-zinc-800/50">
@@ -389,35 +389,35 @@ export default function CS2ProfilePage() {
 
               {stats && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6">
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-950/40 to-amber-950/20 border border-amber-900/30">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-amber-950/40 to-amber-950/20 border border-amber-900/30">
                     <div className="flex items-center gap-2 mb-1">
                       <Target className="w-4 h-4 text-amber-500" />
                       <span className="text-xs text-zinc-400 uppercase tracking-wide">K/D Ratio</span>
                     </div>
                     <p className="text-2xl font-bold text-white">{calculateKD(stats.totalKills, stats.totalDeaths)}</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-rose-950/40 to-rose-950/20 border border-rose-900/30">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-rose-950/40 to-rose-950/20 border border-rose-900/30">
                     <div className="flex items-center gap-2 mb-1">
                       <Crosshair className="w-4 h-4 text-rose-500" />
                       <span className="text-xs text-zinc-400 uppercase tracking-wide">HS %</span>
                     </div>
                     <p className="text-2xl font-bold text-white">{calculateHSPercent(stats.totalHeadshots, stats.totalKills)}%</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-sky-950/40 to-sky-950/20 border border-sky-900/30">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-sky-950/40 to-sky-950/20 border border-sky-900/30">
                     <div className="flex items-center gap-2 mb-1">
                       <Trophy className="w-4 h-4 text-sky-500" />
                       <span className="text-xs text-zinc-400 uppercase tracking-wide">Win Rate</span>
                     </div>
                     <p className="text-2xl font-bold text-white">{calculateWinRate(stats.totalWins, stats.totalMatchesPlayed)}%</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-purple-950/40 to-purple-950/20 border border-purple-900/30">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-purple-950/40 to-purple-950/20 border border-purple-900/30">
                     <div className="flex items-center gap-2 mb-1">
                       <Zap className="w-4 h-4 text-purple-500" />
                       <span className="text-xs text-zinc-400 uppercase tracking-wide">Accuracy</span>
                     </div>
                     <p className="text-2xl font-bold text-white">{calculateAccuracy(stats.shotsHit, stats.shotsFired)}%</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-orange-950/40 to-orange-950/20 border border-orange-900/30">
+                  <div className="p-4 rounded-xl bg-linear-to-br from-orange-950/40 to-orange-950/20 border border-orange-900/30">
                     <div className="flex items-center gap-2 mb-1">
                       <Clock className="w-4 h-4 text-orange-500" />
                       <span className="text-xs text-zinc-400 uppercase tracking-wide">Hours</span>
@@ -521,11 +521,11 @@ export default function CS2ProfilePage() {
                         Objective Stats
                       </h2>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-red-950/30 to-transparent border border-red-900/20">
+                        <div className="p-4 rounded-xl bg-linear-to-br from-red-950/30 to-transparent border border-red-900/20">
                           <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Bombs Planted</p>
                           <p className="text-2xl font-bold text-red-400">{formatNumber(stats.totalBombsPlanted)}</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-950/30 to-transparent border border-blue-900/20">
+                        <div className="p-4 rounded-xl bg-linear-to-br from-blue-950/30 to-transparent border border-blue-900/20">
                           <p className="text-xs text-zinc-500 uppercase tracking-wide mb-1">Bombs Defused</p>
                           <p className="text-2xl font-bold text-blue-400">{formatNumber(stats.totalBombsDefused)}</p>
                         </div>

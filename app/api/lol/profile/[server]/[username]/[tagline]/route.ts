@@ -1,20 +1,9 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-
+import { profile } from 'console';
+import { PLATFORM_TO_REGION } from '@/lib/utils';
 // Map platform servers to regional routing
-const PLATFORM_TO_REGION: Record<string, string> = {
-  'na1': 'americas',
-  'br1': 'americas',
-  'la1': 'americas',
-  'la2': 'americas',
-  'euw1': 'europe',
-  'eun1': 'europe',
-  'tr1': 'europe',
-  'ru': 'europe',
-  'kr': 'asia',
-  'jp1': 'asia',
-  'oc1': 'sea',
-};
+
 
 export async function GET(
   request: Request,
@@ -34,11 +23,10 @@ export async function GET(
     const decodedGameName = decodeURIComponent(username).trim();
     const decodedTagLine = decodeURIComponent(tagline).trim();
     
-    // Get regional routing for this server
     const region = PLATFORM_TO_REGION[server.toLowerCase()] || 'europe';
     const regionalHost = `${region}.api.riotgames.com`;
 
-    // Step 1: Get account info (PUUID) using Riot ID
+    // Step 1: Get account info (PUUID) using Riot ID (GameName + Tagline)
     const accountResponse = await axios.get(
       `https://${regionalHost}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(decodedGameName)}/${encodeURIComponent(decodedTagLine)}`,
       {
@@ -50,7 +38,7 @@ export async function GET(
 
     const accountData = accountResponse.data;
 
-    // Step 2: Get summoner info using PUUID
+    // Step 2: Get summoner info using PUUID (summonerLevel, profileIconId, revisionDate.)
     const summonerResponse = await axios.get(
       `https://${server}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${accountData.puuid}`,
       {
@@ -66,6 +54,7 @@ export async function GET(
       gameName: accountData.gameName,
       tagLine: accountData.tagLine,
       puuid: accountData.puuid,
+      profileIconId: summonerResponse.data.profileIconId,
     });
   } catch (error) {
     if (axios.isAxiosError(error)) {

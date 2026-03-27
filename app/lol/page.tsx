@@ -7,20 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
 import NavbarLoL from "@/components/NavbarLol";
-
-const SERVERS = [
-  { value: "na1", label: "NA" },
-  { value: "euw1", label: "EUW" },
-  { value: "eun1", label: "EUNE" },
-  { value: "kr", label: "KR" },
-  { value: "br1", label: "BR" },
-  { value: "la1", label: "LAN" },
-  { value: "la2", label: "LAS" },
-  { value: "oc1", label: "OCE" },
-  { value: "ru", label: "RU" },
-  { value: "tr1", label: "TR" },
-  { value: "jp1", label: "JP" },
-];
+import { SERVERS } from "@/lib/utils";
 
 interface RecentSearch {
   gameName: string;
@@ -311,9 +298,9 @@ export default function LolPage() {
             {/* Multi Search Button */}
             <Link 
               href="/lol/multisearch"
-              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
               
               <div className="relative z-10">
@@ -331,9 +318,9 @@ export default function LolPage() {
             {/* Leaderboard Button */}
             <Link 
               href="/lol/leaderboard"
-              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/lol/leaderboards.webp')] bg-cover bg-center"></div>
               
               <div className="relative z-10">
@@ -351,9 +338,9 @@ export default function LolPage() {
             {/* Tier Lists Button */}
             <Link 
               href="/lol/champions"
-              className="group relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
+              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
               
               <div className="relative z-10">
@@ -377,7 +364,7 @@ export default function LolPage() {
             alt="League of Legends"
             className="w-full h-96 object-cover opacity-20"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent"></div>
+          <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/80 to-transparent"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white mb-3">Ready to Analyze Your Performance?</h2>

@@ -7,6 +7,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        bebas: ['Bebas Neue', 'sans-serif'],
+        sans:  ['DM Sans', 'sans-serif'],       // overrides Tailwind's default font-sans
+      },
       colors: {
         // Theme-aware colors mapped to CSS variables. These allow using
         // Tailwind utilities like `bg-background`, `text-foreground`,
@@ -19,6 +23,7 @@ module.exports = {
         accent: 'var(--accent)',
         'accent-foreground': 'var(--accent-foreground)'
       }
+      
     },
   },
   plugins: [],

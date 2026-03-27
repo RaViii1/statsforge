@@ -141,7 +141,7 @@ export default function Home() {
   const { user, userName } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-300 selection:bg-orange-500/30 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-[#09090b] text-zinc-300 selection:bg-orange-500/30 font-sans">
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[20%] w-full h-[80%] bg-orange-600/3 rounded-full blur-[160px]" />
@@ -151,7 +151,7 @@ export default function Home() {
 
       <Navbar />
 
-      <main className="relative z-10">
+      <main className="relative z-10 overflow-x-hidden">
         <section className="relative pt-24 pb-20 lg:pt-40 lg:pb-32 overflow-hidden border-b border-zinc-900/50">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
           

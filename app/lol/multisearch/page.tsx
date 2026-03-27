@@ -1,54 +1,69 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MultiSearch from "@/components/lol/MultiSearch";
-import { Users, ArrowRight } from "lucide-react";
 import NavbarLoL from "@/components/NavbarLol";
 import LolBanner from "@/components/LolBaner";
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function MultiSearchPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-orange-600/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-[120px] animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-400/5 rounded-full blur-[150px]"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,700&display=swap');
+        .font-bebas { font-family: 'Bebas Neue', sans-serif; }
+        body { font-family: 'DM Sans', sans-serif; }
+      `}</style>
 
-      <NavbarLoL />
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-orange-500/30">
 
-      <main className="relative">
-        <section className="relative overflow-hidden pt-8 pb-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="text-center space-y-6">
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 right-0 w-[700px] h-[500px] bg-orange-500/3 rounded-full blur-[180px]" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-blue-600/3 rounded-full blur-[160px]" />
+        </div>
 
-              <h1 className="text-3xl sm:text-6xl lg:text-5xl font-black tracking-tighter text-white leading-[1.1]">
-                Multi-Player
-                <span className="block bg-gradient-to-r from-orange-500 via-orange-400 to-orange-600 bg-clip-text text-transparent">Scout System</span>
-              </h1>
-              
-              <p className="mx-auto max-w-2xl text-base text-zinc-400 leading-relaxed">
-                Paste your entire lobby chat and instantly analyze all players. Get rank, winrate, and stats for your entire team in seconds.
-              </p>
+        <NavbarLoL />
+
+        <main className="relative max-w-7xl mx-auto px-4 sm:px-6">
+
+          <div className="pt-10 pb-8 border-b border-zinc-900">
+            <Link
+              href="/lol"
+              className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
+            >
+              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+              LoL Hub
+            </Link>
+
+            <div className="flex items-end justify-between gap-6 flex-wrap">
+              <div>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">
+                  League of Legends
+                </p>
+                <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide">
+                  MULTI SEARCH
+                </h1>
+                <p className="text-zinc-500 text-sm mt-2 max-w-md leading-relaxed">
+                  Paste your lobby chat and instantly get rank, winrate, and stats for every player in seconds.
+                </p>
+              </div>
             </div>
-
           </div>
-        </section>
 
-        <section className="relative mb-8">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="py-10">
             <MultiSearch />
           </div>
-        </section>
-      </main>
 
-      <div className="w-2/3 mx-auto">
-      <LolBanner/>
+
+          <div className="pb-12">
+            <LolBanner />
+          </div>
+
+        </main>
+
+        <Footer />
       </div>
-      
-
-      <Footer />
-    </div>
+    </>
   );
 }

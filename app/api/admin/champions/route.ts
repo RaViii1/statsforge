@@ -63,11 +63,13 @@ export async function POST(request: Request) {
       .delete()
       .eq("champion_id", id);
 
-    if (traits.length > 0) {
-      const traitInserts = traits.map(traitId => ({
-        champion_id: id,
-        trait_id: traitId
-      }));
+     if (traits.length > 0) {
+       // Remove duplicates before inserting
+       const uniqueTraits = [...new Set(traits)];
+       const traitInserts = uniqueTraits.map(traitId => ({
+         champion_id: id,
+         trait_id: traitId
+       }));
 
       const { error: traitError } = await supabase
         .from("tft_champion_traits")

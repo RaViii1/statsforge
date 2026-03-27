@@ -35,7 +35,8 @@ export async function GET(request: Request) {
         *,
         tft_champion_traits (
           tft_traits (
-            *
+            *,
+            tft_trait_tiers(*)
           )
         ),
         tft_champion_best_items (
@@ -64,12 +65,106 @@ export async function GET(request: Request) {
       tft_champion_best_items: champ.tft_champion_best_items?.map((bi: any) => bi.tft_items) || []
     }));
 
-    if (name && formattedChampions.length > 0) {
-      return NextResponse.json(formattedChampions[0]);
+    // Fetch team comps for each champion
+    const championsWithTeamComps = await Promise.all(
+      formattedChampions.map(async (champ: any) => {
+        const { data: teamCompsData, error: teamCompsError } = await supabase
+          .from('tft_team_comps')
+          .select(`
+            id,
+            name,
+            description,
+            patch,
+            tier,
+            difficulty,
+            set_id,
+            main_carry_ids,
+            synergies_list,
+            active_preset_id,
+            tft_team_comp_phases (
+              id,
+              phase,
+              notes,
+              tft_unit_positions (*)
+            ),
+            tft_leveling_steps (*)
+          `)
+          .eq('set_id', targetSetId);
+
+        if (!teamCompsError) {
+          // Filter team comps that include this champion
+          const championTeamComps = teamCompsData.filter(comp => {
+            return comp.tft_team_comp_phases?.some((phase: any) => {
+              return phase.tft_unit_positions?.some((unit: any) => unit.champion_id === champ.id);
+            });
+          });
+
+          // Transform team comps to match frontend format
+          const transformedTeamComps = championTeamComps.map(comp => {
+            const phases: any = {
+              early: { units: [], notes: '' },
+              mid: { units: [], notes: '' },
+              final: { units: [], notes: '' }
+            };
+
+            comp.tft_team_comp_phases?.forEach((p: any) => {
+              phases[p.phase] = {
+                notes: p.notes || '',
+                units: p.tft_unit_positions.map((u: any) => ({
+                  id: u.id,
+                  characterId: u.champion_id,
+                  name: '', // Will be filled by client if needed
+                  row: u.row,
+                  col: u.col,
+                  stars: u.stars,
+                  items: u.items || []
+                }))
+              };
+            });
+
+            return {
+              id: comp.id,
+              name: comp.name,
+              description: comp.description || '',
+              patch: comp.patch || '16.1',
+              tier: comp.tier,
+              difficulty: comp.difficulty,
+              mainCarryIds: comp.main_carry_ids || [],
+              synergiesList: comp.synergies_list || [],
+              activePresetId: comp.active_preset_id,
+              set_id: comp.set_id,
+              phases,
+              levelingSteps: (comp.tft_leveling_steps || [])
+                .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                .map((s: any) => ({
+                  level: s.level,
+                  stage: s.stage,
+                  gold: s.gold,
+                  description: s.description
+                }))
+            };
+          });
+
+          return {
+            ...champ,
+            teamcomps: transformedTeamComps
+          };
+        }
+
+        return {
+          ...champ,
+          teamcomps: []
+        };
+      })
+    );
+
+    if (name && championsWithTeamComps.length > 0) {
+      return NextResponse.json(championsWithTeamComps[0]);
     }
 
-    return NextResponse.json(formattedChampions);
+    return NextResponse.json(championsWithTeamComps);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
