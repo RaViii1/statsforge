@@ -2,7 +2,7 @@
 
 import { Crown, X, Plus } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { SET_16_CHAMPIONS, getCostColor, getChampionCost, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
+import { getCostColor, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
 import { useEffect, useState } from 'react';
 
 interface MainCarryTrayProps {
