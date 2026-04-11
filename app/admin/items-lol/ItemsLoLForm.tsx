@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { Plus, X, Sword } from "lucide-react";
+import { Plus, X, Sword, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Item } from "@/lib/items";
-
+import ImagePickerModal from "@/components/ImagePickerModal";
 
 export default function ItemsLoLForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Item>>({
@@ -33,6 +34,10 @@ export default function ItemsLoLForm() {
     return () => window.removeEventListener('edit-lol-item', handleEditEvent);
   }, []);
 
+  const handleImageSelect = (url: string, filename: string) => {
+    setFormData(prev => ({ ...prev, image_path: filename }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === 'stats') {
@@ -53,21 +58,13 @@ export default function ItemsLoLForm() {
     if (!formData.name) { toast.error("Name is required"); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/items-lol', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const res = await fetch('/api/admin/items-lol', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
       if (!res.ok) throw new Error("Failed to save item");
       toast.success(isEditing ? "Item updated" : "Item created");
       setFormData({ id: "", riot_api_id: "", name: "", stats: {}, description: "", image_path: "", gamemode: "" });
       setIsEditing(false);
       router.refresh();
-    } catch {
-      toast.error("Error saving item");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Error saving item"); } finally { setLoading(false); }
   };
 
   const handleCancel = () => {
@@ -75,155 +72,95 @@ export default function ItemsLoLForm() {
     setIsEditing(false);
   };
 
-  const inputClass = "w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none transition-colors focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30";
-  const labelClass = "block text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-1.5";
+  const previewUrl = formData.image_path ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${formData.image_path}` : null;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6 pb-5 border-b border-zinc-800">
-        <div className="p-2 bg-orange-500/10 rounded-lg border border-orange-500/20">
-          <Sword className="w-5 h-5 text-orange-500" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-base font-bold text-zinc-100">
-            {isEditing ? 'Edit LoL Item' : 'Add LoL Item'}
-          </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">League of Legends item registry</p>
+    <div className="bg-[#111112] border border-white/5 rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+            <Sword className="w-3.5 h-3.5 text-orange-400" />
+          </div>
+          <span className="text-sm font-semibold text-white">{isEditing ? 'Edit LoL Item' : 'New LoL Item'}</span>
         </div>
         {isEditing && (
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-md px-2.5 py-1">
-            Editing
-          </span>
+          <button type="button" onClick={handleCancel} className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5">
+            <X className="w-3 h-3" /> Cancel
+          </button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Item ID */}
-          <div>
-            <label className={labelClass}>Item ID</label>
-            <div className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-600 font-mono min-h-[38px] flex items-center">
-              {formData.id || <span className="italic">Auto-generated</span>}
+      <div className="max-h-[calc(100vh-280px)] overflow-y-auto custom-scrollbar pr-1">
+      <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        <div className="flex gap-3 items-start">
+          <div className="flex-shrink-0">
+            <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Icon</label>
+            <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 group cursor-pointer">
+              {previewUrl ? (
+                <img src={previewUrl} alt="icon" className="w-full h-full object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }} />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <ImageIcon className="w-4 h-4 text-zinc-600" />
+                  <span className="text-[9px] text-zinc-700">Select</span>
+                </div>
+              )}
+              <button type="button" onClick={() => setShowImagePicker(true)} className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <ImageIcon className="w-4 h-4 text-white" />
+              </button>
+            </div>
+            {previewUrl && (
+              <button type="button" onClick={() => setFormData(prev => ({ ...prev, image_path: '' }))} className="text-[9px] text-red-400 hover:text-red-300 transition-colors mt-1.5 block">Remove</button>
+            )}
+          </div>
+
+          <div className="flex-1 space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Name <span className="text-orange-500">*</span></label>
+              <input name="name" value={formData.name} onChange={handleChange} required className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none placeholder:text-zinc-600 transition-colors" placeholder="Item name" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Gamemode</label>
+              <select name="gamemode" value={formData.gamemode || ''} onChange={handleChange} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none cursor-pointer">
+                <option value="">All Gamemodes</option>
+                <option value="CLASSIC">Classic</option>
+                <option value="ARAM">ARAM</option>
+                <option value="URF">URF</option>
+                <option value="ARENA">Arena</option>
+                <option value="ARAM_MAYHEM">ARAM Mayhem</option>
+                <option value="ALL">Other</option>
+              </select>
             </div>
           </div>
+        </div>
 
-          {/* Riot API ID */}
-          <div>
-            <label className={labelClass}>Riot API ID</label>
-            <input
-              type="text"
-              name="riot_api_id"
-              value={formData.riot_api_id || ''}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="e.g. 3031"
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Item ID</label>
+            <div className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-zinc-600 font-mono min-h-[38px] flex items-center">{formData.id || <span className="italic">Auto-generated</span>}</div>
           </div>
-
-          {/* Name */}
-          <div>
-            <label className={labelClass}>
-              Name <span className="text-orange-500 normal-case tracking-normal">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="Item name"
-              required
-            />
-          </div>
-
-          {/* Gamemode */}
-          <div>
-            <label className={labelClass}>Gamemode</label>
-            <select
-              name="gamemode"
-              value={formData.gamemode || ''}
-              onChange={handleChange}
-              className={inputClass + " cursor-pointer"}
-            >
-              <option value="">All Gamemodes</option>
-              <option value="CLASSIC">Classic</option>
-              <option value="ARAM">ARAM</option>
-              <option value="URF">URF</option>
-              <option value="ARENA">Arena</option>
-              <option value="ARAM_MAYHEM">ARAM Mayhem</option>
-              <option value="ALL">Other</option>
-            </select>
-          </div>
-
-          {/* Image Path */}
-          <div className="md:col-span-2">
-            <label className={labelClass}>Image Path</label>
-            <input
-              type="text"
-              name="image_path"
-              value={formData.image_path}
-              onChange={handleChange}
-              className={inputClass}
-              placeholder="URL or path to image"
-            />
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Riot API ID</label>
+            <input type="text" name="riot_api_id" value={formData.riot_api_id || ''} onChange={handleChange} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none placeholder:text-zinc-600" placeholder="e.g. 3031" />
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-zinc-800" />
-
-        {/* Description */}
-        <div>
-          <label className={labelClass}>Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={3}
-            className={inputClass + " resize-none leading-relaxed"}
-            placeholder="Item description and effects..."
-          />
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Description</label>
+          <textarea name="description" value={formData.description} onChange={handleChange} rows={2} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors" placeholder="Item description..." />
         </div>
 
-        {/* Stats */}
-        <div>
-          <label className={labelClass}>
-            Stats <span className="normal-case tracking-normal text-zinc-600 font-normal">(JSON)</span>
-          </label>
-          <textarea
-            name="stats"
-            value={JSON.stringify(formData.stats, null, 2)}
-            onChange={handleChange}
-            rows={4}
-            className={inputClass + " resize-none font-mono text-xs leading-relaxed text-emerald-400"}
-            placeholder='{ "hp": 300, "ad": 25 }'
-          />
-          <p className="text-xs text-zinc-600 mt-1.5">Enter stat key-value pairs as a valid JSON object</p>
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Stats <span className="normal-case tracking-normal text-zinc-600 font-normal">(JSON)</span></label>
+          <textarea name="stats" value={JSON.stringify(formData.stats, null, 2)} onChange={handleChange} rows={3} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none text-emerald-400" placeholder='{ "hp": 300, "ad": 25 }' />
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 pt-1">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 px-5 rounded-lg transition-colors"
-          >
-            {loading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Item' : 'Create Item')}
-          </button>
-
-          {isEditing && (
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Cancel
-            </button>
-          )}
-        </div>
+        <button type="submit" disabled={loading} className="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-2">
+          {loading ? <span className="w-4 h-4 border border-white/30 border-t-white rounded-full animate-spin" /> : isEditing ? 'Update Item' : 'Create Item'}
+        </button>
       </form>
+      </div>
+
+      <ImagePickerModal isOpen={showImagePicker} onClose={() => setShowImagePicker(false)} onSelect={handleImageSelect} currentImage={formData.image_path} storageBucket="item-icons" />
     </div>
   );
 }

@@ -1,15 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { motion } from 'framer-motion'
 import {
-  User, Mail, Shield, Clock, LogOut,
-  Link2, Check, Crown, Zap, ArrowUpRight,
-  ChevronRight
+  User, Mail, Shield, Clock,
+  Check, Crown, Zap,
+  ChevronRight, Loader2, Settings
 } from 'lucide-react'
-import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { createClient } from '@/lib/supabase/client'
@@ -22,11 +21,14 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, ease, delay },
 })
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, loading, userRole, userName, premium_user } = useAuth()
   const [profileLoading, setProfileLoading] = useState(true)
   const [linkedAccounts, setLinkedAccounts] = useState({ riot: false, steam: false })
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     if (!loading) {
@@ -35,12 +37,49 @@ export default function ProfilePage() {
     }
   }, [user, loading, router])
 
+  useEffect(() => {
+    const checkout = searchParams.get('checkout')
+    if (checkout === 'success') {
+      toast.success('Payment successful! Your account has been upgraded to Premium.')
+      router.replace('/profile')
+    } else if (checkout === 'cancelled') {
+      toast.info('Checkout cancelled. You can upgrade anytime from your profile.')
+      router.replace('/profile')
+    }
+  }, [searchParams, router])
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     toast.success('Signed out')
     router.push('/')
     router.refresh()
+  }
+
+  const handleUpgrade = async () => {
+    setCheckoutLoading(true)
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create checkout session')
+      window.location.href = data.url
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+      setCheckoutLoading(false)
+    }
+  }
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to open billing portal')
+      window.location.href = data.url
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+      setPortalLoading(false)
+    }
   }
 
   if (loading || profileLoading) {
@@ -245,6 +284,19 @@ export default function ProfilePage() {
                       <h3 className="text-2xl font-black text-white italic uppercase tracking-tight">Premium</h3>
                       <p className="text-xs text-zinc-500 mt-1.5">Full access to all features</p>
                     </div>
+
+                    <button
+                      onClick={handleManageBilling}
+                      disabled={portalLoading}
+                      className="mt-1 w-full py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-widest
+                        border border-orange-900/50 text-orange-500 hover:bg-orange-950/30
+                        transition-all duration-150 flex items-center justify-center gap-2
+                        disabled:opacity-50 disabled:cursor-not-allowed">
+                      {portalLoading
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Settings className="w-3.5 h-3.5" />}
+                      Manage Billing
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -283,15 +335,20 @@ export default function ProfilePage() {
                     </div>
 
                     <button
+                      onClick={handleUpgrade}
+                      disabled={checkoutLoading}
                       className="w-full py-3 rounded-xl font-black text-sm text-white
                         italic uppercase tracking-tight
                         transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl
-                        active:scale-[0.98]"
+                        active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed
+                        flex items-center justify-center gap-2"
                       style={{
                         background: 'linear-gradient(135deg, #ea580c 0%, #f59e0b 100%)',
                         boxShadow: '0 0 24px rgba(234,88,12,0.3), inset 0 1px 0 rgba(255,255,255,0.12)'
                       }}>
-                      Upgrade to Premium
+                      {checkoutLoading
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                        : 'Upgrade to Premium'}
                     </button>
                   </div>
                 </div>
@@ -330,5 +387,17 @@ export default function ProfilePage() {
 
       <Footer />
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-zinc-800 border-t-orange-500 animate-spin" />
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   )
 }

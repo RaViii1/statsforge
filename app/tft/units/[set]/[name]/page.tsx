@@ -264,7 +264,8 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
           {/* Faint splash art wash */}
           <div className="absolute inset-0 opacity-[0.08]">
             <img src={champion.image_path || "/images/nochampionimage.jpg"} alt="" aria-hidden
-              className="w-full h-full object-cover object-top scale-110 blur-sm" />
+              className="w-full h-full object-cover object-top scale-110 blur-sm"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
             <div className="absolute inset-0 bg-linear-to-r from-zinc-900 via-zinc-900/80 to-transparent" />
           </div>
 
@@ -504,6 +505,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                                 src={c.image_path || "/images/nochampionimage.jpg"}
                                 alt={c.name}
                                 className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
                                 onMouseEnter={(e) => showTooltip(e, { title: c.name, description: c.ability?.description?.active || c.ability?.description?.passive || '', champion: c, setNumber })}
                                 onMouseLeave={hideTooltip}
                               />
@@ -583,7 +585,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                                         }}
                                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                       >
-                                        <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" />
+                                        <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                       </div>
                                       {unit.items.length > 0 && (
                                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
@@ -620,7 +622,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                                       }}
                                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                     >
-                                      <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" />
+                                      <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                     </div>
                                     {unit.items.length > 0 && (
                                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">

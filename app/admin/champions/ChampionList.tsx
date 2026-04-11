@@ -5,16 +5,24 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import SvgIcon from "@/components/SvgIcon";
-import { getCostColor, getCostBorderColor } from "@/lib/tft/champions";
+import { getCostColor, getCostBorderColor, TFTSet } from "@/lib/tft/champions";
 
 interface ChampionListProps {
   initialChampions: any[];
+  sets: (TFTSet & { id: number })[];
 }
 
-export default function ChampionList({ initialChampions }: ChampionListProps) {
+export default function ChampionList({ initialChampions, sets }: ChampionListProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [selectedSetId, setSelectedSetId] = useState<number | 'all' | 'active'>(() => {
+    const activeSets = sets.filter(s => s.is_active);
+    if (activeSets.length === 1) {
+      return activeSets[0].id;
+    }
+    return 'active';
+  });
 
   const handleDelete = async (id: string) => {
     if (!confirm(`Are you sure you want to delete this champion?`)) return;
@@ -52,9 +60,19 @@ export default function ChampionList({ initialChampions }: ChampionListProps) {
     </div>
   );
 
-  const filtered = initialChampions.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = initialChampions.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    let matchesSet = true;
+    
+    if (selectedSetId === 'active') {
+      const activeSetIds = sets.filter(s => s.is_active).map(s => s.id);
+      matchesSet = c.set_id != null && activeSetIds.includes(Number(c.set_id));
+    } else if (selectedSetId !== 'all') {
+      matchesSet = Number(c.set_id) === Number(selectedSetId);
+    }
+    
+    return matchesSearch && matchesSet;
+  });
 
   return (
     <div className="space-y-6">
@@ -66,15 +84,37 @@ export default function ChampionList({ initialChampions }: ChampionListProps) {
           </h2>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Manage TFT Champion Database</p>
         </div>
-        <div className="relative group">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-orange-500 transition-colors" />
-          <input 
-            type="text"
-            placeholder="Filter by name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full sm:w-64 bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:ring-2 focus:ring-orange-500/50 outline-none transition-all"
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative group">
+            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-orange-500 transition-colors" />
+            <input 
+              type="text"
+              placeholder="Filter by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-48 bg-zinc-950 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:ring-2 focus:ring-orange-500/50 outline-none transition-all"
+            />
+          </div>
+          <select
+            value={selectedSetId}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'all' || value === 'active') {
+                setSelectedSetId(value);
+              } else {
+                setSelectedSetId(parseInt(value));
+              }
+            }}
+            className="w-full sm:w-48 bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white focus:ring-2 focus:ring-orange-500/50 outline-none transition-all"
+          >
+            <option value="active">Active Sets ({sets.filter(s => s.is_active).length})</option>
+            <option value="all">All Sets</option>
+            {sets.map((set) => (
+              <option key={set.id} value={set.id}>
+                {set.name} (Set {set.set_number}){set.is_active ? ' - Active' : ''}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -91,11 +131,21 @@ export default function ChampionList({ initialChampions }: ChampionListProps) {
                 {/* Champion Image/Icon */}
                 <div className="relative shrink-0">
                   <div className={`w-20 h-20 rounded-2xl border-2 overflow-hidden flex items-center justify-center bg-zinc-950 shadow-2xl transition-colors duration-300 ${getCostBorderColor(champ.cost)}`}>
-                    {champ.image_path ? (
-                      <img src={champ.image_path} alt={champ.name} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110" />
-                    ) : (
-                      <img src="/images/nochampionimage.jpg" alt={champ.name} className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110" />
-                    )}
+                    <img 
+                      src={champ.image_path 
+                        ? champ.image_path.startsWith('http') 
+                          ? champ.image_path 
+                          : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/champions/${champ.image_path}`
+                        : "/images/nochampionimage.jpg"} 
+                      alt={champ.name} 
+                      className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110" 
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (target.src !== '/images/nochampionimage.jpg') {
+                          target.src = '/images/nochampionimage.jpg';
+                        }
+                      }}
+                    />
                   </div>
                   <div 
                     className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl border-4 border-zinc-900 flex items-center justify-center text-[10px] font-black shadow-xl text-white"

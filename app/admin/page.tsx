@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createClient } from "@/lib/supabase/server";
 import {
   Layers, Users, Shield, Box, TrendingUp, ChevronRight,
-  Database, BarChart3, Swords, Package, Activity, Zap
+  Database, BarChart3, Swords, Package, Activity, Zap, Sparkles
 } from 'lucide-react'
 import AdminTabs, { UserList } from "./AdminsTab";
 
@@ -44,6 +44,15 @@ const tftLinks = [
     color: 'text-green-400',
     bgColor: 'bg-green-500/10',
     borderColor: 'border-green-500/20',
+  },
+  {
+    title: 'Augments',
+    description: 'Add or edit TFT, Arena & ARAM augments',
+    href: '/admin/augments',
+    icon: Sparkles,
+    color: 'text-pink-400',
+    bgColor: 'bg-pink-500/10',
+    borderColor: 'border-pink-500/20',
   },
 ]
 

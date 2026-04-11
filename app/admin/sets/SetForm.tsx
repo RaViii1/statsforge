@@ -13,7 +13,7 @@ export default function SetForm() {
 
   const [formData, setFormData] = useState<Partial<TFTSet>>({
     name: "",
-    set_number: 16,
+    set_number: 0,
     is_active: true,
   });
 
@@ -29,7 +29,7 @@ export default function SetForm() {
       setFormData({
         id: setData.id,
         name: setData.name || "",
-        set_number: setData.set_number || 16,
+        set_number: setData.set_number || 0,
         is_active: setData.is_active ?? true,
       });
     };
@@ -40,7 +40,7 @@ export default function SetForm() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setFormData({ name: "", set_number: 16, is_active: true });
+    setFormData({ name: "", set_number: 0, is_active: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,13 +52,15 @@ export default function SetForm() {
 
     setLoading(true);
     try {
-      // If creating new, generate a string ID from name if not present
-      const submitData = {
-        ...formData,
-        id: formData.id || formData.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ''),
-        set_number: Number(formData.set_number) || 16,
+      const submitData: any = {
+        name: formData.name,
+        set_number: Number(formData.set_number) || 0,
         is_active: Boolean(formData.is_active),
       };
+      
+      if (isEditing && formData.id) {
+        submitData.id = formData.id;
+      }
 
       const res = await fetch("/api/admin/sets", {
         method: isEditing ? "PUT" : "POST",
@@ -73,7 +75,7 @@ export default function SetForm() {
 
       toast.success(isEditing ? "Set updated successfully!" : "Set created successfully!");
       setIsEditing(false);
-      setFormData({ name: "", set_number: 16, is_active: true });
+      setFormData({ name: "", set_number: 0, is_active: true });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message || "Failed to save set");

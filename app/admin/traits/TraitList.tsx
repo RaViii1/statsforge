@@ -64,10 +64,14 @@ export default function TraitList({ initialTraits }: TraitListProps) {
         {filtered.map((trait) => (
           <div key={trait.id} className="bg-zinc-900 border border-zinc-800 p-4 max-h-48 rounded-3xl hover:border-zinc-700 transition-all group">
             <div className="flex items-start gap-4">
-              <div className="relative shrink-0">
+                <div className="relative shrink-0">
                 <div className="w-14 h-14 rounded-xl border-2 border-zinc-800 overflow-hidden bg-zinc-950 flex items-center justify-center p-2">
                   {trait.icon_path ? (
-                    <img src={trait.icon_path} alt={trait.name} className="w-full h-full object-contain filter brightness-200" />
+                    <img 
+                      src={trait.icon_path.startsWith('http') ? trait.icon_path : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/traits/${trait.icon_path}`} 
+                      alt={trait.name} 
+                      className="w-full h-full object-contain filter brightness-200" 
+                    />
                   ) : (
                     <Shield size={24} className="text-zinc-700" />
                   )}

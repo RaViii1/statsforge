@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { 
-  TrendingUp, Bell, Calendar, Shield, BarChart3, Target, 
-  Eye, PieChart, Activity, Flame, ChevronRight, 
-  Award, Trophy, Cpu, Zap, Box, User
+import {
+  TrendingUp, Bell, Calendar, Shield, BarChart3, Target,
+  PieChart, Activity, Flame, ChevronRight,
+  Cpu, Zap, Box, User, Crown, Check
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -392,6 +392,110 @@ export default function Home() {
           </div>
         </section>
         
+        {/* Pricing Section */}
+        <section id="pricing" className="py-32 relative bg-[#0c0c0e] border-t border-zinc-900/50">
+          <div className="container mx-auto px-6">
+            <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg border border-orange-500/20 bg-orange-500/5 text-[10px] font-bold text-orange-500 uppercase tracking-[0.3em]">
+                <Zap className="w-3 h-3" /> Pricing
+              </div>
+              <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">
+                Power Up Your<br /><span className="text-orange-500 italic">Stats</span>
+              </h2>
+              <p className="text-zinc-500 font-light text-lg">
+                Start free. Upgrade when you&apos;re ready to go deeper.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {/* Free Plan */}
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-8 flex flex-col gap-6">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-2">Free</p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-5xl font-black text-white">$0</span>
+                    <span className="text-zinc-500 text-sm mb-1.5">/month</span>
+                  </div>
+                  <p className="text-zinc-600 text-sm mt-2">Perfect for casual players getting started.</p>
+                </div>
+
+                <ul className="space-y-3 flex-1">
+                  {[
+                    'Basic match history (20 games)',
+                    'Standard ranked stats',
+                    'Single game tracking',
+                    'Community support',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-400">
+                      <Check className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/register"
+                  className="w-full py-3 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-bold
+                    uppercase tracking-widest text-center hover:border-zinc-500 hover:text-white
+                    transition-all duration-150">
+                  Get Started Free
+                </Link>
+              </div>
+
+              {/* Premium Plan */}
+              <div className="relative rounded-2xl border border-orange-500/40 bg-zinc-900/50 p-8 flex flex-col gap-6 overflow-hidden shadow-2xl shadow-orange-900/20">
+                <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-orange-500/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-br from-orange-600/8 to-transparent pointer-events-none" />
+
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500">Premium</p>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+                      bg-orange-500/10 border border-orange-500/20
+                      text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+                      <Crown className="w-2.5 h-2.5" /> Most Popular
+                    </span>
+                  </div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-5xl font-black text-white">$9</span>
+                    <span className="text-zinc-500 text-sm mb-1.5">/month</span>
+                  </div>
+                  <p className="text-zinc-500 text-sm mt-2">For competitive players who demand more.</p>
+                </div>
+
+                <ul className="relative space-y-3 flex-1">
+                  {[
+                    'Unlimited match history',
+                    'Advanced stats & overlays',
+                    'All games supported',
+                    'Priority support',
+                    'Early access to new features',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
+                      <Check className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={user ? '/profile' : '/register'}
+                  className="relative w-full py-3 rounded-xl text-sm font-black text-white
+                    italic uppercase tracking-tight text-center
+                    transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl
+                    active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={{
+                    background: 'linear-gradient(135deg, #ea580c 0%, #f59e0b 100%)',
+                    boxShadow: '0 0 20px rgba(234,88,12,0.3), inset 0 1px 0 rgba(255,255,255,0.12)'
+                  }}>
+                  <Crown className="w-4 h-4" />
+                  {user ? 'Upgrade Now' : 'Get Premium'}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="py-48 relative overflow-hidden bg-zinc-950 border-t border-zinc-900 group/cta">
           
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #fff 1px, transparent 0)', backgroundSize: '32px 32px' }} />

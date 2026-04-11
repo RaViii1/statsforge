@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from "react";
-import { LayoutDashboard, Users, User, Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, User, Shield, ShieldAlert, ShieldCheck, Crown } from "lucide-react";
 
 interface AdminTabsProps {
   overviewContent: React.ReactNode;
@@ -51,6 +51,7 @@ export function UserList({ users }: { users: any[] }) {
           <tr>
             <th className="px-6 py-4 font-black uppercase text-[10px]">User</th>
             <th className="px-6 py-4 font-black uppercase text-[10px]">Role</th>
+            <th className="px-6 py-4 font-black uppercase text-[10px]">Status</th>
             <th className="px-6 py-4 font-black uppercase text-[10px]">Joined</th>
           </tr>
         </thead>
@@ -75,6 +76,14 @@ export function UserList({ users }: { users: any[] }) {
                   {user.role === 'moderator' && <ShieldCheck size={10} />}
                   {user.role}
                 </span>
+              </td>
+              <td className="px-6 py-4">
+                {user.premium_user && (
+                  <span className="ml-2 px-2 py-1 rounded-md text-[10px] font-black uppercase bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 flex items-center gap-1 w-fit">
+                    <Crown size={10} />
+                    Premium
+                  </span>
+                )}
               </td>
               <td className="px-6 py-4 text-zinc-500">
                 {new Date(user.updated_at).toLocaleDateString()}

@@ -8,11 +8,14 @@ export async function GET(request: Request) {
   
   const supabase = await createClient();
   
-  // Fetch all team comps with their final phase units for the list view
   let query = supabase
     .from('tft_team_comps')
     .select(`
       *,
+      tft_sets!inner (
+        id,
+        is_active
+      ),
       tft_team_comp_phases (
         id,
         phase,
@@ -21,6 +24,7 @@ export async function GET(request: Request) {
       ),
       tft_leveling_steps (*)
     `)
+    .eq('tft_sets.is_active', true)
     .order('created_at', { ascending: false });
 
   if (setId) {
@@ -57,7 +61,7 @@ export async function GET(request: Request) {
         units: p.tft_unit_positions.map((u: any) => ({
           id: u.id,
           characterId: u.champion_id,
-          name: '', // Will be filled by client if needed
+          name: '',
           row: u.row,
           col: u.col,
           stars: u.stars,
@@ -135,7 +139,7 @@ export async function POST(request: Request) {
     .from('tft_team_comps')
     .upsert({
       id: (comp.id && comp.id.length > 15) ? comp.id : undefined,
-      user_id: (comp.id && comp.id.length > 15) ? undefined : session.user.id, // Only set user_id on creation if not admin or if new
+      user_id: (comp.id && comp.id.length > 15) ? undefined : session.user.id,
       name: comp.name,
       description: comp.description,
       patch: comp.patch,
@@ -160,7 +164,6 @@ export async function POST(request: Request) {
   for (const [phaseKey, phaseData] of Object.entries(comp.phases)) {
     const pData = phaseData as any;
     
-    // Check if phase exists
     const { data: existingPhase } = await supabase
       .from('tft_team_comp_phases')
       .select('id')
