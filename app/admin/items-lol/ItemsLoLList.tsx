@@ -97,7 +97,7 @@ export default function ItemsLoLList({ initialItems }: ItemsLoLListProps) {
                   <div className="w-[52px] h-[52px] rounded-xl border border-white/[0.1] overflow-hidden bg-black/40 flex items-center justify-center">
                     {item.image_path ? (
                       <img
-                        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item.image_path}`}
+                        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${item.image_path}`}
                         alt={item.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

@@ -256,9 +256,10 @@ export default function ProfilePage() {
               >
                 Recent Matches
                 {activeTab === "matches" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-orange-500 to-transparent"></div>
                 )}
               </button>
+
               <button
                 onClick={() => setActiveTab("mastery")}
                 className={`px-4 py-3 font-semibold transition-all relative ${
@@ -269,25 +270,34 @@ export default function ProfilePage() {
               >
                 Champion Mastery
                 {activeTab === "mastery" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-orange-500 to-transparent"></div>
                 )}
               </button>
               <button
                 onClick={() => setActiveTab("livegame")}
-                className={`px-4 py-3 font-semibold transition-all relative ${
+                className={`group px-4 py-3 font-semibold transition-all duration-300 relative ${
                   activeTab === "livegame"
-                    ? "text-orange-500"
-                    : "text-zinc-400 hover:text-white"
+                    ? "text-white"
+                    : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <span className="flex items-center gap-1 group hover:text-white transition-all transition-100">
-                  <span className="bg-orange-700 text-zinc-400 rounded-md py-1 px-1.5 shadow shadow-orange-700 group-hover:text-white">
-                    Live
+                <span className="flex items-center gap-2">
+                  <span className={`relative flex items-center justify-center w-2 h-2 transition-all duration-300 ${
+                    activeTab === "livegame" 
+                      ? "scale-110" 
+                      : "group-hover:scale-110"
+                  }`}>
+                    <span className={`absolute w-full h-full rounded-full ${
+                      activeTab === "livegame"
+                        ? "bg-orange-500 animate-ping opacity-75"
+                        : "bg-orange-500/50 group-hover:animate-ping group-hover:opacity-75"
+                    }`}></span>
+                    <span className="relative w-2 h-2 rounded-full bg-orange-500"></span>
                   </span>
-                  Game
+                  <span className="tracking-wide">Live Game</span>
                 </span>
                 {activeTab === "livegame" && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-orange-500 to-transparent"></div>
                 )}
               </button>
             </div>

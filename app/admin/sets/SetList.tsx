@@ -97,6 +97,7 @@ export default function SetsList({ initialSets }: SetsListProps) {
                       {set.is_active ? "Active" : "Inactive"}
                     </span>
                   </div>
+                  <div className="text-sm text-zinc-500 mt-2 line-clamp-4">{set.description}</div>
                 </div>
               </div>
 

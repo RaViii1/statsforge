@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import {
   ChevronDown, Plus, Star, Eye, Pencil, Search,
   Crown, Swords, Coins, ChevronsUp, ArrowRight,
@@ -10,7 +11,7 @@ import {
 import { TeamComp, DifficultyLevel, UnitPosition, TooltipState, META_TIER_CONFIG, MetaTier, META_TIERS } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import Footer from '@/components/Footer';
-import { CurrentSetNumber, getCostBorderColor, getChampionImageUrl } from '@/lib/tft/champions';
+import { getCostBorderColor, getChampionImageUrl } from '@/lib/tft/champions';
 import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { HexGrid } from '@/components/tft/planner';
 import { CustomTooltip } from '@/components/tft/planner';
@@ -54,7 +55,7 @@ interface TeamCompCardProps {
   traits: any[];
 }
 
-const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, items, traits }: TeamCompCardProps) => {
+const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, items, traits, setNumber }: TeamCompCardProps & { setNumber: number }) => {
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
   const difficulty = getDifficultyConfig(comp.difficulty || 'medium');
   const finalUnits = comp.phases.final.units;
@@ -120,7 +121,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
           x={tooltip.x}
           y={tooltip.y}
           champion={tooltip.champion}
-          setNumber={tooltip.setNumber}
+          setNumber={setNumber}
         />
       )}
       {tooltip.visible && !tooltip.trait && !tooltip.champion && (
@@ -168,7 +169,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                       <div
                         className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} cursor-pointer`}
                         onMouseEnter={(e) => {
-                          if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
+                          if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber });
                         }}
                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                       >
@@ -210,7 +211,7 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                     <div
                       className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''} cursor-pointer`}
                       onMouseEnter={(e) => {
-                        if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
+                        if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber });
                       }}
                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                     >
@@ -410,7 +411,11 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
   );
 };
 
-export default function TeamCompsPage() {
+export default function SetTeamCompsPage() {
+  const params = useParams();
+  const setParam = params?.set as string;
+  const setNumber = setParam ? parseInt(setParam.replace(/^S/, '')) : null;
+
   const [teamComps, setTeamComps] = useState<TeamComp[]>([]);
   const [champions, setChampions] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
@@ -422,7 +427,7 @@ export default function TeamCompsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeSets, setActiveSets] = useState<any[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+  const [currentSetData, setCurrentSetData] = useState<any>(null);
   const prefersReduced  = useReducedMotion();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user, userRole } = useAuth();
@@ -440,15 +445,31 @@ export default function TeamCompsPage() {
         if (setsRes.ok) {
           const sets = await setsRes.json();
           setActiveSets(sets);
-          if (sets.length > 0 && !selectedSetId) {
-            setSelectedSetId(sets[0].id);
+          
+          if (setNumber) {
+            const found = sets.find((s: any) => s.set_number === setNumber);
+            if (found) setCurrentSetData(found);
+          } else if (sets.length > 0) {
+            setCurrentSetData(sets[0]);
           }
         }
-        const compsUrl = selectedSetId ? `/api/tft/team-comps?set_id=${selectedSetId}` : '/api/tft/team-comps';
-        const champsUrl = selectedSetId ? `/api/tft/champions?set_id=${selectedSetId}` : '/api/tft/champions';
-        const traitsUrl = selectedSetId ? `/api/tft/traits?set_id=${selectedSetId}` : '/api/tft/traits';
+      } catch (err) {
+        console.error('Error fetching sets:', err);
+      }
+    }
+    load();
+  }, [setNumber]);
+
+  useEffect(() => {
+    async function loadData() {
+      if (!currentSetData) return;
+      try {
+        setLoading(true);
         const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
-          fetch(compsUrl), fetch(champsUrl), fetch('/api/tft/items'), fetch(traitsUrl)
+          fetch(`/api/tft/team-comps?set_id=${currentSetData.id}`),
+          fetch(`/api/tft/champions?set_id=${currentSetData.id}`),
+          fetch(`/api/tft/items`),
+          fetch(`/api/tft/traits?set_id=${currentSetData.id}`)
         ]);
         if (compsRes.ok)  setTeamComps(await compsRes.json());
         if (champsRes.ok) setChampions(await champsRes.json());
@@ -460,8 +481,8 @@ export default function TeamCompsPage() {
         setLoading(false);
       }
     }
-    load();
-  }, [selectedSetId]);
+    loadData();
+  }, [currentSetData?.id]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -473,7 +494,6 @@ export default function TeamCompsPage() {
 
   const filteredComps = useMemo(() => {
     let comps = teamComps.filter(c => c.phases.final.units.length > 0);
-    if (selectedSetId) comps = comps.filter(c => c.set_id === selectedSetId);
     if (filter !== 'all') comps = comps.filter(c => c.difficulty === filter);
     if (tierFilter !== 'all') comps = comps.filter(c => c.tier === tierFilter);
     if (debouncedSearch.trim()) {
@@ -487,14 +507,13 @@ export default function TeamCompsPage() {
       });
     }
     return comps;
-  }, [teamComps, filter, tierFilter, debouncedSearch, selectedSetId]);
+  }, [teamComps, filter, tierFilter, debouncedSearch]);
 
   const totalWithUnits    = teamComps.filter(c => c.phases.final.units.length > 0).length;
   const clearFilters      = () => { setSearchQuery(''); setDebouncedSearch(''); setFilter('all'); setTierFilter('all'); };
   const hasActiveFilters  = debouncedSearch || filter !== 'all' || tierFilter !== 'all';
 
-  const currentSet = activeSets.find(s => s.id === selectedSetId);
-  const currentSetName = currentSet ? `S${currentSet.set_number} — ${currentSet.name}` : `Set ${CurrentSetNumber}`;
+  const currentSetName = currentSetData ? `S${currentSetData.set_number} — ${currentSetData.name}` : `Set ${setNumber || ''}`;
 
   if (loading) {
     return (
@@ -514,7 +533,6 @@ export default function TeamCompsPage() {
 
       <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-orange-500/30">
 
-        {/* Ambient glows */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 right-0 w-[700px] h-[500px] bg-orange-500/[0.03] rounded-full blur-[180px]" />
           <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-purple-600/[0.03] rounded-full blur-[160px]" />
@@ -526,11 +544,11 @@ export default function TeamCompsPage() {
 
           <div className="pt-10 pb-8">
             <Link
-              href="/tft"
+              href="/tft/comps"
               className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
             >
               <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-              TFT Hub
+              All Comps
             </Link>
 
             <div className="flex items-end justify-between gap-6 flex-wrap">
@@ -555,7 +573,7 @@ export default function TeamCompsPage() {
                     {filteredComps.length === totalWithUnits ? 'comps' : `of ${totalWithUnits}`}
                   </p>
                 </div>
-                <Link href={`/tft/planner?set_id=${currentSet?.set_number || CurrentSetNumber}`}>
+                <Link href={`/tft/planner?set_id=${setNumber || currentSetData?.set_number || 14}`}>
                   <button className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-black uppercase text-xs tracking-widest rounded-lg transition-colors shadow-md shadow-orange-500/20">
                     <Plus className="w-3.5 h-3.5" />
                     Create
@@ -572,7 +590,7 @@ export default function TeamCompsPage() {
                   key={set.id}
                   href={`/tft/comps/sets/S${set.set_number}`}
                   className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 ${
-                    selectedSetId === set.id
+                    currentSetData?.id === set.id
                       ? 'bg-transparent text-orange-500 border-orange-500 -mb-px pb-3'
                       : 'bg-transparent text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
                   }`}
@@ -585,7 +603,6 @@ export default function TeamCompsPage() {
 
           <div className="py-5 border-b border-zinc-900 flex flex-wrap gap-4 items-center">
 
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
               <input
@@ -608,7 +625,6 @@ export default function TeamCompsPage() {
               </AnimatePresence>
             </div>
 
-            {/* Tier filter */}
             <div className="flex items-center gap-1">
               <motion.button
                 onClick={() => setTierFilter('all')}
@@ -622,7 +638,6 @@ export default function TeamCompsPage() {
               {META_TIERS.map(tier => {
                 const cfg = META_TIER_CONFIG[tier];
                 const isActive = tierFilter === tier;
-                // Extract raw hex from Tailwind color class for inline style
                 const colorMap: Record<string, string> = { 'text-yellow-400': '#facc15', 'text-blue-400': '#60a5fa', 'text-purple-400': '#c084fc', 'text-green-400': '#4ade80', 'text-red-400': '#f87171', 'text-zinc-300': '#d4d4d8' };
                 const rawColor = Object.entries(colorMap).find(([cls]) => cfg.color.includes(cls))?.[1] ?? '#fff';
                 return (
@@ -644,7 +659,6 @@ export default function TeamCompsPage() {
 
             <div className="w-px h-5 bg-zinc-800" />
 
-            {/* Difficulty filter */}
             <div className="flex items-center gap-1">
               <motion.button
                 onClick={() => setFilter('all')}
@@ -674,7 +688,6 @@ export default function TeamCompsPage() {
               })}
             </div>
 
-            {/* Clear */}
             <AnimatePresence>
               {hasActiveFilters && (
                 <motion.button
@@ -706,6 +719,7 @@ export default function TeamCompsPage() {
                         champions={champions}
                         items={items}
                         traits={traits}
+                        setNumber={setNumber || currentSetData?.set_number || 14}
                       />
                     );
                   })}

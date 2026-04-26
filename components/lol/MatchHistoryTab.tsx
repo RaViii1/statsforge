@@ -3,9 +3,10 @@
 import { Clock, Loader2, Search, ChevronDown, Filter, X } from "lucide-react";
 import { Match } from "@/app/types/lolInterfaces";
 import { MatchCard } from "./MatchCard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { determineRole, getChampionImage, getQueueName, getRoleIcon } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName } from "@/lib/champion-data";
+import { Augment } from "@/lib/arena-augments";
 
 interface MatchHistoryTabProps {
   matches: Match[];
@@ -49,6 +50,25 @@ export function MatchHistoryTab({
   const [filterRole, setFilterRole] = useState<string>("");
   const [filterGameMode, setFilterGameMode] = useState<string>("");
   const [sortBy, setSortBy] = useState<"recent" | "champion" | "role">("recent");
+  const [augments, setAugments] = useState<Augment[]>([]);
+  
+  useEffect(() => {
+    fetch("/api/arena/augments")
+      .then(res => res.json())
+      .then((data: Augment[]) => {
+        const arenaAugments = data.filter(a => {
+          if (!a.gamemode) return false;
+          const gm = Array.isArray(a.gamemode) ? a.gamemode : [a.gamemode];
+          return gm.some((g: any) =>
+            typeof g === "string"
+              ? g.toLowerCase() === "arena"
+              : g?.name?.toLowerCase() === "arena"
+          );
+        });
+        setAugments(arenaAugments);
+      })
+      .catch(err => console.error("Failed to fetch augments:", err));
+  }, []);
 
   // Calculate winrate graph data (last 20 games max)
   const recentResults = useMemo(() => {
@@ -369,11 +389,11 @@ export function MatchHistoryTab({
                       className="relative flex items-center gap-2 px-2 py-1.5 bg-zinc-800/60 border border-zinc-700 rounded-lg hover:border-orange-500/30 transition-colors"
                     >
                       <img
-                        src={getChampionImage(getChampionIdByName(champ.championName)?.toString() || "noimages/nochampionimage.jpg")}
+                        src={getChampionImage(getChampionIdByName(champ.championName)?.toString() || "/images/nochampionimage.jpg")}
                         alt={champ.championName}
                         className="w-7 h-7 rounded-full shrink-0"
                         onError={(e) => {
-                          e.currentTarget.src = "images/nochampionimage.jpg";
+                          e.currentTarget.src = "/images/nochampionimage.jpg";
                         }}
                       />
                       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -444,11 +464,11 @@ export function MatchHistoryTab({
                         className="w-full px-3 py-2 text-left text-sm text-white hover:bg-zinc-800 transition-colors flex items-center gap-2"
                       >
                         <img
-                          src={getChampionImage(getChampionIdByName(champ)?.toString() || "images/nochampionimage.jpg")}
+                          src={getChampionImage(getChampionIdByName(champ)?.toString() || "/images/nochampionimage.jpg")}
                           alt={champ}
                           className="w-6 h-6 rounded"
                           onError={(e) => {
-                            e.currentTarget.src = "images/nochampionimage.jpg";
+                            e.currentTarget.src = "/images/nochampionimage.jpg";
                           }}
                         />
                         {champ}
@@ -542,6 +562,7 @@ export function MatchHistoryTab({
                   summonerPuuid={summonerPuuid}
                   server={server}
                   rankedData={rankedData}
+                  augments={augments}
                   onPlayerClick={onPlayerClick}
                 />
               ))}

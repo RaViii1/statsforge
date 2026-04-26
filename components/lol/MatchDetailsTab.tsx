@@ -13,23 +13,24 @@ import {
 } from "@/lib/lol/lolfunctions";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
 import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon } from "@/lib/runes";
-import { getArenaAugmentName, getArenaAugmentIcon } from "@/lib/arena-augments";
 import { getItemImage, getItemDescription } from "@/lib/items";
 import { MatchRunesTab } from "@/components/lol/MatchRunesTab";
 import { MatchPerformanceTab } from "@/components/lol/MatchPerformanceTab";
 import { RankedIcon } from "@/components/lol/RankedIcon";
 import SvgIcon from "../SvgIcon";
+import { Augment, getArenaAugmentIcon, getAugmentById, getArenaAugmentTier, getAugmentTierBorderColor, getAugmentTierBgColor, getAugmentTierGlow } from "@/lib/arena-augments";
 
 interface MatchDetailsTabProps {
   match: Match;
   summonerPuuid: string;
   playerData: MatchParticipant;
+  augments: Augment[];
   onPlayerClick: (gameName: string, tagLine: string) => void;
 }
 
 type TabType = "details" | "performance" | "runes";
 
-export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClick }: MatchDetailsTabProps) {
+export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, onPlayerClick }: MatchDetailsTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [rankedDataMap, setRankedDataMap] = useState<Record<string, RankedEntry | null>>({});
   const [isLoadingRanked, setIsLoadingRanked] = useState(true);
@@ -230,7 +231,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
         <>
           {/* Arena Augments - Enhanced Display */}
           <div className="p-6">
-            <h4 className="text-base font-bold text-purple-200 mb-4 flex items-center gap-2.5">
+            <h4 className="text-base font-bold text-white mb-4 flex items-center gap-2.5">
               {playerData.riotIdGameName}'s Arena Augments
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -241,14 +242,21 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                 playerData.playerAugment4,
                 playerData.playerAugment5,
               ].filter(Boolean).map((augmentId, idx) => {
-                const augmentIcon = getArenaAugmentIcon(augmentId);
-                const augmentName = getArenaAugmentName(augmentId);
+                const augment = getAugmentById(augmentId, augments);
+                const augmentName = augment?.name ?? `Augment ${augmentId}`;
+                const augmentDesc = augment?.description ?? '';
+                const augmentIcon = augment ? getArenaAugmentIcon(augmentId, augments) : '';
+                const tier = getArenaAugmentTier(augment);
+                const borderColor = getAugmentTierBorderColor(tier);
+                const bgColor = getAugmentTierBgColor(tier);
+                const glow = getAugmentTierGlow(tier);
                 return (
                   <div
                     key={idx}
-                    className="group relative flex flex-col items-center gap-2.5 p-3.5 bg-purple-950/40 border border-purple-800/60 rounded-xl hover:bg-purple-900/50 hover:border-purple-600 hover:scale-105 transition-all duration-200 shadow-md hover:shadow-purple-900/40"
+                    className={`group relative flex flex-col items-center gap-2.5 p-3.5 ${bgColor} border-2 ${borderColor} ${glow} rounded-xl hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-md`}
+                    title={augmentDesc ? `${augmentName}\n\n${augmentDesc}` : augmentName}
                   >
-                    <div className="w-14 h-14 rounded-lg bg-purple-900/50 border border-purple-700 overflow-hidden shrink-0 group-hover:border-purple-500 transition-colors shadow-sm">
+                    <div className={`w-14 h-14 rounded-lg overflow-hidden shrink-0 transition-colors shadow-sm`}>
                       {augmentIcon ? (
                         <img
                           src={augmentIcon}
@@ -404,19 +412,25 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   {augmentIds.map((augmentId, idx) => {
-                                    const augmentIcon = getArenaAugmentIcon(augmentId);
-                                    const augmentName = getArenaAugmentName(augmentId);
+                                    const augment = getAugmentById(augmentId, augments);
+                                    const augmentIcon = augment ? getArenaAugmentIcon(augmentId, augments) : '';
+                                    const augmentName = augment?.name ?? `Augment ${augmentId}`;
+                                    const augmentDesc = augment?.description ?? '';
                                     const hasAugment = augmentId && augmentId !== 0;
+                                    const tier = getArenaAugmentTier(augment);
+                                    const borderColor = hasAugment ? getAugmentTierBorderColor(tier) : '';
+                                    const bgColor = hasAugment ? getAugmentTierBgColor(tier) : '';
+                                    const glow = hasAugment ? getAugmentTierGlow(tier) : '';
 
                                     return (
                                       <div
                                         key={`augment-${idx}`}
                                         className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
                                           hasAugment
-                                            ? 'bg-purple-900/50 border border-purple-700 hover:border-purple-400 hover:scale-110 hover:shadow-purple-500/30'
+                                            ? `border ${borderColor} ${bgColor} ${glow} hover:scale-110`
                                             : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
                                         }`}
-                                        title={hasAugment ? augmentName : 'Empty Augment Slot'}
+                                        title={hasAugment ? `${augmentName}${augmentDesc ? `\n\n${augmentDesc}` : ''}` : 'Empty Augment Slot'}
                                       >
                                         {hasAugment && augmentIcon ? (
                                           <img
@@ -465,7 +479,12 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                             alt={itemName}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
-                                              e.currentTarget.src = "images/nochampionimage.jpg";
+                                              console.log('Item image failed to load:', {
+                                                itemId: itemId,
+                                                itemName: itemName,
+                                                src: e.currentTarget.src
+                                              });
+                                              e.currentTarget.src = "/images/noitem.png";
                                             }}
                                           />
                                         )}
@@ -487,6 +506,14 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                         src={getItemImage(participant.item6.toString())}
                                         alt={`Trinket ${participant.item6}`}
                                         className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                              // console.log('Item image failed to load:', {
+                                              //   itemId: itemId,
+                                              //   itemName: itemName,
+                                              //   src: e.currentTarget.src
+                                              // });
+                                              e.currentTarget.src = "/images/noitem.png";
+                                            }}
                                       />
                                     )}
                                   </div>
@@ -757,6 +784,14 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                     src={getItemImage(itemId.toString())}
                                     alt={itemName}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      console.log('Item image failed to load:', {
+                                        itemId: itemId,
+                                        itemName: itemName,
+                                        src: e.currentTarget.src
+                                      });
+                                      e.currentTarget.src = "/images/noitem.png";
+                                    }}
                                   />
                                 ) : null}
                               </div>
@@ -778,6 +813,14 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                     src={getItemImage(itemId.toString())}
                                     alt={itemName}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      console.log('Item image failed to load:', {
+                                        itemId: itemId,
+                                        itemName: itemName,
+                                        src: e.currentTarget.src
+                                      });
+                                      e.currentTarget.src = "/images/noitem.png";
+                                    }}
                                   />
                                 ) : null}
                               </div>
@@ -797,6 +840,14 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, onPlayerClic
                                 src={getItemImage(participant.item6.toString())}
                                 alt={`Trinket ${participant.item6}`}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  console.log('Item image failed to load:', {
+                                    itemId: participant.item6,
+                                    itemName: getItemDescription(participant.item6?.toString()),
+                                    src: e.currentTarget.src
+                                  });
+                                  e.currentTarget.src = "/images/noitem.png";
+                                }}
                               />
                             ) : null}
                           </div>

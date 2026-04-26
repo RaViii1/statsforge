@@ -407,7 +407,7 @@ export default function ChampionStatsCard({ server, puuid }: ChampionStatsCardPr
                       alt={stat.champion}
                       className="w-10 h-10 rounded border border-zinc-700 shrink-0"
                       onError={(e) => {
-                        e.currentTarget.src = "images/nochampionimage.jpg";
+                        e.currentTarget.src = "/images/nochampionimage.jpg";
                       }}
                     />
                     <div className="min-w-0">

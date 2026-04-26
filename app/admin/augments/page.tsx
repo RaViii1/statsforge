@@ -1,9 +1,10 @@
+import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
 import AugmentsList from "./AugmentsList";
 import AugmentsForm from "./AugmentsForm";
 
-export default function AdminAugmentsPage() {
+export default async function AdminAugmentsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0b] pb-24">
       <div className="border-b border-white/6 bg-[#0d0d0f]/80 backdrop-blur-sm sticky top-0 z-10">
@@ -33,14 +34,14 @@ export default function AdminAugmentsPage() {
                 Augment Management
               </h1>
               <p className="text-sm text-zinc-500 mt-0.5">
-                Add and edit TFT augments, tiers, and descriptions
+                Add and edit augments for TFT, Arena, and ARAM
               </p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
-          <div className="sticky top-20">
+          <div className="xl:sticky top-20">
             <AugmentsForm />
           </div>
           <div>

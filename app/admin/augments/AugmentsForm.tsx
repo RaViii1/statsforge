@@ -31,6 +31,10 @@ const EMPTY: AugmentFormData = {
   name: "", description: "", tier: "", icon_path: "", gamemode: []
 };
 
+const generateId = (): number => {
+  return Math.floor(Math.random() * 900000) + 100000;
+};
+
 export default function AugmentsForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -105,7 +109,9 @@ export default function AugmentsForm() {
   const previewUrl = formData.icon_path
     ? formData.icon_path.startsWith('http') 
       ? formData.icon_path 
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/augments/${formData.icon_path}`
+      : formData.icon_path.includes('/')
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${formData.icon_path}`
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/augments/${formData.icon_path}`
     : null;
 
   return (
@@ -134,6 +140,23 @@ export default function AugmentsForm() {
 
       <div className="max-h-[calc(100vh-280px)] overflow-y-auto custom-scrollbar pr-1">
       <form onSubmit={handleSubmit} className="p-5 space-y-4">
+
+        {/* ID Field */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">
+            ID <span className="text-zinc-600">(optional, auto-generated if empty)</span>
+          </label>
+          <input
+            type="number"
+            value={formData.id || ''}
+            onChange={e => setFormData(prev => ({ 
+              ...prev, 
+              id: e.target.value ? parseInt(e.target.value, 10) : undefined 
+            }))}
+            className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none placeholder:text-zinc-600 transition-colors"
+            placeholder="Auto-generated if empty"
+          />
+        </div>
 
         {/* Icon + Name row */}
         <div className="flex gap-3 items-start">

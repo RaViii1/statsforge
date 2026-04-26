@@ -3,6 +3,7 @@
 import { Trophy, Loader2, Search } from "lucide-react";
 import { ChampionMastery } from "@/app/types/lolInterfaces";
 import { getChampionNameById } from "@/lib/champion-data";
+import { getChampionImage } from "@/lib/lol/lolfunctions";
 
 interface ChampionMasteryTabProps {
   championMastery: ChampionMastery[];
@@ -12,8 +13,7 @@ interface ChampionMasteryTabProps {
 export function ChampionMasteryTab({ championMastery, loading }: ChampionMasteryTabProps) {
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 mb-8">
-      <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-        <Trophy className="w-6 h-6 text-orange-500" />
+      <h2 className="text-2xl font-bold text-white flex mb-6 items-center gap-2 border-l-2 border-orange-500 px-2">
         Champion Mastery
       </h2>
       
@@ -33,11 +33,11 @@ export function ChampionMasteryTab({ championMastery, loading }: ChampionMastery
               >
                 <div className="flex items-center gap-3 mb-3">
                   <img
-                    src={`${mastery.championId}.png`}
+                    src={getChampionImage(mastery.championId.toString())}
                     alt={championName}
                     className="w-12 h-12 rounded hover:scale-110 transition-transform"
                     onError={(e) => {
-                      e.currentTarget.src = `/images/lol/default.png`;
+                      e.currentTarget.src = `/images/nochampionimage.jpg`;
                     }}
                   />
                   <div className="flex-1">

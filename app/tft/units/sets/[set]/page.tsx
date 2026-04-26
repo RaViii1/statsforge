@@ -3,8 +3,9 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Search, ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import Footer from "@/components/Footer";
-import { getCostColor, getCostBorderColor, CurrentSetNumber, getChampionImageUrl, getTraitIconUrl } from "@/lib/tft/champions";
+import { getCostColor, getCostBorderColor, getChampionImageUrl, getTraitIconUrl } from "@/lib/tft/champions";
 import { TFTChampion } from "@/lib/tft/champions";
 import NavbarTft from "@/components/NavbarTft";
 import { UnitTooltip } from "@/components/tft/UnitTooltip";
@@ -59,7 +60,6 @@ function ChampionCard({ champion, setNumber, index, onShowTooltip, onHideTooltip
           whileHover={prefersReduced ? {} : { y: -4, transition: { duration: 0.15 } }}
           style={{ "--cost": costColor } as React.CSSProperties}
         >
-          {/* Hover glow */}
           <div
             className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"
             style={{ boxShadow: `0 8px 32px ${costColor}22, 0 0 0 1px ${costColor}15` }}
@@ -131,7 +131,11 @@ function ChampionCard({ champion, setNumber, index, onShowTooltip, onHideTooltip
   );
 }
 
-export default function TFTUnitsPage() {
+export default function SetUnitsPage() {
+  const params = useParams();
+  const setParam = params?.set as string;
+  const setNumber = setParam ? parseInt(setParam.replace(/^S/, '')) : null;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCost, setSelectedCost] = useState(0);
@@ -139,7 +143,7 @@ export default function TFTUnitsPage() {
   const [champions, setChampions] = useState<TFTChampion[]>([]);
   const [allTraits, setAllTraits] = useState<any[]>([]);
   const [activeSets, setActiveSets] = useState<any[]>([]);
-  const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+  const [currentSetData, setCurrentSetData] = useState<any>(null);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: "", description: "", x: 0, y: 0 });
   const [loading, setLoading] = useState(true);
   const prefersReduced = useReducedMotion();
@@ -152,21 +156,35 @@ export default function TFTUnitsPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchData() {
+    async function loadSets() {
       try {
         const setsRes = await fetch("/api/tft/active-sets");
         if (setsRes.ok) {
           const sets = await setsRes.json();
           setActiveSets(sets);
-          if (sets.length > 0 && !selectedSetId) {
-            setSelectedSetId(sets[0].id);
+          
+          if (setNumber) {
+            const found = sets.find((s: any) => s.set_number === setNumber);
+            if (found) setCurrentSetData(found);
+          } else if (sets.length > 0) {
+            setCurrentSetData(sets[0]);
           }
         }
-        const champsUrl = selectedSetId ? `/api/tft/champions?set_id=${selectedSetId}` : "/api/tft/champions";
-        const traitsUrl = selectedSetId ? `/api/tft/traits?set_id=${selectedSetId}` : "/api/tft/traits";
+      } catch (err) {
+        console.error('Error fetching sets:', err);
+      }
+    }
+    loadSets();
+  }, [setNumber]);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!currentSetData) return;
+      try {
+        setLoading(true);
         const [champsRes, traitsRes] = await Promise.all([
-          fetch(champsUrl),
-          fetch(traitsUrl),
+          fetch(`/api/tft/champions?set_id=${currentSetData.id}`),
+          fetch(`/api/tft/traits?set_id=${currentSetData.id}`),
         ]);
         if (champsRes.ok) setChampions(await champsRes.json());
         if (traitsRes.ok) setAllTraits(await traitsRes.json());
@@ -177,7 +195,7 @@ export default function TFTUnitsPage() {
       }
     }
     fetchData();
-  }, [selectedSetId]);
+  }, [currentSetData?.id]);
 
   const filteredChampions = useMemo(() =>
     champions.filter((c) => {
@@ -215,6 +233,8 @@ export default function TFTUnitsPage() {
     is_Hero: trait.is_Hero || false,
   });
 
+  const currentSetName = currentSetData ? `S${currentSetData.set_number} — ${currentSetData.name}` : `Set ${setNumber || ''}`;
+
   return (
     <>
       <style>{`
@@ -236,7 +256,7 @@ export default function TFTUnitsPage() {
           visible={tooltip.visible && !!tooltip.champion}
           title={tooltip.title} description={tooltip.description}
           x={tooltip.x} y={tooltip.y}
-          champion={tooltip.champion} setNumber={CurrentSetNumber}
+          champion={tooltip.champion} setNumber={setNumber || currentSetData?.set_number}
         />
         <TraitTooltip
           visible={tooltip.visible && !!tooltip.trait}
@@ -246,18 +266,18 @@ export default function TFTUnitsPage() {
 
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6">
 
-          <div className="pt-10 pb-8 border-b border-zinc-900">
+          <div className="pt-10 pb-8">
             <Link
-              href="/tft"
+              href="/tft/units"
               className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
             >
               <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-              TFT Hub
+              All Units
             </Link>
 
             <div className="flex items-end justify-between gap-6 flex-wrap">
               <div>
-                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">Set {CurrentSetNumber}</p>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">{currentSetName}</p>
                 <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide">UNITS</h1>
                 <p className="text-zinc-500 text-sm mt-2 max-w-md">
                   Every champion — costs, abilities, synergies, and optimal items.
@@ -287,7 +307,7 @@ export default function TFTUnitsPage() {
                   key={set.id}
                   href={`/tft/units/sets/S${set.set_number}`}
                   className={`px-4 py-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 ${
-                    selectedSetId === set.id
+                    currentSetData?.id === set.id
                       ? 'bg-transparent text-orange-500 border-orange-500 -mb-px pb-3'
                       : 'bg-transparent text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
                   }`}
@@ -400,7 +420,6 @@ export default function TFTUnitsPage() {
           </div>
 
           <div className="py-10">
-
             {loading && (
               <div className="space-y-14">
                 {[1, 2, 3].map((tier) => (
@@ -448,7 +467,6 @@ export default function TFTUnitsPage() {
                       transition={{ duration: 0.3 }}
                     >
                       <div className="relative p-0 pb-5">
-                        {/* Section header */}
                         <div className="flex items-center gap-4 mb-5">
                           <div className="w-0.5 h-5 rounded-full shrink-0" style={{ backgroundColor: costColor }} />
                           <h2
@@ -463,7 +481,6 @@ export default function TFTUnitsPage() {
                           </span>
                         </div>
 
-                        {/* Cards */}
                         <motion.div
                           className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
                           layout
@@ -473,7 +490,7 @@ export default function TFTUnitsPage() {
                               <ChampionCard
                                 key={champion.id}
                                 champion={champion}
-                                setNumber={CurrentSetNumber}
+                                setNumber={setNumber || currentSetData?.set_number || 14}
                                 index={index}
                                 onShowTooltip={showTooltip}
                                 onHideTooltip={hideTooltip}

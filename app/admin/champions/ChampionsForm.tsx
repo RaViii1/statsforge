@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Star, Search, X, Box, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { TFTChampion, TFTSet } from "@/lib/tft/champions";
+import { TFTChampion, TFTSet, getTraitIconUrl } from "@/lib/tft/champions";
 import SvgIcon from "@/components/SvgIcon";
 import { createClient } from "@/lib/supabase/client";
 import ImagePickerModal from "@/components/ImagePickerModal";
@@ -288,7 +288,9 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
   const previewUrl = formData.image_path 
     ? formData.image_path.startsWith('http')
       ? formData.image_path
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/champions/${formData.image_path}`
+      : formData.image_path.includes('/')
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${formData.image_path}`
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/champions/${formData.image_path}`
     : null;
 
   return (
@@ -435,7 +437,7 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
                   >
                     <div className="w-4 h-4 bg-zinc-800 rounded flex items-center justify-center overflow-hidden">
                       {trait?.icon_path ? (
-                        <img src={trait.icon_path} alt="" className="w-3 h-3 object-contain" />
+                        <img src={getTraitIconUrl(trait.icon_path)} alt="" className="w-3 h-3 object-contain" />
                       ) : (
                         <Box className="w-2.5 h-2.5 text-zinc-600" />
                       )}
@@ -472,7 +474,7 @@ export default function ChampionForm({ sets }: ChampionFormProps) {
                   >
                     <div className="w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center overflow-hidden">
                       {trait.icon_path ? (
-                        <img src={trait.icon_path} alt="" className="w-4 h-4 object-contain" />
+                        <img src={getTraitIconUrl(trait.icon_path)} alt="" className="w-4 h-4 object-contain" />
                       ) : (
                         <Box className="w-3 h-3 text-zinc-600" />
                       )}

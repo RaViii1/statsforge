@@ -14,6 +14,7 @@ export default function SetForm() {
   const [formData, setFormData] = useState<Partial<TFTSet>>({
     name: "",
     set_number: 0,
+    description: "",
     is_active: true,
   });
 
@@ -29,6 +30,7 @@ export default function SetForm() {
       setFormData({
         id: setData.id,
         name: setData.name || "",
+        description: setData.description || "",
         set_number: setData.set_number || 0,
         is_active: setData.is_active ?? true,
       });
@@ -40,7 +42,7 @@ export default function SetForm() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setFormData({ name: "", set_number: 0, is_active: true });
+    setFormData({ name: "", description: "", set_number: 0, is_active: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +56,7 @@ export default function SetForm() {
     try {
       const submitData: any = {
         name: formData.name,
+        description: formData.description,
         set_number: Number(formData.set_number) || 0,
         is_active: Boolean(formData.is_active),
       };
@@ -75,7 +78,7 @@ export default function SetForm() {
 
       toast.success(isEditing ? "Set updated successfully!" : "Set created successfully!");
       setIsEditing(false);
-      setFormData({ name: "", set_number: 0, is_active: true });
+      setFormData({ name: "", description: "", set_number: 0, is_active: true });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message || "Failed to save set");
@@ -85,7 +88,7 @@ export default function SetForm() {
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-3xl space-y-8 overflow-y-auto max-h-[85vh] scrollbar-hide">
+    <div className=" p-6 space-y-8 overflow-y-auto max-h-[85vh] scrollbar-hide bg-[#111112] border border-white/5 rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           {isEditing ? (
@@ -139,6 +142,11 @@ export default function SetForm() {
               />
             </div>
           </div>
+          
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Description</label>
+          <textarea name="description" value={formData.description}  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors" placeholder="Item description..." />
+        </div>
         </div>
 
         <div className="space-y-1.5">

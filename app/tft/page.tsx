@@ -9,20 +9,7 @@ import Footer from "@/components/Footer";
 import NavbarTft from "@/components/NavbarTft";
 import { CurrentSetNumber } from "@/lib/tft/champions";
 
-const SERVERS = [
-  { value: "na1", label: "NA" },
-  { value: "euw1", label: "EUW" },
-  { value: "eun1", label: "EUNE" },
-  { value: "kr", label: "KR" },
-  { value: "br1", label: "BR" },
-  { value: "la1", label: "LAN" },
-  { value: "la2", label: "LAS" },
-  { value: "oc1", label: "OCE" },
-  { value: "ru", label: "RU" },
-  { value: "tr1", label: "TR" },
-  { value: "jp1", label: "JP" },
-];
-
+import { SERVERS } from "@/lib/utils";
 interface RecentSearch {
   gameName: string;
   tagLine: string;
@@ -37,8 +24,39 @@ export default function TFTPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [stats, setStats] = useState({  activeSetNumbers: [] as number[] });
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [compsRes, champsRes, traitsRes, setsRes] = await Promise.all([
+          fetch('/api/tft/team-comps'),
+          fetch('/api/tft/champions'),
+          fetch('/api/tft/traits'),
+          fetch('/api/tft/active-sets')
+        ]);
+        
+        const [compsData, champsData, traitsData, setsData] = await Promise.all([
+          compsRes.ok ? compsRes.json() : [],
+          champsRes.ok ? champsRes.json() : [],
+          traitsRes.ok ? traitsRes.json() : [],
+          setsRes.ok ? setsRes.json() : []
+        ]);
+        
+        setStats({
+          activeSetNumbers: Array.isArray(setsData) ? setsData.map((s: any) => s.set_number).sort((a: number, b: number) => b - a) : []
+        });
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("tft_recent_searches");
@@ -302,7 +320,15 @@ export default function TFTPage() {
                   <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Meta Comps</h3>
-                <p className="text-zinc-400 text-sm mb-6">Explore the highest win-rate compositions and trending strategies for Set {CurrentSetNumber}.</p>
+                <p className="text-zinc-400 text-sm mb-6">
+                  {loading ? 'Loading...' : (
+                    <>
+                      {stats.activeSetNumbers.length === 1 
+                        ? `Check most popular team comps in Set ${stats.activeSetNumbers[0]}`
+                        : `Check most popular team comps in Sets ${stats.activeSetNumbers.join(', ')}`}
+                    </>
+                  )}
+                </p>
                 <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
                   View Meta
                 </div>
@@ -338,9 +364,17 @@ export default function TFTPage() {
                   <Users2 className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Units</h3>
-                <p className="text-zinc-400 text-sm mb-6">Explore all champions in the current set with detailed stats and traits.</p>
+                <p className="text-zinc-400 text-sm mb-6">
+                  {loading ? 'Loading...' : (
+                    <>
+                      {stats.activeSetNumbers.length === 1 
+                        ? `Explore all champions in Set ${stats.activeSetNumbers[0]} with stats`
+                        : `Explore all champions in Sets ${stats.activeSetNumbers.join(', ')} with stats`}
+                    </>
+                  )}
+                </p>
                 <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Check set {CurrentSetNumber} Units
+                  View Units
                 </div>
               </div>
             </Link> 

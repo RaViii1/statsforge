@@ -1,6 +1,6 @@
 import React from 'react';
 import { TooltipState } from '@/lib/tft/teamplanner-types';
-import { getCostColor, TFTChampion, TFTTrait } from '@/lib/tft/champions';
+import { getCostColor, TFTChampion, TFTTrait, getChampionImageUrl, getTraitIconUrl } from '@/lib/tft/champions';
 import SvgIcon from '../SvgIcon';
 import { TraitDto } from '@/lib/tft/tftfunctions';
 
@@ -42,7 +42,7 @@ export const UnitTooltip = ({
 
           {champion?.image_path ? (
             <img
-              src={champion.image_path}
+              src={getChampionImageUrl(champion.image_path)}
               alt={title}
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -91,7 +91,7 @@ export const UnitTooltip = ({
               <div key={i} className="flex items-center gap-1.5">
                 {trait.icon_path && (
                   <img
-                    src={trait.icon_path}
+                    src={getTraitIconUrl(trait.icon_path)}
                     alt={trait.name}
                     className="w-3.5 h-3.5 rounded-sm object-contain"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

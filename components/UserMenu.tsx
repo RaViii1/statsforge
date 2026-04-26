@@ -183,18 +183,19 @@ export default function UserMenu() {
 
         <AnimatePresence>
           {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.96 }}
-              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              role="menu"
-              aria-label="User menu options"
-              className="absolute right-0 mt-2 w-56 rounded-2xl overflow-hidden
-                bg-zinc-900/80 backdrop-blur-xl
-                border border-white/[0.08]
-                shadow-2xl shadow-black/40
-                z-[100]"
+             <motion.div
+               initial={{ opacity: 0, y: -4, scale: 0.96 }}
+               animate={{ opacity: 1, y: 0, scale: 1 }}
+               exit={{ opacity: 0, y: -4, scale: 0.96 }}
+               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+               role="menu"
+               aria-label="User menu options"
+               className="absolute mt-2 w-56 rounded-2xl overflow-hidden
+                 bg-zinc-900/80 backdrop-blur-xl
+                 border border-white/[0.08]
+                 shadow-2xl shadow-black/40
+                 z-[100]
+                 left-0 lg:right-0 lg:left-auto"
             >
               {/* User info header */}
               <div className="px-4 py-3 border-b border-white/[0.06]">

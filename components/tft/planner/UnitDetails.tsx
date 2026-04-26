@@ -2,7 +2,8 @@
 
 import { Search, Trash2, Crown, Star, Plus, Backpack } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTChampion, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
+import { TFTChampion, getCostColor, CurrentSetNumber, getChampionImageUrl } from '@/lib/tft/champions';
+import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { getTFTUnitIcon, getTFTItemIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
 import SvgIcon from '@/components/SvgIcon';
@@ -51,7 +52,7 @@ export const UnitDetails = ({
               <div className="relative">
                   <div className="w-24 h-24 rounded-2xl border-4 overflow-hidden shadow-2xl" style={{ borderColor: getCostColor(cost) }}>
                     <img 
-                      src={champ?.image_path || '/images/nochampionimage.jpg'} 
+                      src={getChampionImageUrl(champ?.image_path)} 
                       alt={champ?.name || 'Unknown Champion'} 
                       className="w-full h-full object-cover" 
                       onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
@@ -103,7 +104,7 @@ export const UnitDetails = ({
                       {itemName ? (
                           <>
                             <img 
-                              src={itemObj?.image_path || '/images/noitem.png'} 
+                              src={getItemImageUrl(itemObj?.image_path)} 
                               alt={itemName} 
                               className="w-full h-full object-cover rounded-xl opacity-80 group-hover:opacity-100 transition-opacity" 
                               onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
@@ -144,7 +145,7 @@ export const UnitDetails = ({
                       className={`aspect-square bg-white/4 border border-white/5 rounded-xl overflow-hidden hover:border-orange-500/40 transition-all group active:scale-90 cursor-grab active:cursor-grabbing ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <img 
-                        src={it.image_path || '/images/noitem.png'} 
+                        src={getItemImageUrl(it.image_path)} 
                         alt={it.name} 
                         className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" 
                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}

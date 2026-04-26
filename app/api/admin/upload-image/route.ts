@@ -38,7 +38,11 @@ export async function POST(request: Request) {
     let publicUrl: string;
 
     if (bucket === "item-icons" || bucket === "TftUnitIcons") {
-      filePath = file.name;
+      if (folder) {
+        filePath = `${folder}/${file.name}`;
+      } else {
+        filePath = file.name;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)

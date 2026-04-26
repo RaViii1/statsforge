@@ -2,7 +2,7 @@
 
 import { Search, ChevronLeft, ChevronRight, Save, Trash2 } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTChampion, getCostColor, CurrentSetNumber } from '@/lib/tft/champions';
+import { TFTChampion, getCostColor, CurrentSetNumber, getChampionImageUrl } from '@/lib/tft/champions';
 import { getTFTUnitIcon } from '@/lib/tft/tftfunctions';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
@@ -101,7 +101,7 @@ export const UnitSelector = ({
                 <div className="relative shrink-0">
                   <div className="w-9 h-9 rounded-lg border overflow-hidden" style={{ borderColor: getCostColor(c.cost) }}>
                     <img 
-                      src={c.image_path || '/images/nochampionimage.jpg'} 
+                      src={getChampionImageUrl(c.image_path)} 
                       alt={c.name} 
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100" 
                       onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}

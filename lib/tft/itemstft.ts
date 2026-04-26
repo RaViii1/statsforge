@@ -1004,3 +1004,12 @@ export function getItemName(id: string): string | undefined {
   const item = itemstft.find(i => i.id === id);
   return item?.name;
 }
+
+export const getItemImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '/images/noitem.png';
+  if (imagePath.startsWith('http')) return imagePath;
+  if (imagePath.includes('/')) {
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${imagePath}`;
+  }
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/tft-items/${imagePath}`;
+};

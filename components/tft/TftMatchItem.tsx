@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Users, Clock, Star, Coins, Sword, Trophy, Shield } from "lucide-react";
-import { TFTItem } from "@/lib/tft/itemstft";
+import { TFTItem, getItemImageUrl } from "@/lib/tft/itemstft";
 import {
   ParticipantDto,
   getTFTUnitIcon,
@@ -181,7 +181,7 @@ export default function TFTMatchCard({ match, puuid, items, traits, units }: TFT
                 onMouseLeave={() => setTooltip({ visible: false })}
               >
                 <img
-                  src={item?.image_path ?? "/images/noitem.png"}
+                  src={getItemImageUrl(item?.image_path)}
                   alt={item?.name ?? itemName}
                   className="w-full h-full object-cover"
                   onError={(e) => {

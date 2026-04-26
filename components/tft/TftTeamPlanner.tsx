@@ -44,6 +44,7 @@ import SetPicker from './planner/SetPicker';
 
 interface TftTeamPlannerProps {
   editId?: string | null;
+  initialSetId?: number | null;
 }
 
 const createEmptyTeam = (setId: number = 0, setNumber: number = 16): TeamComp => ({
@@ -64,7 +65,7 @@ const createEmptyTeam = (setId: number = 0, setNumber: number = 16): TeamComp =>
   synergiesList: [],
 });
 
-export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
+export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) => {
   const supabase = createClient();
   const { user, userRole, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<any>(null);
@@ -129,7 +130,17 @@ export const TftTeamPlanner = ({ editId }: TftTeamPlannerProps) => {
           fetchedSets = await setsRes.json();
           setActiveSets(fetchedSets);
           if (fetchedSets.length > 0 && !editId) {
-            setSelectedSetId(fetchedSets[0].id);
+            // If initialSetId provided (from URL), use matching set
+            if (initialSetId) {
+              const matchedSet = fetchedSets.find(s => s.set_number === initialSetId);
+              if (matchedSet) {
+                setSelectedSetId(matchedSet.id);
+              } else {
+                setSelectedSetId(fetchedSets[0].id);
+              }
+            } else {
+              setSelectedSetId(fetchedSets[0].id);
+            }
           }
         } else {
           console.error('Failed to fetch active sets:', setsRes.status);

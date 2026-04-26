@@ -4,7 +4,7 @@ import { use, useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Loader2, Eye, ArrowRightIcon } from "lucide-react";
 import Footer from "@/components/Footer";
-import { getCostBorderColor } from "@/lib/tft/champions";
+import { getCostBorderColor, getChampionImageUrl, getTraitIconUrl } from "@/lib/tft/champions";
 import SvgIcon from "@/components/SvgIcon";
 import { TFTChampion } from "@/lib/tft/champions";
 import NavbarTft from "@/components/NavbarTft";
@@ -263,7 +263,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
         <div className="relative rounded-2xl bg-zinc-900/50 shadow-xl shadow-black/40 overflow-hidden mb-8">
           {/* Faint splash art wash */}
           <div className="absolute inset-0 opacity-[0.08]">
-            <img src={champion.image_path || "/images/nochampionimage.jpg"} alt="" aria-hidden
+            <img src={getChampionImageUrl(champion.image_path)} alt="" aria-hidden
               className="w-full h-full object-cover object-top scale-110 blur-sm"
               onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
             <div className="absolute inset-0 bg-linear-to-r from-zinc-900 via-zinc-900/80 to-transparent" />
@@ -294,7 +294,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                     >
                       <div className="w-4 h-4 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
                         {trait.icon_path
-                          ? <img src={trait.icon_path} alt="" className="w-3 h-3 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ? <img src={getTraitIconUrl(trait.icon_path)} alt="" className="w-3 h-3 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                           : <span className="text-[8px] font-black text-orange-400">{trait.name[0]}</span>}
                       </div>
                       <span className="text-[9px] font-black uppercase tracking-widest text-zinc-200">{trait.name}</span>
@@ -314,7 +314,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
 
             <div className="w-44 h-44 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 shrink-0">
               <img
-                src={champion.image_path || "/images/nochampionimage.jpg"}
+                src={getChampionImageUrl(champion.image_path)}
                 alt={champion.name}
                 className="w-full h-full object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
@@ -478,7 +478,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                           onMouseEnter={(e) => showTooltip(e, { title: trait.name, description: trait.description || '', trait: buildTraitTooltip(trait) })}
                           onMouseLeave={hideTooltip}
                         >
-                          <img src={trait.icon_path || "/images/notraitimage.png"} alt={trait.name} className="w-5 h-5 object-contain" />
+                          <img src={getTraitIconUrl(trait.icon_path) || "/images/notraitimage.png"} alt={trait.name} className="w-5 h-5 object-contain" />
                         </div>
                         <div className="flex-1 min-w-0 pt-0.5">
                           <h4 className="text-sm font-black text-white italic leading-none mb-1">{trait.name}</h4>
@@ -502,7 +502,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                               }`}
                             >
                               <img
-                                src={c.image_path || "/images/nochampionimage.jpg"}
+                                src={getChampionImageUrl(c.image_path)}
                                 alt={c.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
@@ -585,7 +585,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                                         }}
                                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                       >
-                                        <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
+                                        <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                       </div>
                                       {unit.items.length > 0 && (
                                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
@@ -622,7 +622,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
                                       }}
                                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                     >
-                                      <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
+                                      <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                     </div>
                                     {unit.items.length > 0 && (
                                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">

@@ -9,13 +9,14 @@ import NavbarTft from '@/components/NavbarTft';
 export default async function PlannerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>
+  searchParams: Promise<{ edit?: string; set_id?: string }>
 }) {
   const supabase = await createClient();
   const { data: { session } } = await supabase.auth.getSession();
   
   const params = await searchParams;
   const editId = params?.edit ?? null;
+  const setIdFromUrl = params?.set_id ?? null;
 
   if (!session?.user) {
     const redirectUrl = editId 
@@ -34,7 +35,7 @@ export default async function PlannerPage({
       <NavbarTft />
 
       <main className="relative max-w-[1800px] mx-auto px-4 sm:px-6 py-8">
-        <TftTeamPlanner editId={editId} key={editId || 'new'} />
+        <TftTeamPlanner editId={editId} initialSetId={setIdFromUrl ? parseInt(setIdFromUrl) : null} key={editId || 'new'} />
       </main>
 
       <Footer />

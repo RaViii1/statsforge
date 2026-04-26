@@ -40,11 +40,20 @@ const FALLBACK_TIER = {
   bg: 'bg-zinc-900/50',
 };
 
+const GAMEMODE_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'tft', label: 'TFT' },
+  { id: 'arena', label: 'Arena' },
+  { id: 'aram', label: 'ARAM' },
+  { id: 'recent', label: 'Recently Added' },
+];
+
 export default function AugmentsList() {
   const [augments, setAugments] = useState<Augment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
   const [search, setSearch] = useState("");
+  const [selectedGamemode, setSelectedGamemode] = useState<string>('all');
 
   const fetchAugments = useCallback(async () => {
     try {
@@ -89,10 +98,27 @@ export default function AugmentsList() {
   const getGamemodes = (gm: string | string[]) =>
     Array.isArray(gm) ? gm : gm ? [gm] : [];
 
-  const filtered = augments.filter(a =>
-    a.name?.toLowerCase().includes(search.toLowerCase()) ||
-    a.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = augments.filter(a => {
+    const matchesSearch =
+      a.name?.toLowerCase().includes(search.toLowerCase()) ||
+      a.description?.toLowerCase().includes(search.toLowerCase());
+
+    let matchesGamemode = true;
+    if (selectedGamemode === 'all') {
+      matchesGamemode = true;
+    } else if (selectedGamemode === 'recent') {
+      matchesGamemode = true;
+    } else {
+      const gamemodes = getGamemodes(a.gamemode);
+      matchesGamemode = gamemodes.includes(selectedGamemode);
+    }
+
+    return matchesSearch && matchesGamemode;
+  });
+
+  const sortedFiltered = selectedGamemode === 'recent'
+    ? [...filtered].sort((a, b) => b.id - a.id).slice(0, 20)
+    : filtered;
 
   if (isLoading) {
     return (
@@ -107,9 +133,10 @@ export default function AugmentsList() {
   return (
     <div className="space-y-3">
 
-      {/* Search + count */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      {/* Top bar: responsive 2-row mobile, 1-row desktop */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Search */}
+        <div className="relative flex-1 min-w-0 order-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
           </svg>
@@ -120,12 +147,48 @@ export default function AugmentsList() {
             className="w-full bg-[#111112] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-orange-500/30 focus:ring-1 focus:ring-orange-500/20 transition-colors"
           />
         </div>
-        <div className="flex-shrink-0 px-3 py-2.5 bg-[#111112] border border-white/5 rounded-xl">
+
+        {/* Filters - hidden on mobile (wrapped by search+count), shown on desktop after search */}
+        <div className="hidden lg:flex items-center gap-2 flex-wrap order-3 lg:order-2">
+          {GAMEMODE_FILTERS.map(gm => (
+            <button
+              key={gm.id}
+              onClick={() => setSelectedGamemode(gm.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                selectedGamemode === gm.id
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-[#111112] border border-white/5 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {gm.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Count - on mobile after search, on desktop after filters */}
+        <div className="flex-shrink-0 self-start lg:self-auto px-3 py-2 bg-[#111112] border border-white/5 rounded-xl order-2 lg:order-3">
           <span className="text-xs font-semibold text-zinc-500">
-            {filtered.length}
+            {sortedFiltered.length}
             <span className="text-zinc-700 font-normal"> / {augments.length}</span>
           </span>
         </div>
+      </div>
+
+      {/* Mobile filters - single row, each button stretches equally */}
+      <div className="flex lg:hidden gap-2">
+        {GAMEMODE_FILTERS.map(gm => (
+          <button
+            key={gm.id}
+            onClick={() => setSelectedGamemode(gm.id)}
+            className={`flex-1 px-2 py-2 text-xs font-medium rounded-lg transition-colors text-center ${
+              selectedGamemode === gm.id
+                ? 'bg-orange-500 text-white'
+                : 'bg-[#111112] border border-white/5 text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {gm.label}
+          </button>
+        ))}
       </div>
 
       {/* Empty states */}
@@ -145,12 +208,16 @@ export default function AugmentsList() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((augment) => {
+          {sortedFiltered.map((augment) => {
             const tier = getTier(augment.tier);
             const gamemodes = getGamemodes(augment.gamemode);
             const tierStyle = (tier && TIER_STYLES[tier]) ? TIER_STYLES[tier] : FALLBACK_TIER;
             const imgUrl = augment.icon_path
-              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/augments/${augment.icon_path}`
+              ? augment.icon_path.startsWith('http')
+                ? augment.icon_path
+                : augment.icon_path.includes('/')
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${augment.icon_path}`
+                  : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/augments/${augment.icon_path}`
               : null;
 
             return (

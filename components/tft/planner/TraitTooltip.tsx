@@ -1,6 +1,6 @@
 import React from 'react';
 import { TooltipState } from '@/lib/tft/teamplanner-types';
-import { TFTTrait } from '@/lib/tft/champions';
+import { TFTTrait, getTraitIconUrl } from '@/lib/tft/champions';
 import { getTierColor } from '@/lib/tft/tftfunctions';
 
 interface TraitTooltipProps extends TooltipState {
@@ -32,7 +32,7 @@ export const TraitTooltip = ({
           {trait?.icon_path && (
           <div>
             <img
-              src={trait.icon_path}
+              src={getTraitIconUrl(trait.icon_path)}
               alt={title}
               className="w-6 h-6 rounded-lg object-contain"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

@@ -65,14 +65,14 @@ export default async function AdminItemsPage() {
 
         {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
-          <div className="sticky top-20">
+          <div className="xl:sticky top-20">
             <ItemForm 
               sets={(sets as (TFTSet & { id: number })[]) || []} 
               components={(components as TFTItem[]) || []}
             />
           </div>
           <div>
-            <ItemList initialItems={items || []} />
+            <ItemList initialItems={items || []} sets={(sets as (TFTSet & { id: number })[]) || []} />
           </div>
         </div>
       </div>

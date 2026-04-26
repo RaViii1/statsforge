@@ -251,7 +251,7 @@ export default function ItemForm({ sets, components }: ItemFormProps) {
       </form>
       </div>
 
-      <ImagePickerModal isOpen={showImagePicker} onClose={() => setShowImagePicker(false)} onSelect={handleImageSelect} currentImage={formData.image_path} storageBucket="item-icons" />
+      <ImagePickerModal isOpen={showImagePicker} onClose={() => setShowImagePicker(false)} onSelect={handleImageSelect} currentImage={formData.image_path} storageBucket="TftUnitIcons" folder="tft-items" />
     </div>
   );
 }

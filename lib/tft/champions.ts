@@ -3,6 +3,7 @@ import { TFTItem } from "./itemstft";
 export interface TFTSet {
   id: number;
   name: string;
+  description?: string;
   set_number: number;
   is_active: boolean;
   patch_start?: string;
@@ -116,6 +117,24 @@ export const getCostBorderColor = (cost: number): string => {
     case 7: return 'border-orange-600';
     default: return 'border-zinc-400';
   }
+};
+
+export const getChampionImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '/images/nochampionimage.jpg';
+  if (imagePath.startsWith('http')) return imagePath;
+  if (imagePath.includes('/')) {
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${imagePath}`;
+  }
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/champions/${imagePath}`;
+};
+
+export const getTraitIconUrl = (iconPath: string | null | undefined): string => {
+  if (!iconPath) return '/images/nochampionimage.jpg';
+  if (iconPath.startsWith('http')) return iconPath;
+  if (iconPath.includes('/')) {
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${iconPath}`;
+  }
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/traits/${iconPath}`;
 };
 
 export const CurrentSetNumber = 16;

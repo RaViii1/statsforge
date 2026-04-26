@@ -42,11 +42,11 @@ export function MatchPerformanceTab({ match, summonerPuuid }: MatchPerformanceTa
       return (
         <div className="flex items-center gap-2 mb-2">
           <img
-            src={getChampionImage(participant.championId.toString() || "images/nochampionimage.jpg")}
+            src={getChampionImage(participant.championId.toString() || "/images/nochampionimage.jpg")}
             alt={participant.championName}
             className="w-6 h-6 rounded-full flex-shrink-0"
             onError={(e) => {
-              e.currentTarget.src = "images/nochampionimage.jpg";
+              e.currentTarget.src = "/images/nochampionimage.jpg";
             }}
           />
           <span className={`text-xs font-bold w-16 text-right ${isPlayer ? 'text-orange-400' : 'text-zinc-400'}`}>
@@ -74,11 +74,11 @@ export function MatchPerformanceTab({ match, summonerPuuid }: MatchPerformanceTa
           {value.toLocaleString()}
         </span>
         <img
-          src={getChampionImage(participant.championId.toString() || "images/nochampionimage.jpg")}
+          src={getChampionImage(participant.championId.toString() || "/images/nochampionimage.jpg")}
           alt={participant.championName}
           className="w-6 h-6 rounded-full flex-shrink-0"
           onError={(e) => {
-            e.currentTarget.src = "images/nochampionimage.jpg";
+            e.currentTarget.src = "/images/nochampionimage.jpg";
           }}
         />
       </div>

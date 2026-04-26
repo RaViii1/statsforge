@@ -165,7 +165,9 @@ export default function TraitForm({ sets }: TraitFormProps) {
   const previewUrl = formData.icon_path 
     ? formData.icon_path.startsWith('http')
       ? formData.icon_path
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/traits/${formData.icon_path}`
+      : formData.icon_path.includes('/')
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${formData.icon_path}`
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/traits/${formData.icon_path}`
     : null;
 
   return (

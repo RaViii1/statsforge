@@ -17,7 +17,7 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(request: Request): Promise<NextResponse> {
   const supabase = await createClient();
   const body = await request.json();
-  const { name, description, tier, icon_path, gamemode } = body;
+  const { id, name, description, tier, icon_path, gamemode } = body;
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -33,9 +33,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
+  const insertData: any = { name, description, tier, icon_path: processedIconPath, gamemode };
+  if (id && id > 0) {
+    insertData.id = id;
+  }
+
   const { error } = await supabase
     .from("augments")
-    .insert([{ name, description, tier, icon_path: processedIconPath, gamemode }]);
+    .insert([insertData]);
 
   if (error) {
     console.error("Error saving augment:", error);

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createClient } from "@/lib/supabase/server";
 import {
   Layers, Users, Shield, Box, TrendingUp, ChevronRight,
-  Database, BarChart3, Swords, Package, Activity, Zap, Sparkles
+  Database, BarChart3, Swords, Package, Activity, Zap, Sparkles, UsersRound
 } from 'lucide-react'
 import AdminTabs, { UserList } from "./AdminsTab";
 
@@ -53,6 +53,15 @@ const tftLinks = [
     color: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
     borderColor: 'border-pink-500/20',
+  },
+  {
+    title: 'Team Comps',
+    description: 'View and edit team compositions',
+    href: '/admin/team-comps',
+    icon: UsersRound,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10',
+    borderColor: 'border-cyan-500/20',
   },
 ]
 

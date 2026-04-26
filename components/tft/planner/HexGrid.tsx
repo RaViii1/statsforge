@@ -2,7 +2,8 @@
 
 import { Plus, Star, Crown } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { getCostColor, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
+import { getCostColor, CurrentSetNumber, TFTChampion, getChampionImageUrl, getTraitIconUrl } from '@/lib/tft/champions';
+import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { getTFTUnitIcon, getTFTItemIcon, getTierBorderColor, getTierColor } from '@/lib/tft/tftfunctions';
 import { getItemDescription } from '@/lib/tft/itemstft';
 import { TraitTooltip } from './TraitTooltip';
@@ -85,7 +86,7 @@ export const HexGrid = ({
             }`}>
               {trait.iconPath ? (
                 <img 
-                  src={trait.iconPath} 
+                  src={getTraitIconUrl(trait.iconPath)} 
                   alt={trait.name} 
                   className="w-3.5 h-3.5 object-contain"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -173,7 +174,7 @@ export const HexGrid = ({
                           </clipPath>
                         </defs>
                           <image 
-                            href={champ?.image_path || '/images/nochampionimage.jpg'} 
+                            href={getChampionImageUrl(champ?.image_path)} 
                             width="94" 
                             height="108" 
                             x="3" 
@@ -215,7 +216,7 @@ export const HexGrid = ({
                               return (
                                 <div key={i} className="w-7 h-7 rounded-lg border-2 border-black overflow-hidden shadow-2xl transform hover:scale-110 transition-transform">
                                   <img 
-                                    src={itemObj?.image_path || '/images/noitem.png'} 
+                                    src={getItemImageUrl(itemObj?.image_path)} 
                                     alt={itemName} 
                                     className="w-full h-full object-cover" 
                                     onMouseEnter={(e) => setTooltip({ 

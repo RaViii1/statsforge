@@ -2,7 +2,8 @@
 
 import { Crown, X, Plus } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
-import { getCostColor, CurrentSetNumber, TFTChampion } from '@/lib/tft/champions';
+import { getCostColor, CurrentSetNumber, TFTChampion, getChampionImageUrl } from '@/lib/tft/champions';
+import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { useEffect, useState } from 'react';
 
 interface MainCarryTrayProps {
@@ -99,7 +100,7 @@ export const MainCarryTray = ({
                       <div className="relative shrink-0">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl border-2 border-orange-500/40 overflow-hidden">
                            <img 
-                              src={champ.image_path || '/images/nochampionimage.jpg'} 
+                              src={getChampionImageUrl(champ.image_path)} 
                               alt={champ.name} 
                               className="w-full h-full object-cover" 
                               onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }}
@@ -128,7 +129,7 @@ export const MainCarryTray = ({
                               <div key={idx} className={`w-6 h-6 sm:w-7 sm:h-7 rounded-lg border transition-all overflow-hidden ${itemName ? 'border-orange-500/40 bg-zinc-800' : 'border-white/5 bg-black/20'}`}>
                                 {itemName && (
                                   <img 
-                                    src={itemObj?.image_path || '/images/noitem.png'} 
+                                    src={getItemImageUrl(itemObj?.image_path)} 
                                     alt={itemName} 
                                     className="w-full h-full object-cover" 
                                     onMouseEnter={(e) => setTooltip({ 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TooltipState } from "@/lib/tft/teamplanner-types";
-import { TFTItem } from "@/lib/tft/itemstft";
+import { TFTItem, getItemImageUrl } from "@/lib/tft/itemstft";
 import { getTFTItemIcon } from "@/lib/tft/tftfunctions";
 import SvgIcon from "@/components/SvgIcon";
 
@@ -99,7 +99,7 @@ export const CustomTooltip = ({
                   <React.Fragment key={key}>
                     <div className="relative group">
                       <img 
-                        src={component.image_path || '/images/noitem.png'}
+                        src={getItemImageUrl(component.image_path)}
                         alt={component.name}
                         className="w-6 h-6 rounded object-cover border border-zinc-700"
                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}

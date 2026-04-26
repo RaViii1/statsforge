@@ -1,234 +1,103 @@
-// Arena Augment ID to Name mapping
-// Source: https://darkintaqt.com/blog/arena-augments
-// Icons from CommunityDragon: https://raw.communitydragon.org/latest/cdragon/arena/en_us.json
 
-export interface ArenaAugment {
+export interface Augment {
   id: number;
-  name: string;
-  apiName: string;
+  name: string | null;
+  description: string | null;
+  tier: any;
+  icon_path: string | null;
+  gamemode: any;
+  apiname: string | null;
 }
 
-export const ARENA_AUGMENTS: Record<number, ArenaAugment> = {
-  0: { id: 0, name: "Warmup Routine", apiName: "WarmupRoutine" },
-  1: { id: 1, name: "Vanish", apiName: "Vanish" },
-  2: { id: 2, name: "Chain Lightning", apiName: "ChainLightning" },
-  3: { id: 3, name: "Cerberus", apiName: "Cerberus" },
-  4: { id: 4, name: "Typhoon", apiName: "Typhoon" },
-  5: { id: 5, name: "Self Destruct", apiName: "SelfDestruct" },
-  6: { id: 6, name: "Serve Beyond Death", apiName: "ServeBeyondDeath" },
-  
-  8: { id: 8, name: "Demon's Dance", apiName: "DemonsDance" },
-  
-  11: { id: 11, name: "Chauffeur", apiName: "Chauffeur" },
-  12: { id: 12, name: "Marksmage", apiName: "Marksmage" },
-  13: { id: 13, name: "Light Warden", apiName: "LightWarden" },
-  14: { id: 14, name: "Quest: Mad Hatter", apiName: "Quest_MadHatter" },
-  15: { id: 15, name: "Blade Waltz", apiName: "BladeWaltz" },
+export type AugmentTier = 'silver' | 'gold' | 'prismatic';
 
-  17: { id: 17, name: "Firefox", apiName: "Firefox" },
-  19: { id: 19, name: "Ice Cold", apiName: "IceCold" },
-  20: { id: 20, name: "Spin To Win", apiName: "SpinToWin" },
-  21: { id: 21, name: "Banner of Command", apiName: "BannerofCommand" },
-  22: { id: 22, name: "Tank It Or Leave It", apiName: "TankItOrLeaveIt" },
-  23: { id: 23, name: "Witchful Thinking", apiName: "WitchfulThinking" },
-  24: { id: 24, name: "Transmute: Gold", apiName: "TransmuteGold" },
-  25: { id: 25, name: "Vengeance", apiName: "Vengeance" },
-  26: { id: 26, name: "Erosion", apiName: "Erosion" },
-  27: { id: 27, name: "Stats!", apiName: "Stats" },
-  28: { id: 28, name: "Master of Duality", apiName: "MasterofDuality" },
-  29: { id: 29, name: "Light 'em Up!", apiName: "LightemUp" },
-  30: { id: 30, name: "Guilty Pleasure", apiName: "GuiltyPleasure" },
-  31: { id: 31, name: "Slap Around", apiName: "SlapAround" },
-  32: { id: 32, name: "Magic Missile", apiName: "MagicMissile" },
-  33: { id: 33, name: "Spellwake", apiName: "Spellwake" },
-  34: { id: 34, name: "Center of the Universe", apiName: "CenterOfTheUniverse" },
-  35: { id: 35, name: "Phenomenal Evil", apiName: "PhenomenalEvil" },
-  36: { id: 36, name: "Big Brain", apiName: "BigBrain" },
-  37: { id: 37, name: "Vulnerability", apiName: "Vulnerability" },
-  38: { id: 38, name: "Cannon Fodder", apiName: "CannonFodder" },
-  39: { id: 39, name: "Ultimate Roulette", apiName: "UltimateRoulette" },
-  40: { id: 40, name: "Clown College", apiName: "ClownCollege" },
-  41: { id: 41, name: "Numb to Pain", apiName: "NumbToPain" },
-  42: { id: 42, name: "Augmented Power", apiName: "AugmentedPower" },
-  43: { id: 43, name: "Mad Scientist", apiName: "MadScientist" },
-  44: { id: 44, name: "Mountain Soul", apiName: "MountainSoul" },
-  46: { id: 46, name: "Trickster Demon", apiName: "TricksterDemon" },
-  49: { id: 49, name: "Frost Wraith", apiName: "FrostWraith" },
-  50: { id: 50, name: "Symphony of War", apiName: "SymphonyofWar" },
-  54: { id: 54, name: "Bodyguard", apiName: "Bodyguard" },
-  55: { id: 55, name: "Circle of Death", apiName: "CircleofDeath" },
-  56: { id: 56, name: "Quest: Wooglet's Witchcap", apiName: "Quest_WoogletsWitchcap" },
-  57: { id: 57, name: "Earthwake", apiName: "Earthwake" },
-  58: { id: 58, name: "Scoped Weapons", apiName: "ScopedWeapons" },
-  59: { id: 59, name: "Bread And Butter", apiName: "BreadAndButter" },
-  60: { id: 60, name: "The Brutalizer", apiName: "TheBrutalizer" },
-  61: { id: 61, name: "Sonic Boom", apiName: "SonicBoom" },
-  63: { id: 63, name: "Symbiotic Mutation", apiName: "SymbioticMutation" },
-  64: { id: 64, name: "Celestial Body", apiName: "CelestialBody" },
-  65: { id: 65, name: "Bravest of the Brave", apiName: "BravestoftheBrave" },
-  66: { id: 66, name: "Bread And Jam", apiName: "BreadAndJam" },
-  67: { id: 67, name: "Spirit Link", apiName: "SpiritLink" },
-  68: { id: 68, name: "Fallen Aegis", apiName: "FallenAegis" },
-  69: { id: 69, name: "Holy Fire", apiName: "HolyFire" },
-  70: { id: 70, name: "Overflow", apiName: "Overflow" },
-  71: { id: 71, name: "Feel the Burn", apiName: "FeeltheBurn" },
-  
-  73: { id: 73, name: "Scopier Weapons", apiName: "ScopierWeapons" },
-  74: { id: 74, name: "Defensive Maneuvers", apiName: "DefensiveManeuvers" },
-  75: { id: 75, name: "Slow Cooker", apiName: "SlowCooker" },
-  76: { id: 76, name: "Outlaw's Grit", apiName: "OutlawsGrit" },
-  77: { id: 77, name: "Don't Blink", apiName: "DontBlink" },
-  78: { id: 78, name: "Shadow Runner", apiName: "ShadowRunner" },
-  79: { id: 79, name: "Infernal Conduit", apiName: "InfernalConduit" },
-  81: { id: 81, name: "Back To Basics", apiName: "BacktoBasics" },
-  82: { id: 82, name: "Prismatic Egg", apiName: "PrismaticEgg" },
-  83: { id: 83, name: "Clothesline", apiName: "Clothesline" },
-  84: { id: 84, name: "Don't Chase", apiName: "DontChase" },
-  85: { id: 85, name: "Soul Siphon", apiName: "SoulSiphon" },
-  86: { id: 86, name: "Trueshot Prodigy", apiName: "TrueshotProdigy" },
-  87: { id: 87, name: "Divine Intervention", apiName: "DivineIntervention" },
-
-  89: { id: 89, name: "Bread And Cheese", apiName: "BreadAndCheese" },
-  90: { id: 90, name: "Impassable", apiName: "Impassable" },
-  91: { id: 91, name: "Pandora's Box", apiName: "PandorasBox" },
-  92: { id: 92, name: "Extendo-Arm", apiName: "ExtendoArm" },
-  93: { id: 93, name: "Raid Boss", apiName: "RaidBoss" },
-  94: { id: 94, name: "Die Another Day", apiName: "DieAnotherDay" },
-  95: { id: 95, name: "404 Augment Not Found", apiName: "Augment404" },
-  96: { id: 96, name: "Dual Wield", apiName: "DualWield" },
-  97: { id: 97, name: "Augment 405", apiName: "Augment405" },
-  99: { id: 99, name: "Deathtouch", apiName: "Deathtouch" },
-  100: { id: 100, name: "Quest: Angel of Retribution", apiName: "Quest_AngelofRetribution" },
-  101: { id: 101, name: "Contract Killer", apiName: "ContractKiller" },
-  102: { id: 102, name: "Goredrink", apiName: "Goredrink" },
-  103: { id: 103, name: "We'll Be Right Back", apiName: "WellBeRightBack" },
-  104: { id: 104, name: "First-Aid Kit", apiName: "FirstAidKit" },
-  105: { id: 105, name: "OK Boomerang", apiName: "OkBoomerang" },
-  106: { id: 106, name: "Quest: Three Sacred Treasures", apiName: "Quest_ThreeSacredTreasures" },
-  107: { id: 107, name: "Juice Box", apiName: "JuiceBox" },
-  108: { id: 108, name: "Scopiest Weapons", apiName: "ScopiestWeapons" },
-  109: { id: 109, name: "Slime Time", apiName: "SlimeTime" },
-  110: { id: 110, name: "Dreadbringer", apiName: "Dreadbringer" },
-  111: { id: 111, name: "Calculated Risk", apiName: "CalculatedRisk" },
-  112: { id: 112, name: "Stackosaurus Rex", apiName: "StackosaurusRex" },
-  113: { id: 113, name: "escAPADe", apiName: "escAPADe" },
-  114: { id: 114, name: "Fey Magic", apiName: "FeyMagic" },
-  115: { id: 115, name: "Firebrand", apiName: "Firebrand" },
-  116: { id: 116, name: "Doomsayer", apiName: "Doomsayer" },
-  117: { id: 117, name: "Flashy", apiName: "Flashy" },
-  118: { id: 118, name: "Nesting Doll", apiName: "NestingDoll" },
-  119: { id: 119, name: "Tap Dancer", apiName: "TapDancer" },
-  120: { id: 120, name: "Fan the Hammer", apiName: "FanTheHammer" },
-  121: { id: 121, name: "Tormentor", apiName: "Tormentor" },
-  122: { id: 122, name: "Minionmancer", apiName: "Minionmancer" },
-  124: { id: 124, name: "Ethereal Weapon", apiName: "EtherealWeapon" },
-  125: { id: 125, name: "Twice Trice", apiName: "TwiceTrice" },
-  126: { id: 126, name: "Dawnbringer's Resolve", apiName: "DawnbringersResolve" },
-  127: { id: 127, name: "Hold Very Still", apiName: "HoldVeryStill" },
-  128: { id: 128, name: "From Beginning to End", apiName: "FromBeginningToEnd" },
-  129: { id: 129, name: "Parasitic Mutation", apiName: "ParasiticMutation" },
-  130: { id: 130, name: "Can't Touch This", apiName: "CantTouchThis" },
-  131: { id: 131, name: "Snowball Fight!", apiName: "SnowballFight" },
-  133: { id: 133, name: "Blood Brother", apiName: "BloodBrother" },
-  134: { id: 134, name: "Ultimate Unstoppable", apiName: "UltimateUnstoppable" },
-  135: { id: 135, name: "Recursion", apiName: "Recursion" },
-  136: { id: 136, name: "Stats on Stats on Stats!", apiName: "StatsOnStatsOnStats" },
-  137: { id: 137, name: "Deft", apiName: "Deft" },
-  138: { id: 138, name: "Goliath", apiName: "Goliath" },
-  139: { id: 139, name: "Juice Press", apiName: "JuicePress" },
-  140: { id: 140, name: "Leg Day", apiName: "LegDay" },
-  141: { id: 141, name: "Trailblazer", apiName: "Trailblazer" },
-  142: { id: 142, name: "Accelerating Sorcery", apiName: "AcceleratingSorcery" },
-  143: { id: 143, name: "Orbital Laser", apiName: "OrbitalLaser" },
-  144: { id: 144, name: "Mystic Punch", apiName: "MysticPunch" },
-  145: { id: 145, name: "Homeguard", apiName: "Homeguard" },
-  146: { id: 146, name: "Null Augment", apiName: "NullAugment" },
-  147: { id: 147, name: "Hat Trick", apiName: "HatTrick" },
-  148: { id: 148, name: "Heavy Hitter", apiName: "HeavyHitter" },
-  149: { id: 149, name: "Rabble Rousing", apiName: "RabbleRousing" },
-  150: { id: 150, name: "Giant Slayer", apiName: "GiantSlayer" },
-  152: { id: 152, name: "Frozen Foundations", apiName: "FrozenFoundations" },
-  153: { id: 153, name: "Critical Healing", apiName: "CriticalHealing" },
-  
-  155: { id: 155, name: "Apex Inventor", apiName: "ApexInventor" },
-  156: { id: 156, name: "Mirror Image", apiName: "MirrorImage" },
-  157: { id: 157, name: "Desecrator", apiName: "Desecrator" },
-  158: { id: 158, name: "All For You", apiName: "AllForYou" },
-  159: { id: 159, name: "Keystone Conjurer", apiName: "KeystoneConjurer" },
-  160: { id: 160, name: "Laser Eyes", apiName: "LaserEyes" },
-  161: { id: 161, name: "Spirit Infusion", apiName: "SpiritInfusion" },
-  162: { id: 162, name: "Stats on Stats!", apiName: "StatsOnStats" },
-  163: { id: 163, name: "Dashing", apiName: "Dashing" },
-  164: { id: 164, name: "Fire Sale", apiName: "FireSale" },
-  165: { id: 165, name: "Eureka", apiName: "Eureka" },
-  166: { id: 166, name: "Repulsor", apiName: "Repulsor" },
-  167: { id: 167, name: "Skilled Sniper", apiName: "SkilledSniper" },
-  168: { id: 168, name: "Parasitic Relationship", apiName: "ParasiticRelationship" },
-  169: { id: 169, name: "Restart", apiName: "Restart" },
-  170: { id: 170, name: "Draw Your Sword", apiName: "DrawYourSword" },
-  171: { id: 171, name: "Restless Restoration", apiName: "RestlessRestoration" },
-  172: { id: 172, name: "Dive Bomber", apiName: "DiveBomber" },
-  173: { id: 173, name: "Sacrifice: For Gold", apiName: "GoHSacrificeForGold" },
-  174: { id: 174, name: "Quantum Computing", apiName: "QuantumComputing" },
-  175: { id: 175, name: "Oathsworn", apiName: "Oathsworn" },
-  176: { id: 176, name: "Flashbang", apiName: "Flashbang" },
-  177: { id: 177, name: "Tank Engine", apiName: "TankEngine" },
-  178: { id: 178, name: "Sacrifice: For Silver", apiName: "GoHSacrificeForSilver" },
-  179: { id: 179, name: "Shrink Ray", apiName: "ShrinkRay" },
-  180: { id: 180, name: "Castle", apiName: "Castle" },
-  181: { id: 181, name: "Quest: Steel Your Heart", apiName: "Quest_SteelYourHeart" },
-  182: { id: 182, name: "Executioner", apiName: "Executioner" },
-  183: { id: 183, name: "Courage of the Colossus", apiName: "CourageoftheColossus" },
-  184: { id: 184, name: "Fruits of Your Labor", apiName: "FruitsOfYourLabor" },
-  185: { id: 185, name: "Infernal Soul", apiName: "InfernalSoul" },
-  186: { id: 186, name: "Willing Sacrifice", apiName: "WillingSacrifice" },
-  187: { id: 187, name: "Dark Blessing", apiName: "DarkBlessing" },
-  188: { id: 188, name: "Mind to Matter", apiName: "MindtoMatter" },
-  
-  190: { id: 190, name: "Wisdom of Ages", apiName: "WisdomofAges" },
-  191: { id: 191, name: "Sacrifice: For Prismatic", apiName: "GoHSacrificeForPrismatic" },
-  192: { id: 192, name: "Now You See Me", apiName: "NowYouSeeMe" },
-  193: { id: 193, name: "Perseverance", apiName: "Perseverance" },
-  
-  195: { id: 195, name: "And My Axe!", apiName: "AndMyAxe" },
-
-
-  47: { id: 47, name: "It's Critical", apiName: "ItsCritical" },
-  243: { id: 243, name: "Transmute Chaos", apiName: "TransmuteChaos" },
-  305: { id: 305, name: "Leg Day", apiName: "LegDay" },
-  151: { id: 151, name: "Bread And Cheese", apiName: "BreadAndCheese" },
-  123: { id: 123, name: "Summoner's Roulette", apiName: "summonersroulette" },
-  98: { id: 98, name: "With Haste", apiName: "WithHaste" },
-  51: { id: 51, name: "Trueshot Prodigy", apiName: "TrueshotProdigy" },
-  88: { id: 88, name: "Ultimate Revolution", apiName: "ultimaterevolution" },
-  7: { id: 7, name: "Blunt Force", apiName: "BluntForce" },
-  72: { id: 72, name: "Searing Dawn", apiName: "SearingDawn" },
-  45: { id: 45, name: "Ultimate Revolution", apiName: "ThreadtheNeedle" },
-  211: { id: 211, name: "It's Killing Time", apiName: "ItsKillingTime" },
-  154: { id: 154, name: "Quest: Urf's Champion", apiName: "Quest_UrfsChampion" },
-  205: { id: 205, name: "ADAPt", apiName: "ADAPt" },
-  52: { id: 52, name: "Lightning Strikes", apiName: "LightningStrikes" },
-  217: { id: 217, name: "Deathtouch", apiName: "Deathtouch" },
-  16: { id: 16, name: "Combo Master", apiName: "ComboMaster" },
-  62: { id: 62, name: "Omni Soul", apiName: "OmniSoul" },
-  9: { id: 9, name: "Buff Buddies", apiName: "BuffBuddies" },
-  223: { id: 223, name: "Summoner Revolution", apiName: "SummonerRevolution" },
-  237: { id: 237, name: "Transmute: Gold", apiName: "Transmutegold" },
-  53: { id: 53, name: "Mad Scientist", apiName: "MadScientist" },
-  48: { id: 48, name: "Jeweled Gauntlet", apiName: "JeweledGauntlet" },
-  80: { id: 80, name: "Tank It Or Leave It", apiName: "TankItOrLeaveIt" },
+export const getArenaAugmentTier = (augment: Augment | undefined): AugmentTier => {
+  if (!augment) return 'silver';
+  const tierValue = augment.tier;
+  if (typeof tierValue === 'string') {
+    const lower = tierValue.toLowerCase();
+    if (lower === 'gold') return 'gold';
+    if (lower === 'prismatic') return 'prismatic';
+    return 'silver';
+  }
+  if (typeof tierValue === 'number') {
+    if (tierValue === 2) return 'gold';
+    if (tierValue === 3) return 'prismatic';
+  }
+  return 'silver';
 };
 
-export function getArenaAugmentName(augmentId: number | undefined): string {
-  if (!augmentId) return "No Augment";
-  return ARENA_AUGMENTS[augmentId]?.name || `Augment ${augmentId}`;
-}
+export const getAugmentTierBorderColor = (tier: AugmentTier): string => {
+  switch (tier) {
+    case 'gold':
+      return 'border-yellow-400';
+    case 'prismatic':
+      return 'border-purple-500';
+    default:
+      return 'border-zinc-400';
+  }
+};
 
-export function getArenaAugmentIcon(augmentId: number | undefined): string {
-  if (!augmentId) return "";
-  const augment = ARENA_AUGMENTS[augmentId];
-  if (!augment) return "";
-  
-  const apiNameLower = augment.apiName.toLowerCase();
-  return `https://raw.communitydragon.org/latest/game/assets/ux/cherry/augments/icons/${apiNameLower}_large.png`;
-}
+export const getAugmentTierBgColor = (tier: AugmentTier): string => {
+  switch (tier) {
+    case 'gold':
+      return 'bg-yellow-950/40';
+    case 'prismatic':
+      return 'bg-purple-900/50';
+    default:
+      return 'bg-zinc-800/40';
+  }
+};
+
+export const getAugmentTierGlow = (tier: AugmentTier): string => {
+  switch (tier) {
+    case 'gold':
+      return 'shadow-md shadow-yellow-500/30';
+    case 'prismatic':
+      return 'shadow-md shadow-purple-500/30';
+    default:
+      return 'shadow-md shadow-zinc-800/40';
+  }
+};
+
+export const getArenaAugmentIconUrl = (iconPath: string | null | undefined): string => {
+  if (!iconPath) return '/images/nochampionimage.jpg';
+  if (iconPath.startsWith('http')) return iconPath;
+  if (iconPath.includes('/')) {
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${iconPath}`;
+  }
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/augments/${iconPath}`;
+};
+
+export const getAugmentById = (
+  augmentId: string | number | null | undefined,
+  augments: Augment[]
+): Augment | undefined => {
+  if (!augmentId) return undefined;
+  const numericId = typeof augmentId === 'string' ? parseInt(augmentId, 10) : augmentId;
+  return augments.find((a) => a.id === numericId);
+};
+
+export const getArenaAugmentName = (
+  augmentId: string | number | null | undefined,
+  augments: Augment[]
+): string => {
+  const augment = getAugmentById(augmentId, augments);
+  return augment?.name ?? `Augment ${augmentId}`;
+};
+
+export const getArenaAugmentDescription = (
+  augmentId: string | number | null | undefined,
+  augments: Augment[]
+): string => {
+  const augment = getAugmentById(augmentId, augments);
+  return augment?.description ?? '';
+};
+
+export const getArenaAugmentIcon = (
+  augmentId: string | number | null | undefined,
+  augments: Augment[]
+): string => {
+  const augment = getAugmentById(augmentId, augments);
+  return getArenaAugmentIconUrl(augment?.icon_path);
+};

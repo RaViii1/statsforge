@@ -26,7 +26,8 @@ import { CustomTooltip } from '@/components/tft/planner';
 import { TraitTooltip } from '@/components/tft/planner/TraitTooltip';
 import { UnitTooltip } from '@/components/tft/UnitTooltip';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import { CurrentSetNumber, getCostBorderColor, getCostColor } from '@/lib/tft/champions';
+import { CurrentSetNumber, getCostBorderColor, getCostColor, getChampionImageUrl } from '@/lib/tft/champions';
+import { getItemImageUrl } from '@/lib/tft/itemstft';
 import Footer from '@/components/Footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
 import { toast } from 'sonner';
@@ -230,7 +231,7 @@ const ReadOnlyHexGrid = ({
                           </clipPath>
                         </defs>
                         <image 
-                          href={champ?.image_path || "/images/nochampionimage.jpg"} 
+                          href={getChampionImageUrl(champ?.image_path)} 
                           width="94" 
                           height="108" 
                           x="3" 
@@ -283,7 +284,7 @@ const ReadOnlyHexGrid = ({
                                 })}
                                 onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                               >
-                                <img src={itemObj?.image_path || '/images/noitem.png'} 
+                                <img src={getItemImageUrl(itemObj?.image_path)} 
                                 alt={item} 
                                 className="w-full h-full object-cover" 
                                 />
@@ -631,7 +632,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                           <div 
                             className={`w-16 h-16 rounded-xl border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} shadow-lg transform group-hover:scale-105 transition-transform`}
                           >
-                            <img src={champ?.image_path || '/images/nochampionimage.jpg'} alt={champ?.name || unit.name} className="w-full h-full object-cover" />
+                            <img src={getChampionImageUrl(champ?.image_path)} alt={champ?.name || unit.name} className="w-full h-full object-cover" />
                           </div>
                             <div className="flex-1">
                               <p className="font-black text-white uppercase tracking-tight text-lg italic">{champ?.name || unit.name}</p>
@@ -695,7 +696,7 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                             onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY })}
                             onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                           >
-                            <img src={itemObj?.image_path || '/images/noitem.png'} alt={item} className="w-full h-full object-cover" />
+                            <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                           {idx < priorityItems.length - 1 && (

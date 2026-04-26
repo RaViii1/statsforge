@@ -58,7 +58,7 @@ export default async function AdminChampionsPage() {
 
         {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
-          <div className="sticky top-20">
+          <div className="xl:sticky top-20">
             <ChampionForm sets={(sets as (TFTSet & { id: number })[]) || []} />
           </div>
           <div>
