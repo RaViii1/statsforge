@@ -18,6 +18,7 @@ interface MatchHistoryTabProps {
   onLoadMore: () => void;
   onPlayerClick: (gameName: string, tagLine: string) => void;
   onRefresh?: () => void;
+  runesData?: { runes: any[]; trees: any[] };
 }
 
 interface ChampionStats {
@@ -40,7 +41,8 @@ export function MatchHistoryTab({
   rankedData,
   onLoadMore,
   onPlayerClick,
-  onRefresh
+  onRefresh,
+  runesData,
 }: MatchHistoryTabProps) {
   const [expandedChampion, setExpandedChampion] = useState<string | null>(null);
   const [showRoles, setShowRoles] = useState(false);
@@ -552,21 +554,22 @@ export function MatchHistoryTab({
             <Loader2 className="w-10 h-10 text-orange-500 animate-spin mx-auto mb-4" />
             <p className="text-zinc-400">Loading match history...</p>
           </div>
-        ) : filteredMatches.length > 0 ? (
-          <>
-            <div className="space-y-3 mb-6">
-              {filteredMatches.map((match: Match) => (
-                <MatchCard
-                  key={match.metadata.matchId}
-                  match={match}
-                  summonerPuuid={summonerPuuid}
-                  server={server}
-                  rankedData={rankedData}
-                  augments={augments}
-                  onPlayerClick={onPlayerClick}
-                />
-              ))}
-            </div>
+) : filteredMatches.length > 0 ? (
+           <>
+             <div className="space-y-3 mb-6">
+               {filteredMatches.map((match: Match) => (
+                 <MatchCard
+                   key={match.metadata.matchId}
+                   match={match}
+                   summonerPuuid={summonerPuuid}
+                   server={server}
+                   rankedData={rankedData}
+                   augments={augments}
+                   onPlayerClick={onPlayerClick}
+                   runesData={runesData}
+                 />
+               ))}
+             </div>
             {!hasActiveFilters && (
               <div className="text-center">
                 <button

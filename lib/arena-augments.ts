@@ -9,7 +9,7 @@ export interface Augment {
   apiname: string | null;
 }
 
-export type AugmentTier = 'silver' | 'gold' | 'prismatic';
+export type AugmentTier = 'silver' | 'gold' | 'prismatic' | 'special';
 
 export const getArenaAugmentTier = (augment: Augment | undefined): AugmentTier => {
   if (!augment) return 'silver';
@@ -18,11 +18,16 @@ export const getArenaAugmentTier = (augment: Augment | undefined): AugmentTier =
     const lower = tierValue.toLowerCase();
     if (lower === 'gold') return 'gold';
     if (lower === 'prismatic') return 'prismatic';
+    if (lower === 'special' || lower === 'emerald') return 'special';
     return 'silver';
   }
   if (typeof tierValue === 'number') {
-    if (tierValue === 2) return 'gold';
-    if (tierValue === 3) return 'prismatic';
+    // DB tier mapping: 0=silver, 1=gold, 2=prismatic, 3/4=special
+    if (tierValue === 1) return 'gold';
+    if (tierValue === 2) return 'prismatic';
+    if (tierValue === 3 || tierValue === 4) return 'special';
+    // Default to silver for tier 0 or any other value
+    return 'silver';
   }
   return 'silver';
 };
@@ -33,6 +38,8 @@ export const getAugmentTierBorderColor = (tier: AugmentTier): string => {
       return 'border-yellow-400';
     case 'prismatic':
       return 'border-purple-500';
+    case 'special':
+      return 'border-emerald-400';
     default:
       return 'border-zinc-400';
   }
@@ -44,6 +51,8 @@ export const getAugmentTierBgColor = (tier: AugmentTier): string => {
       return 'bg-yellow-950/40';
     case 'prismatic':
       return 'bg-purple-900/50';
+    case 'special':
+      return 'bg-emerald-900/50';
     default:
       return 'bg-zinc-800/40';
   }
@@ -55,6 +64,8 @@ export const getAugmentTierGlow = (tier: AugmentTier): string => {
       return 'shadow-md shadow-yellow-500/30';
     case 'prismatic':
       return 'shadow-md shadow-purple-500/30';
+    case 'special':
+      return 'shadow-md shadow-emerald-500/30';
     default:
       return 'shadow-md shadow-zinc-800/40';
   }

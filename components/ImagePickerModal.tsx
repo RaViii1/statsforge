@@ -10,7 +10,7 @@ interface ImagePickerModalProps {
   onClose: () => void;
   onSelect: (url: string, filename: string) => void;
   currentImage?: string;
-  storageBucket?: 'item-icons' | 'TftUnitIcons';
+  storageBucket?: 'item-icons' | 'TftUnitIcons' | 'Lol_runes';
   folder?: string;
 }
 
@@ -34,15 +34,19 @@ export default function ImagePickerModal({
   }, []);
 
   const uploadEndpoint = '/api/admin/upload-image';
-  const bucketBaseUrl = storageBucket === 'item-icons' 
+  const bucketBaseUrl = storageBucket === 'item-icons'
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons`
-    : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons`;
+    : storageBucket === 'TftUnitIcons'
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons`
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/Lol_runes`;
 
   useEffect(() => {
     if (isOpen && storageBucket === 'item-icons') {
       fetchImages();
     } else if (isOpen && storageBucket === 'TftUnitIcons' && folder) {
       fetchTftImages();
+    } else if (isOpen && storageBucket === 'Lol_runes' && folder) {
+      fetchLolRunesImages();
     }
   }, [isOpen, storageBucket, folder]);
 
@@ -88,6 +92,25 @@ export default function ImagePickerModal({
     }
   };
 
+  const fetchLolRunesImages = async () => {
+    if (!folder) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/list-runes-images?folder=${folder}`);
+      const data = await res.json();
+      if (data.files) {
+        setImages(data.files);
+      }
+      if (data.error) {
+        toast.error(data.error);
+      }
+    } catch (err) {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -109,10 +132,10 @@ export default function ImagePickerModal({
       }
       
       const fileUrl = result.url || result.filename
-        ? `${bucketBaseUrl}/${result.filename || file.name}`
-        : `${bucketBaseUrl}/${file.name}`;
-      
-      onSelect(fileUrl, file.name);
+        ? `${bucketBaseUrl}/${result.filename || file.name.toLowerCase()}`
+        : `${bucketBaseUrl}/${file.name.toLowerCase()}`;
+
+      onSelect(fileUrl, result.filename || file.name.toLowerCase());
       onClose();
     } catch (err: any) {
       toast.error(err.message || 'Upload failed');
@@ -127,7 +150,7 @@ export default function ImagePickerModal({
 
   const handleSelect = (url: string, name: string) => {
     setSelectedImage(url);
-    onSelect(url, name);
+    onSelect(url, name.toLowerCase());
     onClose();
   };
 

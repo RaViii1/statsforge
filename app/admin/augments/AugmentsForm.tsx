@@ -10,15 +10,16 @@ interface AugmentFormData {
   id?: number;
   name: string;
   description: string;
-  tier: string;
+  tier: number;
   icon_path: string;
   gamemode: string[];
 }
 
 const TIERS = [
-  { id: 'silver',    label: 'Silver',    active: 'bg-zinc-300/10 text-zinc-300 border-zinc-300/30' },
-  { id: 'gold',      label: 'Gold',      active: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' },
-  { id: 'prismatic', label: 'Prismatic', active: 'bg-purple-500/10 text-purple-300 border-purple-500/30' },
+  { id: 0, label: 'Silver',    active: 'bg-zinc-300/10 text-zinc-300 border-zinc-300/30' },
+  { id: 1, label: 'Gold',      active: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' },
+  { id: 2, label: 'Prismatic', active: 'bg-purple-500/10 text-purple-300 border-purple-500/30' },
+  { id: 4, label: 'Special',   active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
 ];
 
 const GAMEMODES = [
@@ -28,7 +29,7 @@ const GAMEMODES = [
 ];
 
 const EMPTY: AugmentFormData = {
-  name: "", description: "", tier: "", icon_path: "", gamemode: []
+  name: "", description: "", tier: 1, icon_path: "", gamemode: []
 };
 
 const generateId = (): number => {
@@ -50,7 +51,7 @@ export default function AugmentsForm() {
         id: a.id,
         name: a.name ?? "",
         description: a.description ?? "",
-        tier: Array.isArray(a.tier) ? (a.tier[0] ?? "") : (a.tier ?? ""),
+        tier: typeof a.tier === 'number' ? a.tier : Number(a.tier) || 1,
         icon_path: a.icon_path ?? "",
         gamemode: Array.isArray(a.gamemode) ? a.gamemode : (a.gamemode ? [a.gamemode] : []),
       });
@@ -78,7 +79,7 @@ export default function AugmentsForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) { toast.error("Name is required"); return; }
-    if (!formData.tier) { toast.error("Select a tier"); return; }
+    if (formData.tier === undefined) { toast.error("Select a tier"); return; }
     if (formData.gamemode.length === 0) { toast.error("Select at least one gamemode"); return; }
     setLoading(true);
     try {

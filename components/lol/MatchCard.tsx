@@ -16,7 +16,7 @@ import {
   getChampionImage,
 } from "@/lib/lol/lolfunctions";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
-import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon } from "@/lib/runes";
+import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
 import { getItemImage } from "@/lib/items";
 import { MatchDetailsTab } from "./MatchDetailsTab";
 import { MatchRunesTab } from "./MatchRunesTab";
@@ -29,6 +29,7 @@ interface MatchCardProps {
   rankedData: any[];
   augments: Augment[];
   onPlayerClick: (gameName: string, tagLine: string) => void;
+  runesData?: { runes: any[]; trees: any[] };
 }
 
 export function MatchCard({
@@ -38,6 +39,7 @@ export function MatchCard({
   rankedData,
   augments,
   onPlayerClick,
+  runesData,
 }: MatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedTab, setExpandedTab] = useState<"teams" | "runes">("teams");
@@ -54,8 +56,17 @@ export function MatchCard({
 
   const primaryStyle = playerData.perks?.styles?.[0];
   const secondaryStyle = playerData.perks?.styles?.[1];
-  const primaryKeystone = primaryStyle?.selections?.[0]?.perk;
-  const secondaryTree = (secondaryStyle as any)?.style;
+  const primaryKeystoneId = primaryStyle?.selections?.[0]?.perk;
+  const secondaryTreeId = (secondaryStyle as any)?.style;
+
+  // Find rune and tree data from the passed runesData
+  const primaryKeystone = runesData?.runes?.find(
+    (rune) => parseInt(rune.id.split('_')[1] || rune.id) === primaryKeystoneId
+  );
+  
+  const secondaryTree = runesData?.trees?.find(
+    (tree) => parseInt(tree.id.split('_')[1] || tree.id) === secondaryTreeId
+  );
 
   const lpChange = getLPChange(match, playerData, rankedData);
 
@@ -119,7 +130,7 @@ export function MatchCard({
               alt={augmentName}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.currentTarget.src = "//images/nochampionimage.jpg";
+                e.currentTarget.src = "/images/nochampionimage.jpg";
               }}
             />
           ) : (
@@ -143,7 +154,6 @@ export function MatchCard({
     >
       {/* Main Match Card */}
       <div className="p-3 sm:p-4 cursor-pointer" onClick={toggleExpansion}>
-
         <div className="block md:hidden space-y-3">
           {/* Top Row: Game Mode + Result */}
           <div className="flex items-center justify-between gap-2">
@@ -227,19 +237,35 @@ export function MatchCard({
               {/* Runes */}
               {!arena && primaryKeystone && secondaryTree && (
                 <div className="flex flex-col gap-1">
-                  <div className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={getRuneIcon(primaryKeystone)}
-                      alt={getRuneName(primaryKeystone)}
-                      className="w-4 h-4 object-contain"
-                    />
+                  <div 
+                    className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-hidden flex items-center justify-center rounded"
+                    title={primaryKeystone.name}
+                  >
+                    {primaryKeystone.icon_path && (
+                      <img
+                        src={getRuneIconUrl(primaryKeystone.icon_path)}
+                        alt={primaryKeystone.name}
+                        className="w-4 h-4 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/noruneicon.png";
+                        }}
+                      />
+                    )}
                   </div>
-                  <div className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={getRuneTreeIcon(secondaryTree)}
-                      alt={getRuneTreeName(secondaryTree)}
-                      className="w-3 h-3 object-contain"
-                    />
+                  <div 
+                    className="w-6 h-6 bg-zinc-800/40 border border-zinc-700 overflow-hidden flex items-center justify-center rounded"
+                    title={secondaryTree.name}
+                  >
+                    {secondaryTree.icon_path && (
+                      <img
+                        src={getTreeIconUrl(secondaryTree.icon_path)}
+                        alt={secondaryTree.name}
+                        className="w-3 h-3 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/norunetreeicon.png";
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -442,28 +468,34 @@ export function MatchCard({
             {!arena && primaryKeystone && secondaryTree && (
               <div className="flex flex-col gap-1">
                 <div
-                  className="w-6 h-6 xl:w-7 xl:h-7 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center"
-                  title={`${getRuneName(primaryKeystone)}: ${getRuneDescription(primaryKeystone)}`}
+                  className="w-6 h-6 xl:w-7 xl:h-7 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center rounded"
+                  title={`${primaryKeystone.name}: ${primaryKeystone.description || "No description"}`}
                 >
-                  <img
-                    src={getRuneIcon(primaryKeystone)}
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png";
-                    }}
-                    alt={getRuneName(primaryKeystone)}
-                    className="w-4 h-4 xl:w-5 xl:h-5 object-contain"
-                  />
+                  {primaryKeystone.icon_path && (
+                    <img
+                      src={getRuneIconUrl(primaryKeystone.icon_path)}
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/noruneicon.png";
+                      }}
+                      alt={primaryKeystone.name}
+                      className="w-4 h-4 xl:w-5 xl:h-5 object-contain"
+                    />
+                  )}
                 </div>
                 <div
-                  className="w-6 h-6 xl:w-7 xl:h-7 border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center"
-                  title={getRuneTreeName(secondaryTree)}
+                  className="w-6 h-6 xl:w-7 xl:h-7 border-zinc-700 overflow-hidden hover:border-orange-500 transition-all flex items-center justify-center rounded"
+                  title={secondaryTree.name}
                 >
-                  <img
-                    src={getRuneTreeIcon(secondaryTree)}
-                    alt={getRuneTreeName(secondaryTree)}
-                    className="w-3 h-3 xl:w-4 xl:h-4 object-contain"
-                  />
+                  {secondaryTree.icon_path && (
+                    <img
+                      src={getTreeIconUrl(secondaryTree.icon_path)}
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/norunetreeicon.png";
+                      }}
+                      alt={secondaryTree.name}
+                      className="w-3 h-3 xl:w-4 xl:h-4 object-contain"
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -595,6 +627,9 @@ export function MatchCard({
       {isExpanded && (
         <div className="border-t border-zinc-700/50">
           <div className="p-3 sm:p-4 bg-gradient-to-r from-slate-800/20 via-black/2 to-orange-900/10">
+
+
+            {/* Tab Content */}
             {expandedTab === "teams" && (
               <MatchDetailsTab
                 match={match}
@@ -602,6 +637,7 @@ export function MatchCard({
                 playerData={playerData}
                 onPlayerClick={onPlayerClick}
                 augments={augments}
+                runesData={runesData}
               />
             )}
 
@@ -610,6 +646,7 @@ export function MatchCard({
                 primaryStyle={primaryStyle}
                 secondaryStyle={secondaryStyle}
                 statPerks={playerData.perks?.statPerks}
+                runesData={runesData}
               />
             )}
           </div>

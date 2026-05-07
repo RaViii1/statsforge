@@ -74,6 +74,15 @@ const lolLinks = [
     color: 'text-orange-400',
     bgColor: 'bg-orange-500/10',
     borderColor: 'border-orange-500/20',
+  },  
+  {
+    title: 'Rune Trees',
+    description: 'Manage rune trees and their configurations',
+    href: '/admin/runes',
+    icon: Zap,
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-yellow-500/20',
   },
   {
     title: 'Champions',
@@ -84,6 +93,7 @@ const lolLinks = [
     bgColor: 'bg-blue-500/10',
     borderColor: 'border-blue-500/20',
   },
+  
 ]
 
 /* ─── Reusable components ───────────────────────────────────────── */

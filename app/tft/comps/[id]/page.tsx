@@ -315,21 +315,29 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<TooltipState>({ visible: false, title: '', description: '', x: 0, y: 0 });
 
-  useEffect(() => {
-    const fetchCompData = async () => {
-      try {
-        const [compRes, champsRes, itemsRes, traitsRes] = await Promise.all([
-          fetch(`/api/tft/team-comps/${resolvedParams.id}`),
-          fetch('/api/tft/champions'),
-          fetch('/api/tft/items'),
-          fetch('/api/tft/traits')
-        ]);
-        console.log("API responses:",  champsRes.json);
-        
-        if (!compRes.ok) throw new Error('Failed to fetch comp');
-        
-         const { comp, phases, steps, units } = await compRes.json();
-        
+    useEffect(() => {
+      const fetchCompData = async () => {
+        try {
+          // First fetch the comp to get its set_id
+          const compRes = await fetch(`/api/tft/team-comps/${resolvedParams.id}`);
+          if (!compRes.ok) throw new Error('Failed to fetch comp');
+          
+          const { comp, phases, steps, units } = await compRes.json();
+          const targetSetId = comp.set_id;
+
+          // Build URLs with set_id if available
+          const baseSetUrl = targetSetId ? `?set_id=${targetSetId}` : '';
+          const champsUrl = `/api/tft/champions${baseSetUrl}`;
+          const itemsUrl = `/api/tft/items${baseSetUrl}`;
+          const traitsUrl = `/api/tft/traits${baseSetUrl}`;
+
+          // Fetch champions, items, and traits in parallel
+          const [champsRes, itemsRes, traitsRes] = await Promise.all([
+            fetch(champsUrl),
+            fetch(itemsUrl),
+            fetch(traitsUrl)
+          ]);
+
          const champsData = champsRes.ok ? await champsRes.json() : [];
          const itemsData = itemsRes.ok ? await itemsRes.json() : [];
          const traitsData = traitsRes.ok ? await traitsRes.json() : [];

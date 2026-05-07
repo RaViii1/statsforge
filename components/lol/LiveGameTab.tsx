@@ -11,7 +11,7 @@ import {
 } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName, getChampionNameById } from "@/lib/champion-data";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
-import { getRuneIcon, getRuneTreeIcon } from "@/lib/runes";
+import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
 import { RankedIcon } from "./RankedIcon";
 
 interface LiveGameTabProps {
@@ -22,6 +22,7 @@ interface LiveGameTabProps {
   error?: string | null;
   onRefresh: () => void;
   onPlayerClick: (gameName: string, tagLine: string) => void;
+  runesData?: { runes: any[]; trees: any[] };
 }
 
 export function LiveGameTab({ 
@@ -31,10 +32,27 @@ export function LiveGameTab({
   loading,
   error,
   onRefresh,
-  onPlayerClick 
+  onPlayerClick,
+  runesData 
 }: LiveGameTabProps) {
   const isArenaGame = liveGameData && isArena(liveGameData.gameQueueConfigId);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Helper function to get rune from runesData
+  const getRuneFromData = (runeId: number) => {
+    if (!runesData?.runes) return null;
+    return runesData.runes.find(
+      (rune) => parseInt(rune.id.split('_')[1] || rune.id) === runeId
+    );
+  };
+
+  // Helper function to get tree from runesData
+  const getTreeFromData = (treeId: number) => {
+    if (!runesData?.trees) return null;
+    return runesData.trees.find(
+      (tree) => parseInt(tree.id.split('_')[1] || tree.id) === treeId
+    );
+  };
 
   useEffect(() => {
     if (isInGame && liveGameData?.gameStartTime > 0) {
@@ -54,42 +72,59 @@ export function LiveGameTab({
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
-  
   const RunesDisplay = ({ participant }: { participant: any }) => {
     if (!participant.perks || !participant.perks.perkIds) return null;
 
     const selectedPrimaryRunes = participant.perks.perkIds.slice(0, 4);
     const selectedSecondaryRunes = participant.perks.perkIds.slice(4, 6);
     const secondaryTreeId = participant.perks.perkSubStyle;
+    
+    const secondaryTree = getTreeFromData(secondaryTreeId);
 
     return (
       <div className="flex items-center gap-1.5 ml-2">
         <div className="flex items-center gap-0.5">
-          {selectedPrimaryRunes.map((runeId: number, idx: number) => (
-            <img
-              key={`primary-${runeId}-${idx}`}
-              src={getRuneIcon(runeId)}
-              alt=""
-              className={`${idx === 0 ? 'w-5 h-5' : 'w-4 h-4'} object-contain`}
-            />
-          ))}
+          {selectedPrimaryRunes.map((runeId: number, idx: number) => {
+            const rune = getRuneFromData(runeId);
+            return rune?.icon_path ? (
+              <img
+                key={`primary-${runeId}-${idx}`}
+                src={getRuneIconUrl(rune.icon_path)}
+                alt=""
+                className={`${idx === 0 ? 'w-5 h-5' : 'w-4 h-4'} object-contain`}
+                onError={(e) => {
+                  e.currentTarget.src = "/images/noruneicon.png";
+                }}
+              />
+            ) : null;
+          })}
         </div>
         <div className="w-px h-4 bg-zinc-700" />
         <div className="flex items-center gap-0.5">
-          <img
-            src={getRuneTreeIcon(secondaryTreeId)}
-            alt=""
-            className="w-4 h-4 object-contain opacity-60"
-          />
-          {selectedSecondaryRunes.map((runeId: number, idx: number) => (
+          {secondaryTree?.icon_path && (
             <img
-              key={`secondary-${runeId}-${idx}`}
-              src={getRuneIcon(runeId)}
+              src={getTreeIconUrl(secondaryTree.icon_path)}
               alt=""
-              className="w-4 h-4 object-contain opacity-80"
+              className="w-4 h-4 object-contain opacity-60"
+              onError={(e) => {
+                e.currentTarget.src = "/images/norunetreeicon.png";
+              }}
             />
-          ))}
-
+          )}
+          {selectedSecondaryRunes.map((runeId: number, idx: number) => {
+            const rune = getRuneFromData(runeId);
+            return rune?.icon_path ? (
+              <img
+                key={`secondary-${runeId}-${idx}`}
+                src={getRuneIconUrl(rune.icon_path)}
+                alt=""
+                className="w-4 h-4 object-contain opacity-80"
+                onError={(e) => {
+                  e.currentTarget.src = "/images/noruneicon.png";
+                }}
+              />
+            ) : null;
+          })}
         </div>
       </div>
     );
@@ -138,22 +173,21 @@ export function LiveGameTab({
           <p className="mt-8 text-xl font-medium text-white">Scanning Servers</p>
           <p className="text-zinc-500 mt-2">Connecting to Riot Games infrastructure...</p>
         </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-red-950/20 rounded-2xl border border-red-900/30 text-center px-6">
-            <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mb-6">
-              <Zap className="w-8 h-8 text-red-500" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Service Temporarily Unavailable</h3>
-            <p className="text-zinc-400 max-w-md">{error}</p>
-            <button 
-              onClick={onRefresh}
-              className="mt-8 px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all border border-zinc-700"
-            >
-              Try Again
-            </button>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-red-950/20 rounded-2xl border border-red-900/30 text-center px-6">
+          <div className="w-16 h-16 bg-red-900/20 rounded-full flex items-center justify-center mb-6">
+            <Zap className="w-8 h-8 text-red-500" />
           </div>
-        ) : isInGame && liveGameData ? (
-
+          <h3 className="text-xl font-bold text-white mb-2">Service Temporarily Unavailable</h3>
+          <p className="text-zinc-400 max-w-md">{error}</p>
+          <button 
+            onClick={onRefresh}
+            className="mt-8 px-8 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl transition-all border border-zinc-700"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : isInGame && liveGameData ? (
         <div className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-5 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl flex items-center gap-4">
@@ -255,7 +289,7 @@ export function LiveGameTab({
                                 {isCurrentPlayer && (
                                   <span className="px-1.5 py-0.5 bg-orange-500 text-[9px] font-black uppercase text-white rounded">YOU</span>
                                 )}
-                               {isArenaGame ? null : <RunesDisplay participant={participant} />}
+                                {isArenaGame ? null : <RunesDisplay participant={participant} />}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <p className="text-xs text-orange-500/80">{championName}</p>

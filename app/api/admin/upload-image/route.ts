@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const bucket = (formData.get("bucket") as string) || "TftUnitIcons";
-    const folder = (formData.get("folder") as string) || "champions";
+    const folder = (formData.get("folder") as string) || "";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -34,43 +34,22 @@ export async function POST(request: Request) {
     }
 
     const supabase = createServiceClient();
-    let filePath: string;
-    let publicUrl: string;
 
-    if (bucket === "item-icons" || bucket === "TftUnitIcons") {
-      if (folder) {
-        filePath = `${folder}/${file.name}`;
-      } else {
-        filePath = file.name;
-      }
+    // Build file path inside bucket (lowercase filename for consistency)
+    const fileName = file.name.toLowerCase();
+    const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, { upsert: true });
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, { upsert: true });
 
-      if (uploadError) {
-        return NextResponse.json({ error: uploadError.message }, { status: 500 });
-      }
-
-      publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucket}/${filePath}`;
-    } else {
-      const fileExt = file.name.split(".").pop();
-      const baseName = file.name.split(".").slice(0, -1).join(".");
-      const uniqueFileName = `${baseName}_${Date.now()}.${fileExt}`;
-      filePath = `${folder}/${uniqueFileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("TftUnitIcons")
-        .upload(filePath, file);
-
-      if (uploadError) {
-        return NextResponse.json({ error: uploadError.message }, { status: 500 });
-      }
-
-      publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${filePath}`;
+    if (uploadError) {
+      return NextResponse.json({ error: uploadError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ url: publicUrl });
+    const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucket}/${filePath}`;
+
+    return NextResponse.json({ url: publicUrl, filename: fileName });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Upload failed" },

@@ -221,8 +221,8 @@ export default function ItemForm({ sets, components }: ItemFormProps) {
                 <div ref={componentSuggestionRef} className="absolute z-50 w-full mt-1 bg-[#111112] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
                   {filteredComponents.map(component => (
                     <button key={component.id} type="button" onClick={() => addComponent(component)} className="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-3">
-                      <div className="w-6 h-6 bg-zinc-900 rounded-md flex items-center justify-center overflow-hidden">
-                        {component.image_path ? <img src={component.image_path} alt="" className="w-4 h-4 object-cover" /> : <Box className="w-3 h-3 text-zinc-600" />}
+                      <div className="w-8 h-8 bg-zinc-900 rounded-md flex items-center justify-center overflow-hidden">
+                        {component.image_path ? <img src={component.image_path} alt="" className="w-6 h-6 object-cover" /> : <Box className="w-3 h-3 text-zinc-600" />}
                       </div>
                       {component.name}
                     </button>
@@ -231,12 +231,36 @@ export default function ItemForm({ sets, components }: ItemFormProps) {
               )}
             </div>
           </div>
-        )}
+         )}
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Description</label>
+          <textarea
+            value={formData.description}
+            onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            rows={3}
+            className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors leading-relaxed"
+            placeholder="item description"
+          />
+        </div>
 
         <div className="space-y-1.5">
           <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Stats</label>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {[{ id: 'hp', label: 'HP', icon: 'health', color: 'text-green-400' },{ id: 'ap', label: 'AP', icon: 'ap', color: 'text-blue-500' },{ id: 'ad', label: 'AD', icon: 'dmg', color: 'text-orange-500' },{ id: 'as', label: 'AS', icon: 'attackspeed', color: 'text-yellow-300' },{ id: 'armor', label: 'Armor', icon: 'armor', color: 'text-orange-400' },{ id: 'mr', label: 'MR', icon: 'mr', color: 'text-purple-500' },{ id: 'mana', label: 'Mana', icon: 'mana', color: 'text-cyan-400' },{ id: 'crit', label: 'Crit', icon: 'crit', color: 'text-red-500' },{ id: 'crit_dmg', label: 'Crit DMG', icon: 'critdmg', color: 'text-pink-500' },{ id: 'healing', label: 'Healing', icon: 'healing', color: 'text-green-300' },{ id: 'shield', label: 'Shield', icon: 'shield', color: 'text-blue-300' },{ id: 'lifesteal', label: 'Lifesteal', icon: 'lifesteal', color: 'text-red-600' },{ id: 'dmgAmp', label: 'DMG Amp', icon: 'dmgamp', color: 'text-white' }].map(stat => (
+          <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+            {[{ id: 'hp', label: 'HP', icon: 'health', color: 'text-green-400' },
+            { id: 'ap', label: 'AP', icon: 'ap', color: 'text-blue-500' },
+            { id: 'ad', label: 'AD', icon: 'dmg', color: 'text-orange-500' },
+            { id: 'as', label: 'AS', icon: 'attackspeed', color: 'text-yellow-300' },
+            { id: 'armor', label: 'Armor', icon: 'armor', color: 'text-orange-400' },
+            { id: 'mr', label: 'MR', icon: 'mr', color: 'text-purple-500' },
+            { id: 'mana', label: 'Mana', icon: 'mana', color: 'text-cyan-400' },
+            { id: 'crit', label: 'Crit', icon: 'crit', color: 'text-red-500' },
+            { id: 'crit_dmg', label: 'Crit DMG', icon: 'crit', color: 'text-white' },
+            { id: 'healing', label: 'Healing', icon: 'health', color: 'text-green-300' },
+            { id: 'shield', label: 'Shield', icon: 'armor', color: 'text-white' },
+            { id: 'lifesteal', label: 'Lifesteal', icon: 'lifesteal', color: 'text-red-600' },
+            { id: 'durability', label: 'Durability', icon: 'durability', color: 'text-green-400' },
+            { id: 'dmgAmp', label: 'DMG Amp', icon: 'dmgamp', color: 'text-white' }].map(stat => (
               <div key={stat.id} className="space-y-1">
                 <label className="text-[9px] uppercase font-semibold text-zinc-600 flex items-center justify-center gap-8"><SvgIcon type={stat.icon as any} size={12} className={stat.color}/>{stat.label}</label>
                 <input type="number" value={(formData.stats as any)?.[stat.id] || 0} onChange={e => updateStat(stat.id, parseInt(e.target.value))} className="w-full bg-zinc-950 border border-white/5 rounded-lg px-2 py-2 text-white text-[10px] text-center focus:ring-1 focus:ring-orange-500/30 outline-none" placeholder="0" />

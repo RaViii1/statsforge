@@ -23,6 +23,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
+  // Convert tier to number if present
+  const numericTier = tier !== undefined && tier !== null ? Number(tier) : null;
+
   let processedIconPath = icon_path;
   if (icon_path) {
     try {
@@ -33,7 +36,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   }
 
-  const insertData: any = { name, description, tier, icon_path: processedIconPath, gamemode };
+  const insertData: any = { name, description, tier: numericTier, icon_path: processedIconPath, gamemode };
   if (id && id > 0) {
     insertData.id = id;
   }
@@ -83,6 +86,8 @@ export async function PUT(request: Request): Promise<NextResponse> {
     );
   }
 
+  const numericTier = tier !== undefined && tier !== null ? Number(tier) : null;
+
   let processedIconPath = icon_path;
   if (icon_path) {
     try {
@@ -95,7 +100,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
 
   const { error } = await supabase
     .from("augments")
-    .update({ name, description, tier, icon_path: processedIconPath, gamemode })
+    .update({ name, description, tier: numericTier, icon_path: processedIconPath, gamemode })
     .eq("id", Number(id));
 
   if (error) {

@@ -6,7 +6,8 @@ import {
   Edit3,
   Share2,
   Save,
-  ArrowLeft
+  ArrowLeft,
+  ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -25,21 +26,30 @@ import {
   TooltipState,
   generatePatchesForSet,
   DEFAULT_LEVELING, 
-  UNITS_PER_PAGE 
+  UNITS_PER_PAGE,
+  META_TIERS,
+  META_TIER_CONFIG,
+  MetaTier
 } from '@/lib/tft/teamplanner-types';
+import { DIFFICULTY_LEVELS } from '@/lib/tft/difficulty';
+
+const TIER_DESCRIPTIONS: Record<MetaTier, string> = {
+  S: 'Top meta comp - Consistently top 4',
+  A: 'Strong comp - High win rate',
+  B: 'Solid comp - Situationally strong',
+  C: 'Below average - Needs high roll',
+  F: 'Weak comp - Not recommended',
+};
 
 import {
   CustomTooltip,
-  DifficultyPicker,
   HexGrid,
   LevelingTempo,
   MainCarryTray,
-  TierPicker,
   UnitDetails,
   UnitSelector
 } from './planner';
 import { UnitTooltip } from './UnitTooltip';
-import SetPicker from './planner/SetPicker';
 
 
 interface TftTeamPlannerProps {
@@ -104,111 +114,122 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
 
   const initDoneRef = useRef(false);
 
-  useEffect(() => {
-    if (initDoneRef.current) return;
-    initDoneRef.current = true;
+   useEffect(() => {
+     if (initDoneRef.current) return;
+     initDoneRef.current = true;
 
-    async function init() {
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setProfile(profileData);
-      }
+     async function init() {
+       if (user) {
+         const { data: profileData } = await supabase
+           .from('profiles')
+           .select('*')
+           .eq('id', user.id)
+           .single();
+         setProfile(profileData);
+       }
 
-      try {
-        // Fetch active sets and items in parallel
-        const [setsRes, itemsRes] = await Promise.all([
-          fetch("/api/tft/active-sets"),
-          fetch("/api/tft/items"),
-        ]);
+       try {
+         // Fetch active sets first
+         const setsRes = await fetch("/api/tft/active-sets");
+         let fetchedSets: TFTSet[] = [];
+         let targetSetId: number | null = null;
 
-        let fetchedSets: TFTSet[] = [];
-        if (setsRes.ok) {
-          fetchedSets = await setsRes.json();
-          setActiveSets(fetchedSets);
-          if (fetchedSets.length > 0 && !editId) {
-            // If initialSetId provided (from URL), use matching set
-            if (initialSetId) {
-              const matchedSet = fetchedSets.find(s => s.set_number === initialSetId);
-              if (matchedSet) {
-                setSelectedSetId(matchedSet.id);
-              } else {
-                setSelectedSetId(fetchedSets[0].id);
-              }
-            } else {
-              setSelectedSetId(fetchedSets[0].id);
-            }
-          }
-        } else {
-          console.error('Failed to fetch active sets:', setsRes.status);
-        }
+         if (setsRes.ok) {
+           fetchedSets = await setsRes.json();
+           setActiveSets(fetchedSets);
+           if (fetchedSets.length > 0 && !editId) {
+             // Determine which set to use
+             if (initialSetId) {
+               const matchedSet = fetchedSets.find(s => s.set_number === initialSetId);
+               if (matchedSet) {
+                 targetSetId = matchedSet.id;
+               } else {
+                 targetSetId = fetchedSets[0].id;
+               }
+             } else {
+               targetSetId = fetchedSets[0].id;
+             }
+             setSelectedSetId(targetSetId);
+           }
+         } else {
+           console.error('Failed to fetch active sets:', setsRes.status);
+         }
 
-        if (itemsRes.ok) {
-          const itemsData = await itemsRes.json();
-          setItems(itemsData);
-        } else {
-          console.error('Failed to fetch items:', itemsRes.status);
-        }
+         // Fetch items with set_id filter if available
+         const itemsUrl = targetSetId ? `/api/tft/items?set_id=${targetSetId}` : "/api/tft/items";
+         const itemsRes = await fetch(itemsUrl);
 
-        // If no sets came back and we are not in edit mode, still create an
-        // empty team so the planner renders instead of hanging on the spinner.
-        if (fetchedSets.length === 0 && !editId) {
-          setCurrentTeam(createEmptyTeam(0, 16));
-        }
-      } catch (err) {
-        console.error('Error during planner init:', err);
-        // Ensure the planner always exits the loading state even on network error.
-        if (!editId) {
-          setCurrentTeam(createEmptyTeam(0, 16));
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
+         if (itemsRes.ok) {
+           const itemsData = await itemsRes.json();
+           setItems(itemsData);
+         } else {
+           console.error('Failed to fetch items:', itemsRes.status);
+         }
 
-    init();
-  }, [user]);
+         // If no sets came back and we are not in edit mode, still create an
+         // empty team so the planner renders instead of hanging on the spinner.
+         if (fetchedSets.length === 0 && !editId) {
+           setCurrentTeam(createEmptyTeam(0, 16));
+         }
+       } catch (err) {
+         console.error('Error during planner init:', err);
+         // Ensure the planner always exits the loading state even on network error.
+         if (!editId) {
+           setCurrentTeam(createEmptyTeam(0, 16));
+         }
+       } finally {
+         setLoading(false);
+       }
+     }
 
-  // Refetch champions/traits when selectedSetId changes
-  useEffect(() => {
-    if (!selectedSetId) {
-      return;
-    }
-    
-    const loadSetData = async () => {
-      try {
-        const [champsRes, traitsRes] = await Promise.all([
-          fetch(`/api/tft/champions?set_id=${selectedSetId}`),
-          fetch(`/api/tft/traits?set_id=${selectedSetId}`)
-        ]);
+     init();
+   }, [user]);
 
-        if (champsRes.ok) {
-          const champsData = await champsRes.json();
-          setChampions(champsData);
-          // Clear search/traits when champions change
-          setSearchQuery('');
-          setSelectedTraits([]);
-          setUnitPage(0);
-        } else {
-          console.error('Failed to fetch champions:', champsRes.status);
-        }
-        
+   // Refetch champions, traits, and items when selectedSetId changes
+   useEffect(() => {
+     if (!selectedSetId) {
+       return;
+     }
+     
+     const loadSetData = async () => {
+       try {
+         const [champsRes, traitsRes, itemsRes] = await Promise.all([
+           fetch(`/api/tft/champions?set_id=${selectedSetId}`),
+           fetch(`/api/tft/traits?set_id=${selectedSetId}`),
+           fetch(`/api/tft/items?set_id=${selectedSetId}`)
+         ]);
+
+         if (champsRes.ok) {
+           const champsData = await champsRes.json();
+           setChampions(champsData);
+           // Clear search/traits when champions change
+           setSearchQuery('');
+           setSelectedTraits([]);
+           setUnitPage(0);
+         } else {
+           console.error('Failed to fetch champions:', champsRes.status);
+         }
+         
          if (traitsRes.ok) {
-            const traitsData = await traitsRes.json();
-            setAllTraits(traitsData);
-          } else {
-            console.error('Failed to fetch traits:', traitsRes.status);
-          }
-      } catch (error) {
-        console.error('Error fetching set data:', error);
-      }
-    };
-    
-    loadSetData();
-  }, [selectedSetId]);
+           const traitsData = await traitsRes.json();
+           setAllTraits(traitsData);
+         } else {
+           console.error('Failed to fetch traits:', traitsRes.status);
+         }
+
+         if (itemsRes.ok) {
+           const itemsData = await itemsRes.json();
+           setItems(itemsData);
+         } else {
+           console.error('Failed to fetch items:', itemsRes.status);
+         }
+       } catch (error) {
+         console.error('Error fetching set data:', error);
+       }
+     };
+     
+     loadSetData();
+   }, [selectedSetId]);
 
   const fetchTeamComp = async (id: string) => {
     try {
@@ -636,20 +657,52 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
     setDraggedItemId(null);
   };
 
-  const handleAddUnitToEmptyHex = (championId: string) => {
-    if (!canEdit) return;
-    const emptyHex = [0, 1, 2, 3].flatMap(r => [0, 1, 2, 3, 4, 5, 6].map(col => ({ r, col }))).find(hex => !currentPhaseData.units.find(u => u.row === hex.r && u.col === hex.col));
-    if (emptyHex) addUnit(championId, emptyHex.r, emptyHex.col);
-    else toast.warning("Deployment grid full");
-  };
+   const handleAddUnitToEmptyHex = (championId: string) => {
+     if (!canEdit) return;
+     const emptyHex = [0, 1, 2, 3].flatMap(r => [0, 1, 2, 3, 4, 5, 6].map(col => ({ r, col }))).find(hex => !currentPhaseData.units.find(u => u.row === hex.r && u.col === hex.col));
+     if (emptyHex) addUnit(championId, emptyHex.r, emptyHex.col);
+     else toast.warning("Deployment grid full");
+   };
 
-  return (
+  // Compute top bar status pills
+  const tierConfig = currentTeam.tier ? META_TIER_CONFIG[currentTeam.tier] : null;
+  const tierPill = tierConfig ? (
+    <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-black uppercase tracking-widest ${tierConfig.bgColor} ${tierConfig.color}`}>
+      {tierConfig.label}
+    </div>
+  ) : null;
+
+  const difficultyConfig = currentTeam.difficulty ? DIFFICULTY_LEVELS.find(d => d.id === currentTeam.difficulty) : null;
+  const difficultyPill = difficultyConfig ? (
+    <div 
+      className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-black uppercase tracking-widest"
+      style={{
+        backgroundColor: difficultyConfig.bgColor,
+        borderColor: difficultyConfig.borderColor,
+        color: difficultyConfig.color
+      }}
+    >
+      {difficultyConfig.label}
+    </div>
+  ) : null;
+
+  const setConfig = selectedSetId ? activeSets.find(s => s.id === selectedSetId) : null;
+  const setPill = setConfig ? (
+    <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-black uppercase tracking-widest bg-white/10 border-white/20 text-white/90">
+      S{setConfig.set_number}
+    </div>
+  ) : null;
+
+   return (
     <>
       <div className="flex items-center gap-4 py-4">
-        <Link href="/tft/comps" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-all group uppercase text-[10px] font-black tracking-widest">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Comps
-        </Link>
+            <Link
+              href="/tft"
+              className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
+            >
+              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+              TFT Hub
+            </Link>
       </div>
       <div className="w-full bg-zinc-950/80 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-2xl animate-in fade-in duration-500">
         <CustomTooltip {...tooltip} />
@@ -662,53 +715,31 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
           champion={tooltip.champion}
           setNumber={tooltip.setNumber}
         />
-        <div className="flex items-center gap-4 justify-between px-6 py-4 bg-white/2 border-b border-white/5">
+        <div className="flex items-center gap-3 justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/2 border-b border-white/5">
           <span className="text-[11px] font-black text-orange-500 tracking-[0.2em]">
             {isEditMode ? 'EDITING' : 'NEW COMP'}
           </span>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
-              <TierPicker 
-                value={currentTeam.tier} 
-                onChange={(tier) => updateTeam({ tier })} 
-                setTooltip={setTooltip}
-              />
-              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
-              <DifficultyPicker 
-                value={currentTeam.difficulty} 
-                onChange={(level) => updateTeam({ difficulty: level })} 
-                setTooltip={setTooltip}
-              />
-              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
-              <SetPicker 
-                activeSets={activeSets} 
-                selectedSetId={selectedSetId}
-                onSetChange={handleSetChange} 
-                disabled={isEditMode}
-              />
-              <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
-              {activePreset && (
-                <>
-                  <div className={`px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-widest shadow-lg ${activePreset.tagColor}`}>
-                    {activePreset.name}
-                  </div>
-                  <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2"></div>
-                </>
-              )}
-            </div>
-              <div className="flex items-center gap-3 px-4 py-1.5 bg-white/4 border border-white/5 rounded-xl">
-                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Patch:</span>
-                <select value={currentTeam.patch} onChange={(e) => updateTeam({ patch: e.target.value })} disabled={!canEdit} className="bg-transparent text-[10px] font-black text-orange-400 focus:bg-zinc-900 focus:outline-none cursor-pointer disabled:cursor-not-allowed">
-                  {activeSets.find(s => s.id === selectedSetId) && generatePatchesForSet(activeSets.find(s => s.id === selectedSetId)!.set_number).map(p => (
-                    <option key={p} value={p} className="bg-zinc-900">{p}</option>
-                  ))}
-                </select>
+          
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {tierPill}
+            {difficultyPill}
+            {setPill}
+            
+            {/* Active Preset Pill */}
+            {activePreset && (
+              <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border text-[9px] sm:text-[10px] font-black uppercase tracking-widest shadow-lg ${activePreset.tagColor}`}>
+                {activePreset.name}
               </div>
-            <div className="w-0.5 h-6 bg-linear-to-b from-orange-500 to-amber-600 rounded-full mx-2 content-end"></div>
-            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tft/comps/${currentTeam.id}`); toast.success("Operation link copied"); }} className="p-2.5 hover:bg-white/5 rounded-xl border border-white/5 text-white/40 hover:text-white transition-all"><Share2 className="w-4 h-4" /></button>
+            )}
+
+            {/* Action buttons */}
+            <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/tft/comps/${currentTeam.id}`); toast.success("Operation link copied"); }} className="p-2 sm:p-2.5 hover:bg-white/5 rounded-xl border border-white/5 text-white/40 hover:text-white transition-all">
+              <Share2 className="w-4 h-4" />
+            </button>
             {canEdit && (
-              <button onClick={deleteTeam} className="p-2.5 hover:bg-red-500/10 rounded-xl border border-white/5 text-white/20 hover:text-red-500 transition-all"><Trash2 className="w-4 h-4" /></button>
+              <button onClick={deleteTeam} className="p-2 sm:p-2.5 hover:bg-red-500/10 rounded-xl border border-white/5 text-white/20 hover:text-red-500 transition-all">
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
           </div>
         </div>
@@ -842,10 +873,126 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Clear Board
                 </button>
-              </div>
-            </div>
+               </div>
+             </div>
 
-            {/* Dynamic content */}
+             {/* Tier / Difficulty / Set / Patch selectors - responsive grid */}
+             <div className="px-3 py-3 border-b border-white/5 min-h-64">
+               <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* Tier Picker */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Tier</span>
+                  <div className="flex gap-0.5 sm:gap-1">
+                    {META_TIERS.map((tier) => {
+                      const config = META_TIER_CONFIG[tier];
+                      const isActive = currentTeam.tier === tier;
+                      return (
+                        <button
+                          key={tier}
+                          onClick={() => updateTeam({ tier: tier })}
+                          onMouseEnter={(e) => setTooltip({ 
+                            visible: true, 
+                            title: `${tier} Tier`, 
+                            description: TIER_DESCRIPTIONS[tier], 
+                            x: e.clientX, 
+                            y: e.clientY 
+                          })}
+                          onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                          className={`
+                            w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[10px] sm:text-[11px] font-black uppercase
+                            border transition-all duration-200
+                            ${isActive 
+                              ? `${config.bgColor} ${config.color} shadow-lg` 
+                              : 'opacity-40 hover:opacity-70 border-white/40 text-white/70'
+                            }
+                          `}
+                        >
+                          {tier}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Difficulty Picker - same square shape as tier */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Difficulty</span>
+                  <div className="flex gap-0.5 sm:gap-1 flex-wrap">
+                    {DIFFICULTY_LEVELS.map((diff) => {
+                      const isActive = currentTeam.difficulty === diff.id;
+                      return (
+                        <button
+                          key={diff.id}
+                          onClick={() => updateTeam({ difficulty: diff.id })}
+                          onMouseEnter={(e) => setTooltip({ 
+                            visible: true, 
+                            title: diff.label, 
+                            description: diff.description, 
+                            x: e.clientX, 
+                            y: e.clientY 
+                          })}
+                          onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
+                          className={`
+                            w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-[8px] sm:text-[9px] font-black uppercase
+                            border transition-all duration-200
+                            ${isActive 
+                              ? 'scale-105 shadow-lg' 
+                              : 'opacity-50 hover:opacity-80'
+                            }
+                          `}
+                          style={{
+                            backgroundColor: isActive ? diff.bgColor : 'transparent',
+                            borderColor: isActive ? diff.color : 'rgba(255,255,255,0.4)',
+                            color: isActive ? diff.color : 'rgba(255,255,255,0.7)',
+                            boxShadow: isActive ? `0 0 20px ${diff.bgColor}` : 'none'
+                          }}
+                        >
+                          {diff.shortLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                 {/* Set Picker */}
+                 <div className="flex flex-col gap-2">
+                   <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Set</span>
+                   <div className="flex items-center gap-2 px-2 sm:px-3 bg-white/4 border border-white/5 rounded-lg">
+                     <select 
+                       value={selectedSetId || ''} 
+                       onChange={(e) => handleSetChange(parseInt(e.target.value))}
+                       disabled={isEditMode}
+                       className="flex-1 bg-transparent text-[9px] sm:text-[10px] font-black text-orange-400 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 py-1.5"
+                     >
+                       {activeSets.map((set: any) => (
+                         <option key={set.id} value={set.id} className="bg-zinc-900">
+                           S{set.set_number} - {set.name}
+                         </option>
+                       ))}
+                     </select>
+                   </div>
+                 </div>
+
+                 {/* Patch Picker */}
+                 <div className="flex flex-col gap-2">
+                   <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Patch</span>
+                   <div className="flex items-center gap-2 px-2 sm:px-3 bg-white/4 border border-white/5 rounded-lg">
+                     <select 
+                       value={currentTeam.patch} 
+                       onChange={(e) => updateTeam({ patch: e.target.value })}
+                       disabled={!canEdit}
+                       className="flex-1 bg-transparent text-[9px] sm:text-[10px] font-black text-orange-400 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 py-1.5"
+                     >
+                       {activeSets.find(s => s.id === selectedSetId) && generatePatchesForSet(activeSets.find(s => s.id === selectedSetId)!.set_number).map(p => (
+                         <option key={p} value={p} className="bg-zinc-900">{p}</option>
+                       ))}
+                     </select>
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* Dynamic content */}
             <div className="flex-1 overflow-hidden">
               {selectedUnit ? (
                 <UnitDetails

@@ -465,12 +465,12 @@ export default function SetTeamCompsPage() {
       if (!currentSetData) return;
       try {
         setLoading(true);
-        const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
-          fetch(`/api/tft/team-comps?set_id=${currentSetData.id}`),
-          fetch(`/api/tft/champions?set_id=${currentSetData.id}`),
-          fetch(`/api/tft/items`),
-          fetch(`/api/tft/traits?set_id=${currentSetData.id}`)
-        ]);
+         const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
+           fetch(`/api/tft/team-comps?set_id=${currentSetData.id}`),
+           fetch(`/api/tft/champions?set_id=${currentSetData.id}`),
+           fetch(`/api/tft/items?set_id=${currentSetData.id}`),
+           fetch(`/api/tft/traits?set_id=${currentSetData.id}`)
+         ]);
         if (compsRes.ok)  setTeamComps(await compsRes.json());
         if (champsRes.ok) setChampions(await champsRes.json());
         if (itemsRes.ok)  setItems(await itemsRes.json());

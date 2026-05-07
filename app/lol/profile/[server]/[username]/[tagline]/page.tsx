@@ -39,6 +39,32 @@ export default function ProfilePage() {
   const [liveGameData, setLiveGameData] = useState<any>(null);
   const [liveGameLoading, setLiveGameLoading] = useState(false);
   const [isInGame, setIsInGame] = useState(false);
+  const [runesData, setRunesData] = useState<{ runes: any[]; trees: any[] }>({ runes: [], trees: [] });
+  const [runesLoading, setRunesLoading] = useState(false);
+
+  // Fetch runes data once on mount
+  useEffect(() => {
+    const fetchRunesData = async () => {
+      try {
+        setRunesLoading(true);
+        const [runesRes, treesRes] = await Promise.all([
+          fetch('/api/runes'),
+          fetch('/api/trees')
+        ]);
+        
+        const runes = await runesRes.json();
+        const trees = await treesRes.json();
+        
+        setRunesData({ runes, trees });
+      } catch (err) {
+        console.error('Failed to fetch runes data:', err);
+      } finally {
+        setRunesLoading(false);
+      }
+    };
+    
+    fetchRunesData();
+  }, []);
   
   const offsetRef = useRef(0);
 
@@ -320,20 +346,21 @@ export default function ProfilePage() {
                   
                 </div>
 
-                {/* Right Main Content */}
-                <div className="min-w-0 mb-8">
-                  <MatchHistoryTab
-                    matches={matchHistory.matches}
-                    loading={matchesLoading}
-                    loadingMore={loadingMore}
-                    summonerPuuid={summonerData.puuid}
-                    server={server}
-                    rankedData={rankedData}
-                    onLoadMore={loadMoreMatches}
-                    onPlayerClick={handlePlayerClick}
-                    onRefresh={refreshMatches}
-                  />
-                </div>
+{/* Right Main Content */}
+                 <div className="min-w-0 mb-8">
+                   <MatchHistoryTab
+                     matches={matchHistory.matches}
+                     loading={matchesLoading}
+                     loadingMore={loadingMore}
+                     summonerPuuid={summonerData.puuid}
+                     server={server}
+                     rankedData={rankedData}
+                     onLoadMore={loadMoreMatches}
+                     onPlayerClick={handlePlayerClick}
+                     onRefresh={refreshMatches}
+                     runesData={runesData}
+                   />
+                 </div>
               </div>
             )}
 
@@ -352,6 +379,7 @@ export default function ProfilePage() {
                 loading={liveGameLoading}
                 onRefresh={checkLiveGame}
                 onPlayerClick={handlePlayerClick}
+                runesData={runesData}
               />
             )}
 

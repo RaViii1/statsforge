@@ -2,7 +2,7 @@
 
 import { Trash2, Edit2, Search, Info, Box } from "lucide-react";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TFTItem, getItemImageUrl } from "@/lib/tft/itemstft";
 import SvgIcon from "@/components/SvgIcon";
@@ -16,9 +16,10 @@ export default function ItemList({ initialItems, sets = [] }: ItemListProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [selectedSetId, setSelectedSetId] = useState<number | 'all' | 'universal'>('all');
-
   const activeSetIds = sets.filter((s: any) => s.is_active).map((s: any) => s.id);
+  const [selectedSetId, setSelectedSetId] = useState<number | 'all' | 'universal'>(
+    activeSetIds.length > 0 ? activeSetIds[0] : 'all'
+  );
 
   const filtered = initialItems.filter(i => {
     const matchesSearch = i.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -61,7 +62,7 @@ export default function ItemList({ initialItems, sets = [] }: ItemListProps) {
   };
 
   return (
-<div className="space-y-3">
+    <div className="space-y-3">
       {/* Search + filter */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
@@ -104,7 +105,7 @@ export default function ItemList({ initialItems, sets = [] }: ItemListProps) {
                   {item.image_path ? (
                     <img src={getItemImageUrl(item.image_path)} alt={item.name} className="w-full h-full object-cover" />
                   ) : (
-                     <img src={"images/noitem.png"} alt={item.name} className="w-full h-full object-cover" />
+                    <img src={"images/noitem.png"} alt={item.name} className="w-full h-full object-cover" />
                   )}
                 </div>
               </div>
@@ -117,7 +118,6 @@ export default function ItemList({ initialItems, sets = [] }: ItemListProps) {
                 <p className="text-xs text-zinc-500">Set {item.tft_sets?.set_number} • {item.tft_sets?.name}</p>
                 
                 <div className="mt-3 space-y-2">
-                 
                   {/* Stats Display */}
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(item.stats || {}).map(([key, value]) => {
@@ -144,36 +144,43 @@ export default function ItemList({ initialItems, sets = [] }: ItemListProps) {
                       );
                     })}
                   </div>
+
                   {item.build_path && item.build_path.length > 0 && (
                     <div className="flex flex-col gap-1.5 text-[10px] text-zinc-400">
-                    <span className="uppercase text-[8px] mr-1">Components:</span>
-                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                      {item.build_path.map((componentId: string, index: number) => {
-                        const component = initialItems.find(i => i.id === componentId);
-                        return (
-                          <div key={`${componentId}-${index}`} className="flex items-center gap-1">
-                            {component?.image_path ? (
-                              <img 
-                                src={component.image_path} 
-                                alt={component.name} 
-                                className="w-4 h-4 rounded border border-zinc-700"
-                                onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
-                              />
-                            ) : (
-                              <div className="w-4 h-4 rounded bg-zinc-700 border border-zinc-600 flex items-center justify-center text-[8px] text-zinc-400">
-                                ?
-                              </div>
-                            )}
-                            <span className="px-1 py-0.5 text-[8px] bg-zinc-800 rounded text-zinc-400">
-                              {component?.name || componentId}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                      <span className="uppercase text-[8px] mr-1">Components:</span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
+                        {item.build_path.map((componentId: string, index: number) => {
+                          const component = initialItems.find(i => i.id === componentId);
+                          return (
+                            <div key={`${componentId}-${index}`} className="flex items-center gap-1">
+                              {component?.image_path ? (
+                                <img 
+                                  src={component.image_path} 
+                                  alt={component.name} 
+                                  className="w-4 h-4 rounded border border-zinc-700"
+                                  onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
+                                />
+                              ) : (
+                                <div className="w-4 h-4 rounded bg-zinc-700 border border-zinc-600 flex items-center justify-center text-[8px] text-zinc-400">
+                                  ?
+                                </div>
+                              )}
+                              <span className="px-1 py-0.5 text-[8px] bg-zinc-800 rounded text-zinc-400">
+                                {component?.name || componentId}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {item.description && (
+                  <p className="text-[10px] text-zinc-500 italic leading-relaxed pt-2 border-t border-zinc-800/50 mt-2">
+                    {item.description}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">

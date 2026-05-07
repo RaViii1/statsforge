@@ -12,7 +12,7 @@ import {
   getChampionImage
 } from "@/lib/lol/lolfunctions";
 import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
-import { getRuneName, getRuneDescription, getRuneIcon, getRuneTreeName, getRuneTreeIcon } from "@/lib/runes";
+import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
 import { getItemImage, getItemDescription } from "@/lib/items";
 import { MatchRunesTab } from "@/components/lol/MatchRunesTab";
 import { MatchPerformanceTab } from "@/components/lol/MatchPerformanceTab";
@@ -26,11 +26,12 @@ interface MatchDetailsTabProps {
   playerData: MatchParticipant;
   augments: Augment[];
   onPlayerClick: (gameName: string, tagLine: string) => void;
+  runesData?: { runes: any[]; trees: any[] };
 }
 
 type TabType = "details" | "performance" | "runes";
 
-export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, onPlayerClick }: MatchDetailsTabProps) {
+export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, onPlayerClick, runesData }: MatchDetailsTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [rankedDataMap, setRankedDataMap] = useState<Record<string, RankedEntry | null>>({});
   const [isLoadingRanked, setIsLoadingRanked] = useState(true);
@@ -67,6 +68,22 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
   // Extract server from match metadata (format: SERVER_matchId)
   const server = match.metadata.matchId.split('_')[0].toLowerCase();
   const matchId = match.metadata.matchId;
+
+  // Helper function to get rune from runesData
+  const getRuneFromData = (runeId: number) => {
+    if (!runesData?.runes) return null;
+    return runesData.runes.find(
+      (rune) => parseInt(rune.id.split('_')[1] || rune.id) === runeId
+    );
+  };
+
+  // Helper function to get tree from runesData
+  const getTreeFromData = (treeId: number) => {
+    if (!runesData?.trees) return null;
+    return runesData.trees.find(
+      (tree) => parseInt(tree.id.split('_')[1] || tree.id) === treeId
+    );
+  };
 
   // Fetch all ranked data in parallel once
   useEffect(() => {
@@ -172,7 +189,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">
-                  {tab.id === 'details' ? 'Details' : 'Runes'}
+                  {tab.id === 'details' ? 'Details' : tab.id === 'performance' ? 'Stats' : 'Runes'}
                 </span>
               </button>
             );
@@ -218,6 +235,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
               primaryStyle={primaryStyle}
               secondaryStyle={secondaryStyle}
               statPerks={playerData.perks?.statPerks}
+              runesData={runesData}
             />
           </div>
         )}
@@ -507,11 +525,6 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                                         alt={`Trinket ${participant.item6}`}
                                         className="w-full h-full object-cover"
                                           onError={(e) => {
-                                              // console.log('Item image failed to load:', {
-                                              //   itemId: itemId,
-                                              //   itemName: itemName,
-                                              //   src: e.currentTarget.src
-                                              // });
                                               e.currentTarget.src = "/images/noitem.png";
                                             }}
                                       />
@@ -594,8 +607,13 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
             <div className="space-y-2">
               {team.map((participant: any) => {
                 const participantCSDisplay = formatCSDisplay(match, participant);
-                const participantPrimaryKeystone = participant.perks?.styles?.[0]?.selections?.[0]?.perk;
-                const participantSecondaryTree = participant.perks?.styles?.[1]?.style;
+                const participantPrimaryKeystoneId = participant.perks?.styles?.[0]?.selections?.[0]?.perk;
+                const participantSecondaryTreeId = participant.perks?.styles?.[1]?.style;
+                
+                // Get rune and tree objects from runesData
+                const participantPrimaryKeystone = getRuneFromData(participantPrimaryKeystoneId);
+                const participantSecondaryTree = getTreeFromData(participantSecondaryTreeId);
+                
                 const damageDealtPercent = (participant.totalDamageDealtToChampions / highestDamageDealt) * 100;
                 const damageTakenPercent = (participant.totalDamageTaken / highestDamageTaken) * 100;
                 const itemIds = [
@@ -655,35 +673,35 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                           {!arena && participantPrimaryKeystone && (
                             <div className="flex flex-col gap-0.5">
                               <div 
-                                className="w-6 h-6 flex items-center justify-center relative " 
-                                title={getRuneName(participantPrimaryKeystone)}
-                                onMouseEnter={(e) => {
-                                  const tooltip = e.currentTarget.querySelector('.rune-tooltip');
-                                  if (tooltip) {
-                                    tooltip.classList.remove('opacity-0', 'invisible');
-                                    tooltip.classList.add('opacity-100', 'visible');
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  const tooltip = e.currentTarget.querySelector('.rune-tooltip');
-                                  if (tooltip) {
-                                    tooltip.classList.remove('opacity-100', 'visible');
-                                    tooltip.classList.add('opacity-0', 'invisible');
-                                  }
-                                }}
+                                className="w-6 h-6 flex items-center justify-center relative" 
+                                title={`${participantPrimaryKeystone.name}: ${participantPrimaryKeystone.description || "No description"}`}
                               >
-                                <img src={getRuneIcon(participantPrimaryKeystone)} onError={(e) => { e.currentTarget.src = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/runesicon.png"; }} alt={getRuneName(participantPrimaryKeystone)} className="w-4 h-4 object-contain" />
-                                <div className="rune-tooltip absolute left-full ml-2 top-1/2 -translate-y-1/2 opacity-0 invisible transition-opacity duration-200 z-50 w-64 p-3 bg-zinc-900 border border-orange-500/60 rounded-lg shadow-2xl pointer-events-none">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                                    <p className="text-xs font-black text-white uppercase tracking-wider">{getRuneName(participantPrimaryKeystone)}</p>
-                                  </div>
-                                  <p className="text-xs text-zinc-300 leading-relaxed">{getRuneDescription(participantPrimaryKeystone)}</p>
-                                </div>
+                                {participantPrimaryKeystone.icon_path && (
+                                  <img 
+                                    src={getRuneIconUrl(participantPrimaryKeystone.icon_path)} 
+                                    onError={(e) => { 
+                                      e.currentTarget.src = "/images/noruneicon.png"; 
+                                    }} 
+                                    alt={participantPrimaryKeystone.name} 
+                                    className="w-4 h-4 object-contain" 
+                                  />
+                                )}
                               </div>
                               {participantSecondaryTree && (
-                                <div className="w-6 h-6 flex items-center justify-center" title={getRuneTreeName(participantSecondaryTree)}>
-                                  <img src={getRuneTreeIcon(participantSecondaryTree)} alt={getRuneTreeName(participantSecondaryTree)} className="w-3.5 h-3.5 object-contain" />
+                                <div 
+                                  className="w-6 h-6 flex items-center justify-center" 
+                                  title={participantSecondaryTree.name}
+                                >
+                                  {participantSecondaryTree.icon_path && (
+                                    <img 
+                                      src={getTreeIconUrl(participantSecondaryTree.icon_path)} 
+                                      alt={participantSecondaryTree.name} 
+                                      className="w-3.5 h-3.5 object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.src = "/images/norunetreeicon.png";
+                                      }}
+                                    />
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -763,7 +781,7 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                         </div>
                       </div>
 
-                      {/* Bottom Row: Items */}
+                      {/* Bottom Row: Items - RESTORED ORIGINAL BEHAVIOR */}
                       <div className={`flex items-center gap-3 ${name === 'Blue Team' ? 'justify-start' : 'justify-end'}`}>
                         <div className={`flex flex-wrap gap-1 ${name === 'Red Team' ? 'flex-row-reverse' : ''}`}>
                           {name === 'Red Team' ? [...itemIds].reverse().map((itemId, idx) => {
@@ -865,5 +883,3 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
     );
   }
 }
-
-

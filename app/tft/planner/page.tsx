@@ -27,10 +27,10 @@ export default async function PlannerPage({
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-600/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl"></div>
-      </div>
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-40 right-0 w-[700px] h-[500px] bg-orange-500/[0.03] rounded-full blur-[120px]" />
+          <div className="absolute left-0 w-[600px] h-[400px] bg-purple-600/[0.06] rounded-full blur-[120px]" />
+        </div>
 
       <NavbarTft />
 

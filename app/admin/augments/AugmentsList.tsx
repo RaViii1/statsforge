@@ -6,30 +6,35 @@ type Augment = {
   id: number;
   name: string;
   description: string;
-  tier: string | string[];
+  tier: number;
   icon_path: string;
   gamemode: string | string[];
 };
 
-const TIER_STYLES: Record<string, { badge: string; border: string; glow: string, bg: string }> = {
-  silver: {
+const TIER_STYLES: Record<number, { badge: string; border: string; glow: string, bg: string }> = {
+  0: {
     badge: 'bg-zinc-700/40 text-zinc-300 border-zinc-500/40',
     border: 'border-zinc-500/50',
     glow:  'shadow-zinc-500/10',
     bg: 'bg-zinc-800/40',
   },
-  gold: {
+  1: {
     badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
     border: 'border-yellow-500/50',
     glow:  'shadow-yellow-500/10',
     bg: 'bg-yellow-500/10',
-
   },
-  prismatic: {
+  2: {
     badge: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
     border: 'border-purple-500/50',
     glow:  'shadow-purple-500/10',
     bg: 'bg-purple-500/10',
+  },
+  4: {
+    badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+    border: 'border-emerald-500/50',
+    glow:  'shadow-emerald-500/10',
+    bg: 'bg-emerald-500/10',
   },
 };
 
@@ -47,6 +52,13 @@ const GAMEMODE_FILTERS = [
   { id: 'aram', label: 'ARAM' },
   { id: 'recent', label: 'Recently Added' },
 ];
+
+const TIER_LABELS: Record<number, string> = {
+  0: 'Silver',
+  1: 'Gold',
+  2: 'Prismatic',
+  4: 'Special',
+};
 
 export default function AugmentsList() {
   const [augments, setAugments] = useState<Augment[]>([]);
@@ -92,8 +104,11 @@ export default function AugmentsList() {
     }
   };
 
-  const getTier = (tier: string | string[]) =>
-    Array.isArray(tier) ? tier[0] : tier;
+  const getTier = (tier: number | string | null | undefined): number | null => {
+    if (typeof tier === 'number') return tier;
+    if (typeof tier === 'string' && tier !== '') return Number(tier);
+    return null;
+  };
 
   const getGamemodes = (gm: string | string[]) =>
     Array.isArray(gm) ? gm : gm ? [gm] : [];
@@ -211,7 +226,7 @@ export default function AugmentsList() {
           {sortedFiltered.map((augment) => {
             const tier = getTier(augment.tier);
             const gamemodes = getGamemodes(augment.gamemode);
-            const tierStyle = (tier && TIER_STYLES[tier]) ? TIER_STYLES[tier] : FALLBACK_TIER;
+            const tierStyle = tier !== null && TIER_STYLES[tier] ? TIER_STYLES[tier] : FALLBACK_TIER;
             const imgUrl = augment.icon_path
               ? augment.icon_path.startsWith('http')
                 ? augment.icon_path
@@ -246,23 +261,23 @@ export default function AugmentsList() {
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="text-white text-sm font-semibold">{augment.name}</span>
-                    {tier && (
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${tierStyle.badge}`}>
-                        {tier}
-                      </span>
-                    )}
-                    {gamemodes.map(gm => (
-                      <span
-                        key={gm}
-                        className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border bg-orange-500/10 text-orange-400 border-orange-500/20"
-                      >
-                        {gm}
-                      </span>
-                    ))}
-                  </div>
+                 <div className="flex-1 min-w-0">
+                   <div className="flex items-center gap-2 flex-wrap mb-1">
+                     <span className="text-white text-sm font-semibold">{augment.name}</span>
+                     {tier !== null && (
+                       <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${tierStyle.badge}`}>
+                         {TIER_LABELS[tier] || tier}
+                       </span>
+                     )}
+                     {gamemodes.map(gm => (
+                       <span
+                         key={gm}
+                         className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border bg-orange-500/10 text-orange-400 border-orange-500/20"
+                       >
+                         {gm}
+                       </span>
+                     ))}
+                   </div>
                   {augment.description ? (
                     <p className="text-zinc-600 text-xs leading-relaxed line-clamp-2 break-words">{augment.description}</p>
                   ) : (

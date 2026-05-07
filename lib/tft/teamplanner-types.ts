@@ -145,7 +145,7 @@ export const DEFAULT_LEVELING: LevelingStep[] = [
   { level: 8, stage: '4-2', gold: '30+', isCurrent: true },
 ];
 
-export const UNITS_PER_PAGE = 16;
+export const UNITS_PER_PAGE = 10;
 export const GRID_ROWS = 4;
 export const GRID_COLS = 7;
 

@@ -444,12 +444,13 @@ export default function TeamCompsPage() {
             setSelectedSetId(sets[0].id);
           }
         }
-        const compsUrl = selectedSetId ? `/api/tft/team-comps?set_id=${selectedSetId}` : '/api/tft/team-comps';
-        const champsUrl = selectedSetId ? `/api/tft/champions?set_id=${selectedSetId}` : '/api/tft/champions';
-        const traitsUrl = selectedSetId ? `/api/tft/traits?set_id=${selectedSetId}` : '/api/tft/traits';
-        const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
-          fetch(compsUrl), fetch(champsUrl), fetch('/api/tft/items'), fetch(traitsUrl)
-        ]);
+         const compsUrl = selectedSetId ? `/api/tft/team-comps?set_id=${selectedSetId}` : '/api/tft/team-comps';
+         const champsUrl = selectedSetId ? `/api/tft/champions?set_id=${selectedSetId}` : '/api/tft/champions';
+         const traitsUrl = selectedSetId ? `/api/tft/traits?set_id=${selectedSetId}` : '/api/tft/traits';
+         const itemsUrl = selectedSetId ? `/api/tft/items?set_id=${selectedSetId}` : '/api/tft/items';
+         const [compsRes, champsRes, itemsRes, traitsRes] = await Promise.all([
+           fetch(compsUrl), fetch(champsUrl), fetch(itemsUrl), fetch(traitsUrl)
+         ]);
         if (compsRes.ok)  setTeamComps(await compsRes.json());
         if (champsRes.ok) setChampions(await champsRes.json());
         if (itemsRes.ok)  setItems(await itemsRes.json());
