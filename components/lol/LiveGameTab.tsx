@@ -10,7 +10,7 @@ import {
   getChampionImage
 } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName, getChampionNameById } from "@/lib/champion-data";
-import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
+import { getSummonerSpellIconUrl, getSummonerSpellRecordById, SummonerSpell } from "@/lib/summoner-spell";
 import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
 import { RankedIcon } from "./RankedIcon";
 
@@ -37,6 +37,18 @@ export function LiveGameTab({
 }: LiveGameTabProps) {
   const isArenaGame = liveGameData && isArena(liveGameData.gameQueueConfigId);
   const [currentTime, setCurrentTime] = useState(Date.now());
+  const [summonerSpells, setSummonerSpells] = useState<Record<string, SummonerSpell>>({});
+
+  useEffect(() => {
+    fetch("/api/summoner-spells")
+      .then(res => res.json())
+      .then((data: SummonerSpell[]) => {
+        const record: Record<string, SummonerSpell> = {};
+        data.forEach(spell => { record[spell.id] = spell; });
+        setSummonerSpells(record);
+      })
+      .catch(err => console.error("Failed to fetch summoner spells:", err));
+  }, []);
 
   // Helper function to get rune from runesData
   const getRuneFromData = (runeId: number) => {
@@ -262,13 +274,13 @@ export function LiveGameTab({
                             
                             <div className="flex flex-col gap-1 shrink-0">
                               <img
-                                src={getSummonerSpellIcon(participant.spell1Id)}
-                                alt={getSummonerSpellName(participant.spell1Id)}
+                                src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, participant.summoner1Id)?.icon_path)}
+                                alt={getSummonerSpellRecordById(summonerSpells, participant.summoner1Id)?.name || `Spell ${participant.summoner1Id}`}
                                 className="w-5 h-5 rounded"
                               />
                               <img
-                                src={getSummonerSpellIcon(participant.spell2Id)}
-                                alt={getSummonerSpellName(participant.spell2Id)}
+                                src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, participant.summoner2Id)?.icon_path)}
+                                alt={getSummonerSpellRecordById(summonerSpells, participant.summoner2Id)?.name || `Spell ${participant.summoner2Id}`}
                                 className="w-5 h-5 rounded"
                               />
                             </div>

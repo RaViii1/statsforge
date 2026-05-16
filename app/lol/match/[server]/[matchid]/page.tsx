@@ -28,44 +28,32 @@ export default function MatchAnalyticsPage() {
       <NavbarLoL />
 
       <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-zinc-400 hover:text-orange-500 transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm font-medium">Back to Profile</span>
-        </button>
-
-        {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-2 text-sm mb-8">
-          <Link 
-            href="/" 
-            className="flex items-center gap-2 text-zinc-400 hover:text-orange-500 transition-colors"
+      <div className="border-b border-white/[0.06] bg-[#0d0d0f]/80 backdrop-blur-sm  top-0 z-10">
+        <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center gap-6">
+          <Link
+            href="/lol"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-orange-400 transition-colors text-[11px] font-semibold tracking-[0.12em] uppercase group"
           >
-            <Home className="w-4 h-4" />
-            <span>Home</span>
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            Lol
           </Link>
-          <ChevronRight className="w-4 h-4 text-zinc-600" />
-          <Link 
-            href="/lol" 
-            className="text-zinc-400 hover:text-orange-500 transition-colors"
-          >
-            League of Legends
-          </Link>
-          <ChevronRight className="w-4 h-4 text-zinc-600" />
-          <span className="text-orange-500 font-medium">Match Analytics</span>
-        </nav>
-
-        {/* Page Header */}
-        <div className="mb-8">
+          <span className="text-white/10 text-lg font-thin">/</span>
+          <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-orange-400">
+            Match Analytics
+          </span>
+        </div>
+          <div className="mb-8 p-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
-            Match Performance Analysis v0.4.1
+            Match Performance Analysis v0.5
           </h1>
           <p className="text-zinc-400">
             Detailed performance breakdown and player statistics for this match
           </p>
         </div>
+      </div>
+
+        {/* Page Header */}
+
 
         {/* Match Analytics Component */}
         <MatchAnalytics 

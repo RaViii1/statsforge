@@ -72,7 +72,7 @@ export default function ItemsLoLForm() {
     setIsEditing(false);
   };
 
-  const previewUrl = formData.image_path ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${formData.image_path}` : null;
+  const previewUrl = formData.image_path ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${formData.image_path}` : null;
 
   return (
     <div className="bg-[#111112] border border-white/5 rounded-2xl overflow-hidden">

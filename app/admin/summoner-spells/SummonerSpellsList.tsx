@@ -1,87 +1,86 @@
 'use client';
 
-import { Trash2, Edit2, Search, Package, Gamepad2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Edit2, Search, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Item } from "@/lib/items";
+import {
+  SummonerSpell,
+  getSummonerSpellIconUrl
+} from "@/lib/summoner-spell";
 
-
-interface ItemsLoLListProps {
-  initialItems?: Item[];
+interface SummonerSpellsListProps {
+  initialSpells?: SummonerSpell[];
 }
 
-const ITEMS_PER_PAGE = 20;
+const SPELLS_PER_PAGE = 20;
 
-export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
+export default function SummonerSpellsList({ initialSpells = [] }: SummonerSpellsListProps) {
   const router = useRouter();
+  const [spells, setSpells] = useState<SummonerSpell[]>(initialSpells);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [items, setItems] = useState<Item[]>(initialItems);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch items from API
-  const loadItems = useCallback(async () => {
+  const loadSpells = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/items-lol');
+      const res = await fetch('/api/admin/summoner-spells');
       if (res.ok) {
         const data = await res.json();
-        setItems(data);
+        setSpells(data);
       }
     } catch (error) {
-      console.error('Failed to load items:', error);
+      console.error('Failed to load summoner spells:', error);
     }
   }, []);
 
   useEffect(() => {
-    if (initialItems.length > 0) {
-      setItems(initialItems);
+    if (initialSpells.length > 0) {
+      setSpells(initialSpells);
     } else {
-      loadItems();
+      loadSpells();
     }
-  }, [initialItems, loadItems]);
+  }, [initialSpells, loadSpells]);
 
-  // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm(`Are you sure you want to delete this item?`)) return;
+    if (!confirm(`Are you sure you want to delete this summoner spell?`)) return;
 
     setIsDeleting(id);
     try {
-      const res = await fetch(`/api/admin/items-lol?id=${id}`, {
+      const res = await fetch(`/api/admin/summoner-spells?id=${id}`, {
         method: "DELETE",
       });
 
       if (!res.ok) throw new Error("Failed to delete");
 
-      toast.success("Item deleted");
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Summoner spell deleted");
+      setSpells((prev) => prev.filter((spell) => spell.id !== id));
       router.refresh();
     } catch (error) {
-      toast.error("Error deleting item");
+      toast.error("Error deleting spell");
     } finally {
       setIsDeleting(null);
     }
   };
 
-  const handleEdit = (item: Item) => {
-    window.dispatchEvent(new CustomEvent("edit-lol-item", { detail: item }));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleEdit = (spell: SummonerSpell) => {
+    window.dispatchEvent(new CustomEvent("edit-summoner-spell", { detail: spell }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filtered = items.filter(
-    (i) =>
-      i.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      i.riot_api_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = spells.filter(
+    (s) =>
+      s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(s.id).toLowerCase().includes(searchTerm)
   );
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedItems = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / SPELLS_PER_PAGE);
+  const startIndex = (currentPage - 1) * SPELLS_PER_PAGE;
+  const paginatedSpells = filtered.slice(startIndex, startIndex + SPELLS_PER_PAGE);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -114,7 +113,7 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
         <div className="shrink-0 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-orange-500 tabular-nums">
           {filtered.length}
           <span className="text-orange-500 font-normal ml-1 text-xs">
-            {filtered.length === 1 ? "item" : "items"}
+            {filtered.length === 1 ? "spell" : "spells"}
           </span>
         </div>
       </div>
@@ -123,19 +122,19 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
       {filtered.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {paginatedItems.map((item) => (
+            {paginatedSpells.map((spell) => (
               <div
-                key={item.id}
+                key={spell.id}
                 className="group relative bg-white/[0.03] hover:bg-white/[0.055] border border-white/[0.07] hover:border-orange-500/25 rounded-2xl p-4 transition-all duration-200"
               >
                 <div className="flex items-start gap-3.5">
-                  {/* Item icon */}
-                  <div className="shrink-0 w-13 h-13">
+                  {/* Spell icon */}
+                  <div className="shrink-0 w-[52px] h-[52px]">
                     <div className="w-[52px] h-[52px] rounded-xl border border-white/[0.1] overflow-hidden bg-black/40 flex items-center justify-center">
-                      {item.image_path ? (
+                      {spell.icon_path ? (
                         <img
-                          src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item.image_path}`}
-                          alt={item.name}
+                          src={getSummonerSpellIconUrl(spell.icon_path)}
+                          alt={spell.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
@@ -143,7 +142,7 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
                           }}
                         />
                       ) : (
-                        <Package className="w-5 h-5 text-zinc-700" />
+                        <Zap className="w-5 h-5 text-zinc-700" />
                       )}
                     </div>
                   </div>
@@ -152,62 +151,44 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 pr-14">
                       <h3 className="text-sm font-semibold text-white leading-tight truncate">
-                        {item.name}
+                        {spell.name}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      {item.riot_api_id && (
-                        <span className="inline-flex items-center gap-1 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded-full font-mono font-medium">
-                          #{item.riot_api_id}
-                        </span>
-                      )}
-                      {item.gamemode && (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {spell.cooldown != null && (
                         <span className="inline-flex items-center gap-1 text-[10px] bg-white/[0.06] text-zinc-400 border border-white/[0.08] px-2 py-0.5 rounded-full">
-                          <Gamepad2 className="w-2.5 h-2.5" />
-                          {item.gamemode}
+                          <Zap className="w-2.5 h-2.5" />
+                          {spell.cooldown}s CD
                         </span>
                       )}
                     </div>
 
-                    {item.description && (
+                    {spell.description && (
                       <p className="mt-2 text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">
-                        {item.description}
+                        {spell.description}
                       </p>
                     )}
 
-                    {Object.keys(item.stats || {}).length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {Object.entries(item.stats).map(([key, value]) => (
-                          <span
-                            key={key}
-                            className="px-1.5 py-0.5 text-[10px] bg-white/[0.05] text-zinc-400 rounded-md capitalize border border-white/[0.06]"
-                          >
-                            <span className="text-zinc-600">{key}:</span>{" "}
-                            {String(value)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 {/* Action buttons — absolutely positioned top-right */}
                 <div className="absolute top-3.5 right-3.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                   <button
-                    onClick={() => handleEdit(item)}
+                    onClick={() => handleEdit(spell)}
                     className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 hover:text-orange-400 hover:bg-orange-500/10 transition-all"
-                    title="Edit item"
+                    title="Edit spell"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id)}
-                    disabled={isDeleting === item.id}
+                    onClick={() => handleDelete(spell.id)}
+                    disabled={isDeleting === spell.id}
                     className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-30"
-                    title="Delete item"
+                    title="Delete spell"
                   >
-                    {isDeleting === item.id ? (
+                    {isDeleting === spell.id ? (
                       <svg
                         className="w-3.5 h-3.5 animate-spin"
                         viewBox="0 0 24 24"
@@ -240,7 +221,7 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-white/[0.06]">
               <div className="text-xs text-zinc-500">
-                Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filtered.length)} of {filtered.length} items
+                Showing {startIndex + 1} to {Math.min(startIndex + SPELLS_PER_PAGE, filtered.length)} of {filtered.length} spells
               </div>
               <div className="flex items-center gap-1.5">
                 <button
@@ -262,7 +243,7 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
                     } else {
                       pageNum = currentPage - 2 + i;
                     }
-                    
+
                     return (
                       <button
                         key={pageNum}
@@ -292,9 +273,9 @@ export default function ItemsLoLList({ initialItems = [] }: ItemsLoLListProps) {
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center mb-4">
-            <Package className="w-6 h-6 text-zinc-600" />
+            <Zap className="w-6 h-6 text-zinc-600" />
           </div>
-          <p className="text-sm font-medium text-zinc-500">No items found</p>
+          <p className="text-sm font-medium text-zinc-500">No spells found</p>
           {searchTerm && (
             <p className="text-xs text-zinc-600 mt-1">
               Try a different search term

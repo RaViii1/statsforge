@@ -28,6 +28,7 @@ export const getQueueName = (queueId: number) => {
     490: "Normal Quickplay",
     1700: "Arena",
     1710: "Arena",
+    1750: "Arena Trios",
     900: "ARURF",
     62: "ARAM",
     63: "ARAM",
@@ -54,7 +55,7 @@ export const getQueueName = (queueId: number) => {
 };
 
 export const isGamemodeWithoutRoles = (queueId: number): boolean => {
-  if ([450, 900, 1700, 1710, 4200, 2400, 3270].includes(queueId)) {
+  if ([450, 900, 1700, 1710, 4200, 2400, 3270, 1750].includes(queueId)) {
     return true;
   }else{
     return false;
@@ -62,14 +63,14 @@ export const isGamemodeWithoutRoles = (queueId: number): boolean => {
 }
 
 export const getRoleIcon = (role: string): string => {
-  const baseUrl = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champ-select/global/default/svg/";
+  const baseUrl = "/images/lanes/";
   const roleMap: Record<string, string> = {
     top: "position-top.svg",
     jungle: "position-jungle.svg",
     mid: "position-middle.svg",
     adc: "position-bottom.svg",
     support: "position-utility.svg",
-    unknown: "position-fill.svg"
+    unknown: "position-utility.svg"
   };
   return baseUrl + (roleMap[role] || roleMap.unknown);
 }
@@ -173,7 +174,7 @@ export function formatGamenametoNameandTagline(gamename?: string | "noname") {
   };
 
  export const isArena = (queueId: number) => {
-    return queueId === 1700 || queueId === 1710;
+    return queueId === 1700 || queueId === 1710 || queueId === 1750;
   };
 
    export const formatCSDisplay = (match: Match, participant: MatchParticipant) => {

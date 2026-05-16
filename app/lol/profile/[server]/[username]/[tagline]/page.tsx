@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import ChampionStatsCard from "@/components/lol/ChampionStatsCard";
 
 import { SummonerData, MatchHistory, ChampionMastery, RankedEntry } from "@/app/types/lolInterfaces";
+import { Item } from "@/lib/items";
 
 // Import new modular components
 import { SummonerProfileHeader } from "@/components/lol/SummonerProfileHeader";
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const [isInGame, setIsInGame] = useState(false);
   const [runesData, setRunesData] = useState<{ runes: any[]; trees: any[] }>({ runes: [], trees: [] });
   const [runesLoading, setRunesLoading] = useState(false);
+  const [items, setItems] = useState<Item[]>([]);
 
   // Fetch runes data once on mount
   useEffect(() => {
@@ -64,6 +66,23 @@ export default function ProfilePage() {
     };
     
     fetchRunesData();
+  }, []);
+
+  // Fetch items data once on mount
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await fetch('/api/lol/lol-items');
+        if (res.ok) {
+          const data = await res.json();
+          setItems(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch items:', err);
+      }
+    };
+    
+    fetchItems();
   }, []);
   
   const offsetRef = useRef(0);
@@ -347,20 +366,21 @@ export default function ProfilePage() {
                 </div>
 
 {/* Right Main Content */}
-                 <div className="min-w-0 mb-8">
-                   <MatchHistoryTab
-                     matches={matchHistory.matches}
-                     loading={matchesLoading}
-                     loadingMore={loadingMore}
-                     summonerPuuid={summonerData.puuid}
-                     server={server}
-                     rankedData={rankedData}
-                     onLoadMore={loadMoreMatches}
-                     onPlayerClick={handlePlayerClick}
-                     onRefresh={refreshMatches}
-                     runesData={runesData}
-                   />
-                 </div>
+                  <div className="min-w-0 mb-8">
+                    <MatchHistoryTab
+                      matches={matchHistory.matches}
+                      loading={matchesLoading}
+                      loadingMore={loadingMore}
+                      summonerPuuid={summonerData.puuid}
+                      server={server}
+                      rankedData={rankedData}
+                      onLoadMore={loadMoreMatches}
+                      onPlayerClick={handlePlayerClick}
+                      onRefresh={refreshMatches}
+                      runesData={runesData}
+                      items={items}
+                    />
+                  </div>
               </div>
             )}
 

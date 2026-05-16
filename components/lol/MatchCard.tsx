@@ -15,9 +15,9 @@ import {
   isGamemodeWithoutRoles,
   getChampionImage,
 } from "@/lib/lol/lolfunctions";
-import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
+import { getSummonerSpellIconUrl, getSummonerSpellRecordById, SummonerSpell } from "@/lib/summoner-spell";
 import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
-import { getItemImage } from "@/lib/items";
+import { Item, getItemImage } from "@/lib/items";
 import { MatchDetailsTab } from "./MatchDetailsTab";
 import { MatchRunesTab } from "./MatchRunesTab";
 import { getArenaAugmentIconUrl, Augment, getAugmentById, getArenaAugmentTier, getAugmentTierBorderColor, getAugmentTierBgColor, getAugmentTierGlow } from "@/lib/arena-augments";
@@ -30,6 +30,8 @@ interface MatchCardProps {
   augments: Augment[];
   onPlayerClick: (gameName: string, tagLine: string) => void;
   runesData?: { runes: any[]; trees: any[] };
+  items?: Item[];
+  summonerSpells?: Record<string, SummonerSpell>;
 }
 
 export function MatchCard({
@@ -40,9 +42,15 @@ export function MatchCard({
   augments,
   onPlayerClick,
   runesData,
+  items = [],
+  summonerSpells = {},
 }: MatchCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedTab, setExpandedTab] = useState<"teams" | "runes">("teams");
+
+  const getItemById = (id: string | number) => {
+    return items.find(i => i.id === String(id));
+  };
 
   const playerData = match.info.participants.find(
     (p: MatchParticipant) => p.puuid === summonerPuuid
@@ -59,7 +67,6 @@ export function MatchCard({
   const primaryKeystoneId = primaryStyle?.selections?.[0]?.perk;
   const secondaryTreeId = (secondaryStyle as any)?.style;
 
-  // Find rune and tree data from the passed runesData
   const primaryKeystone = runesData?.runes?.find(
     (rune) => parseInt(rune.id.split('_')[1] || rune.id) === primaryKeystoneId
   );
@@ -98,7 +105,6 @@ export function MatchCard({
     if (!isExpanded) setExpandedTab("teams");
   };
 
-  // Augment IDs for this player
   const augmentIds = [
     playerData.playerAugment1,
     playerData.playerAugment2,
@@ -121,7 +127,7 @@ export function MatchCard({
       return (
         <div
           key={idx}
-          className={`w-6 h-6 shrink-0 rounded overflow-hidden border-1 ${borderColor} ${bgColor} ${glow} hover:opacity-80 transition-all`}
+          className={`w-6 h-6 shrink-0 rounded overflow-hidden border ${borderColor} ${bgColor} ${glow} hover:opacity-80 transition-all`}
           title={`${augmentName}${augmentDesc ? `\n\n${augmentDesc}` : ''}`}
         >
           {augment?.icon_path ? (
@@ -148,14 +154,13 @@ export function MatchCard({
         remake
           ? "bg-zinc-900/40 border-zinc-700/50 hover:border-zinc-600"
           : playerData.win
-          ? "bg-emerald-950/20 border-emerald-900/30 hover:border-emerald-900 hover:shadow-md hover:shadow-emerald-900/10"
-          : "bg-red-950/20 border-red-900/30 hover:border-red-900 hover:shadow-md hover:shadow-red-900/10"
+          ? "bg-emerald-950/20 border-emerald-900/30 hover:border-emerald-900"
+          : "bg-red-950/20 border-red-900/30 hover:border-red-900"
       }`}
     >
-      {/* Main Match Card */}
       <div className="p-3 sm:p-4 cursor-pointer" onClick={toggleExpansion}>
+        {/* Mobile Layout */}
         <div className="block md:hidden space-y-3">
-          {/* Top Row: Game Mode + Result */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium text-zinc-400">
@@ -196,9 +201,7 @@ export function MatchCard({
             </div>
           </div>
 
-          {/* Middle Row: Champion + Stats */}
           <div className="flex items-center gap-3">
-            {/* Champion with spells and runes */}
             <div className="flex items-center gap-2">
               <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 border-zinc-700">
                 <span className="absolute bottom-0 left-0 bg-zinc-900/90 text-white text-xs px-1.5 py-0.5 rounded-tr font-medium">
@@ -216,25 +219,23 @@ export function MatchCard({
                 />
               </div>
 
-              {/* Summoner Spells */}
               <div className="flex flex-col gap-1">
                 <div className="w-6 h-6 rounded border border-zinc-700 overflow-hidden">
                   <img
-                    src={getSummonerSpellIcon(playerData.summoner1Id)}
-                    alt={getSummonerSpellName(playerData.summoner1Id)}
+                    src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, playerData.summoner1Id)?.icon_path)}
+                    alt={getSummonerSpellRecordById(summonerSpells, playerData.summoner1Id)?.name || `Spell ${playerData.summoner1Id}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="w-6 h-6 rounded border border-zinc-700 overflow-hidden">
                   <img
-                    src={getSummonerSpellIcon(playerData.summoner2Id)}
-                    alt={getSummonerSpellName(playerData.summoner2Id)}
+                    src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, playerData.summoner2Id)?.icon_path)}
+                    alt={getSummonerSpellRecordById(summonerSpells, playerData.summoner2Id)?.name || `Spell ${playerData.summoner2Id}`}
                     className="w-full h-full object-cover"
                   />
                 </div>
               </div>
 
-              {/* Runes */}
               {!arena && primaryKeystone && secondaryTree && (
                 <div className="flex flex-col gap-1">
                   <div 
@@ -271,7 +272,6 @@ export function MatchCard({
               )}
             </div>
 
-            {/* KDA Stats */}
             <div className="flex flex-col flex-1 min-w-0">
               <span className="text-base sm:text-lg font-bold text-white">
                 {playerData.kills} /{" "}
@@ -290,7 +290,6 @@ export function MatchCard({
               </span>
             </div>
 
-            {/* Expand Button */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -306,7 +305,6 @@ export function MatchCard({
             </button>
           </div>
 
-          {/* Bottom Row: Items */}
           <div className="flex items-center gap-1 flex-wrap">
             {(arena
               ? [
@@ -326,37 +324,40 @@ export function MatchCard({
                   playerData.item5,
                   playerData.item6,
                 ]
-            ).map((itemId, idx) => (
-              <div
-                key={idx}
-                className="w-7 h-7 shrink-0 rounded bg-zinc-800/50 border border-zinc-700 overflow-hidden"
-              >
-                {itemId !== 0 && (
-                  <img
-                    src={getItemImage(itemId.toString())}
-                    alt={`Item ${itemId}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log('Item image failed to load:', {
-                        itemId: itemId,
-                        src: e.currentTarget.src
-                      });
-                      e.currentTarget.src = "/images/noitem.png";
-                    }}
-                  />
-                )}
-              </div>
-            ))}
+            ).map((itemId, idx) => {
+              const item = getItemById(itemId);
+              return (
+                <div
+                  key={idx}
+                  className="w-7 h-7 shrink-0 rounded bg-zinc-800/50 border border-zinc-700 overflow-hidden"
+                >
+                  
+                  {itemId !== 0 && (
+                    console.log('Rendering item:', item?.description, item?.name),
+                    <img
+                      src={getItemImage(item?.image_path)}
+                      alt={item?.name || `Item ${itemId}`}
+                      title={item?.description || `Item ${itemId} no description`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/noitem.png";
+                      }}
+                    />
+                    
+                  )}
+                 
+                </div>
+                
+              );
+            })}
           </div>
 
-          {/* Mobile Augments */}
           {arena && augmentIds.length > 0 && (
             <div className="grid grid-cols-5 gap-1">
               {renderAugments()}
             </div>
           )}
 
-          {/* First Blood and Multikill Pills */}
           <div className="flex gap-2 flex-wrap">
             {firstBloodKill && (
               <div className="flex items-center gap-1 px-2 py-0.5 bg-red-600/20 border border-red-500/40 rounded">
@@ -375,8 +376,8 @@ export function MatchCard({
           </div>
         </div>
 
+        {/* Desktop Layout */}
         <div className="hidden md:flex items-center gap-2 xl:gap-3">
-          {/* Game Mode + Result */}
           <div className="flex flex-col gap-0.5 min-w-[90px] xl:min-w-[110px] shrink-0">
             <span className="text-xs text-zinc-400 font-bold pb-0.5">
               {getQueueName(match.info.queueId)}
@@ -427,7 +428,6 @@ export function MatchCard({
             </div>
           </div>
 
-          {/* Champion Icon + Summoner Spells + Runes */}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="relative w-14 h-14 xl:w-16 xl:h-16 rounded-lg overflow-hidden border-2 border-zinc-700 hover:border-orange-500 transition-all">
               <span className="absolute bottom-0 left-0 bg-zinc-900/90 text-white text-xs px-1.5 py-0.5 rounded-tr font-medium">
@@ -440,31 +440,29 @@ export function MatchCard({
               />
             </div>
 
-            {/* Summoner Spells */}
             <div className="flex flex-col gap-1">
               <div
                 className="w-6 h-6 xl:w-7 xl:h-7 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all"
-                title={getSummonerSpellName(playerData.summoner1Id)}
+                title={getSummonerSpellRecordById(summonerSpells, playerData.summoner1Id)?.name || `Spell ${playerData.summoner1Id}`}
               >
                 <img
-                  src={getSummonerSpellIcon(playerData.summoner1Id)}
-                  alt={getSummonerSpellName(playerData.summoner1Id)}
+                  src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, playerData.summoner1Id)?.icon_path)}
+                  alt={getSummonerSpellRecordById(summonerSpells, playerData.summoner1Id)?.name || `Spell ${playerData.summoner1Id}`}
                   className="w-full h-full object-cover"
                 />
               </div>
               <div
                 className="w-6 h-6 xl:w-7 xl:h-7 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all"
-                title={getSummonerSpellName(playerData.summoner2Id)}
+                title={getSummonerSpellRecordById(summonerSpells, playerData.summoner2Id)?.name || `Spell ${playerData.summoner2Id}`}
               >
                 <img
-                  src={getSummonerSpellIcon(playerData.summoner2Id)}
-                  alt={getSummonerSpellName(playerData.summoner2Id)}
+                  src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, playerData.summoner2Id)?.icon_path)}
+                  alt={getSummonerSpellRecordById(summonerSpells, playerData.summoner2Id)?.name || `Spell ${playerData.summoner2Id}`}
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
 
-            {/* Runes */}
             {!arena && primaryKeystone && secondaryTree && (
               <div className="flex flex-col gap-1">
                 <div
@@ -501,7 +499,6 @@ export function MatchCard({
             )}
           </div>
 
-          {/* KDA Stats */}
           <div className="flex flex-col gap-0.5 min-w-[100px] shrink-0">
             <span className="text-base xl:text-lg font-bold text-white">
               {playerData.kills} /{" "}
@@ -517,7 +514,6 @@ export function MatchCard({
             <span className="text-sm text-zinc-400">{kda} KDA</span>
           </div>
 
-          {/* Items */}
           <div className="flex gap-0.5 xl:gap-1 shrink-0">
             {(arena
               ? [
@@ -537,30 +533,28 @@ export function MatchCard({
                   playerData.item5,
                   playerData.item6,
                 ]
-            ).map((itemId, idx) => (
-              <div
-                key={idx}
-                className="w-6 h-6 xl:w-7 xl:h-7 shrink-0 rounded bg-zinc-800/50 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all"
-              >
-                {itemId !== 0 && (
-                  <img
-                    src={getItemImage(itemId.toString())}
-                    alt={`Item ${itemId}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log('Item image failed to load:', {
-                        itemId: itemId,
-                        src: e.currentTarget.src
-                      });
-                      e.currentTarget.src = "/images/noitem.png";
-                    }}
-                  />
-                )}
-              </div>
-            ))}
+            ).map((itemId, idx) => {
+              const item = getItemById(itemId);
+              return (
+                <div
+                  key={idx}
+                  className="w-6 h-6 xl:w-7 xl:h-7 shrink-0 rounded bg-zinc-800/50 border border-zinc-700 overflow-hidden hover:border-orange-500 transition-all"
+                >
+                  {itemId !== 0 && (
+                    <img
+                      src={getItemImage(item?.image_path)}
+                      alt={item?.name || `Item ${itemId}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/images/noitem.png";
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
-          {/* CS & Gold — hidden on md, shown on lg+ */}
           <div className="hidden lg:flex flex-col gap-0.5 text-right min-w-[80px] shrink-0">
             <span className="text-sm text-zinc-300">{csDisplay.totalCS} CS</span>
             {csDisplay.csPerMin ? (
@@ -577,17 +571,15 @@ export function MatchCard({
             )}
           </div>
 
-          {/* Arena Augments — hidden on md, shown on xl+ */}
           {arena && (
             <div className="hidden xl:flex flex-col gap-1 shrink-0">
               <span className="text-xs text-zinc-400">Augments</span>
-              <div className="grid grid-cols-2 gap-1 max-w-[120px]">
+              <div className="grid grid-cols-3 gap-1 max-w-[120px]">
                 {renderAugments()}
               </div>
             </div>
           )}
 
-          {/* Multikill + First Blood */}
           <div className="flex flex-col gap-0.5 text-right min-w-[100px] xl:min-w-[120px] ml-auto shrink-0">
             {!arena && biggestMultikill && (
               <div className="flex items-center gap-1 px-2 py-0.5 mt-1 bg-orange-600/20 border border-orange-500/40 rounded justify-end ml-auto">
@@ -607,7 +599,6 @@ export function MatchCard({
             )}
           </div>
 
-          {/* Expand Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -626,10 +617,7 @@ export function MatchCard({
 
       {isExpanded && (
         <div className="border-t border-zinc-700/50">
-          <div className="p-3 sm:p-4 bg-gradient-to-r from-slate-800/20 via-black/2 to-orange-900/10">
-
-
-            {/* Tab Content */}
+          <div className="p-3 sm:p-4 bg-gradient-to-r from-slate-800/20 via-black/20 to-orange-900/10">
             {expandedTab === "teams" && (
               <MatchDetailsTab
                 match={match}
@@ -638,6 +626,8 @@ export function MatchCard({
                 onPlayerClick={onPlayerClick}
                 augments={augments}
                 runesData={runesData}
+                items={items}
+                summonerSpells={summonerSpells}
               />
             )}
 

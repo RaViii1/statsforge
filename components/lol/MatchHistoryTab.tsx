@@ -7,6 +7,8 @@ import { useEffect, useMemo, useState } from "react";
 import { determineRole, getChampionImage, getQueueName, getRoleIcon } from "@/lib/lol/lolfunctions";
 import { getChampionIdByName } from "@/lib/champion-data";
 import { Augment } from "@/lib/arena-augments";
+import { Item } from "@/lib/items";
+import { SummonerSpell, getSummonerSpellRecordById } from "@/lib/summoner-spell";
 
 interface MatchHistoryTabProps {
   matches: Match[];
@@ -19,6 +21,8 @@ interface MatchHistoryTabProps {
   onPlayerClick: (gameName: string, tagLine: string) => void;
   onRefresh?: () => void;
   runesData?: { runes: any[]; trees: any[] };
+  items?: Item[];
+  summonerSpells?: Record<string, SummonerSpell>;
 }
 
 interface ChampionStats {
@@ -43,6 +47,7 @@ export function MatchHistoryTab({
   onPlayerClick,
   onRefresh,
   runesData,
+  items = [],
 }: MatchHistoryTabProps) {
   const [expandedChampion, setExpandedChampion] = useState<string | null>(null);
   const [showRoles, setShowRoles] = useState(false);
@@ -53,7 +58,8 @@ export function MatchHistoryTab({
   const [filterGameMode, setFilterGameMode] = useState<string>("");
   const [sortBy, setSortBy] = useState<"recent" | "champion" | "role">("recent");
   const [augments, setAugments] = useState<Augment[]>([]);
-  
+  const [summonerSpells, setSummonerSpells] = useState<Record<string, SummonerSpell>>({});
+
   useEffect(() => {
     fetch("/api/arena/augments")
       .then(res => res.json())
@@ -70,6 +76,17 @@ export function MatchHistoryTab({
         setAugments(arenaAugments);
       })
       .catch(err => console.error("Failed to fetch augments:", err));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/summoner-spells")
+      .then(res => res.json())
+      .then((data: SummonerSpell[]) => {
+        const record: Record<string, SummonerSpell> = {};
+        data.forEach(spell => { record[spell.id] = spell; });
+        setSummonerSpells(record);
+      })
+      .catch(err => console.error("Failed to fetch summoner spells:", err));
   }, []);
 
   // Calculate winrate graph data (last 20 games max)
@@ -556,19 +573,21 @@ export function MatchHistoryTab({
           </div>
 ) : filteredMatches.length > 0 ? (
            <>
-             <div className="space-y-3 mb-6">
-               {filteredMatches.map((match: Match) => (
-                 <MatchCard
-                   key={match.metadata.matchId}
-                   match={match}
-                   summonerPuuid={summonerPuuid}
-                   server={server}
-                   rankedData={rankedData}
-                   augments={augments}
-                   onPlayerClick={onPlayerClick}
-                   runesData={runesData}
-                 />
-               ))}
+              <div className="space-y-3 mb-6">
+ {filteredMatches.map((match: Match) => (
+                  <MatchCard
+                    key={match.metadata.matchId}
+                    match={match}
+                    summonerPuuid={summonerPuuid}
+                    server={server}
+                    rankedData={rankedData}
+                    augments={augments}
+                    onPlayerClick={onPlayerClick}
+                    runesData={runesData}
+                    items={items}
+                    summonerSpells={summonerSpells}
+                  />
+                ))}
              </div>
             {!hasActiveFilters && (
               <div className="text-center">

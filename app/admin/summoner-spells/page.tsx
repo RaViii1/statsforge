@@ -1,47 +1,49 @@
-'use client';
+    'use client';
 
-import { ArrowLeft, Swords, Upload, FileText, X, AlertCircle } from "lucide-react";
+import { ArrowLeft, Zap, Upload, FileText, X, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import ItemsLoLForm from "./ItemsLoLForm";
-import ItemsLoLList from "./ItemsLoLList";
+import SummonerSpellsForm from "./SummonerSpellsForm";
+import SummonerSpellsList from "./SummonerSpellsList";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { getSummonerSpellIconUrl, SummonerSpell } from "@/lib/summoner-spell";
 
-interface ImportItem {
-  id: string;
+
+interface ImportSpell {
+  id: number;
   name: string;
   description: string;
-  image: string;
-  stats: any;
+  cooldown: number;
+  iconPath: string;
 }
 
 interface ImportPreview {
-  items: ImportItem[];
+  spells: ImportSpell[];
 }
 
-export default function ItemsLoLPage() {
-  const [items, setItems] = useState([]);
+export default function SummonerSpellsPage() {
+  const [spells, setSpells] = useState<SummonerSpell[]>([]);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [importing, setImporting] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadItems = useCallback(async () => {
+  const loadSpells = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/items-lol');
+      const res = await fetch('/api/admin/summoner-spells');
       if (res.ok) {
         const data = await res.json();
-        setItems(data);
+        setSpells(data);
       }
     } catch (error) {
-      console.error('Failed to load items:', error);
+      console.error('Failed to load spells:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadItems();
-  }, [loadItems]);
+    loadSpells();
+  }, [loadSpells]);
 
   const handleImportJSON = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,63 +53,46 @@ export default function ItemsLoLPage() {
     reader.onload = (event) => {
       try {
         const raw = JSON.parse(event.target?.result as string);
-
-        // Support Riot's format: { type: "item", version: "...", data: { "1001": {...}, ... } }
-        let itemsData: Array<{id: string; [key: string]: any}> = [];
+        let spellsData: any[] = [];
         if (Array.isArray(raw)) {
-          itemsData = raw;
+          spellsData = raw;
+        } else if (raw.data && Array.isArray(raw.data)) {
+          spellsData = raw.data;
         } else if (raw.data && typeof raw.data === 'object') {
-          // Convert object to array while preserving keys as id (id from key takes precedence)
-          itemsData = Object.entries(raw.data).map(([key, value]) => {
-            const obj = (typeof value === 'object' && value !== null) ? value as Record<string, any> : {};
-            return { ...obj, id: String(obj.id || key) };
-          });
-        } else if (raw.items) {
-          itemsData = raw.items;
-        } else if (raw.data) {
-          itemsData = Object.values(raw.data).filter(Boolean) as Array<{id: string; [key: string]: any}>;
+          spellsData = Object.values(raw.data).filter(Boolean);
         } else {
-          itemsData = Object.values(raw).filter(v => typeof v === 'object') as Array<{id: string; [key: string]: any}>;
+          spellsData = Object.values(raw).filter(v => typeof v === 'object') as any[];
         }
 
-        if (!Array.isArray(itemsData) || itemsData.length === 0) {
-          throw new Error('Invalid format: expected array of items or { data: {...} }');
+        if (!Array.isArray(spellsData) || spellsData.length === 0) {
+          throw new Error('Invalid format: expected array of summoner spells');
         }
 
         const stripTags = (text?: string) => {
           if (!text) return '';
-          return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+          return text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
         };
 
-        const previewItems: ImportItem[] = itemsData.map((item: any) => {
-          // Handle image: can be object with .full property or string
-          let imagePath = '';
-          if (item.image) {
-            if (typeof item.image === 'string') {
-              imagePath = item.image;
-            } else if (item.image.full) {
-              imagePath = item.image.full;
-            }
-          }
-          
-          // Handle stats: prefer stats object, fallback to tags array
-          let itemStats = {};
-          if (item.stats && typeof item.stats === 'object') {
-            itemStats = item.stats;
-          } else if (Array.isArray(item.tags) && item.tags.length > 0) {
-            itemStats = item.tags;
-          }
-          
-          return {
-            id: String(item.id || ''),
-            name: item.name || 'Unnamed Item',
-            description: stripTags(item.plaintext || ''),
-            image: imagePath,
-            stats: itemStats
-          };
-        });
+        const previewSpells: ImportSpell[] = spellsData.map((spell: any) => {
+          let iconPath = spell.iconPath || spell.icon_path || '';
+          // Always take only the last path segment as the filename
+          iconPath = iconPath.split('/').pop() || iconPath;
 
-        setImportPreview({ items: previewItems });
+          return {
+            id: spell.id && spell.id > 0 ? spell.id : null,
+            name: spell.name || 'Unnamed Spell',
+            description: stripTags(spell.description || ''),
+            cooldown: spell.cooldown ?? 0,
+            iconPath,
+          };
+        }).filter(s => s.iconPath);
+
+        if (previewSpells.length === 0 && spellsData.length > 0) {
+          toast.error('No valid spells found in JSON (all entries have missing icon paths)');
+          return;
+        }
+
+        setImportPreview({ spells: previewSpells });
       } catch (err: any) {
         toast.error('Invalid JSON: ' + err.message);
       }
@@ -121,29 +106,37 @@ export default function ItemsLoLPage() {
     setImporting(true);
 
     try {
-      const itemsToImport = importPreview.items.map(item => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        image_path: item.image,
-        stats: item.stats
-      }));
+      const spellsToImport = importPreview.spells
+        .filter(spell => spell.name && spell.iconPath)
+        .map(spell => ({
+          id: spell.id && spell.id > 0 ? spell.id : null,
+          name: spell.name,
+          description: spell.description,
+          cooldown: spell.cooldown,
+          icon_path: spell.iconPath,
+        }));
 
-      const res = await fetch('/api/admin/items-lol', {
+      const res = await fetch('/api/admin/summoner-spells', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itemsToImport)
+        body: JSON.stringify(spellsToImport),
       });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Import failed');
-      }
-
       const result = await res.json();
-      toast.success(`Imported ${result.count} items`);
+
+      if (res.ok && result.success) {
+        toast.success(`Imported ${result.count} spells`);
+      } else {
+        const failed = result.results?.filter((r: any) => !r.success).length ?? result.count;
+        const ok = (result.results?.filter((r: any) => r.success).length ?? result.count) - failed;
+        if (ok > 0) {
+          toast.warning(`Imported ${ok} of ${spellsToImport.length} spells. ${failed} failed.`);
+        } else {
+          toast.error(`Import failed: ${result.message || 'Unknown error'}`);
+        }
+      }
       setImportPreview(null);
-      loadItems();
+      loadSpells();
     } catch (error: any) {
       toast.error('Import failed: ' + error.message);
     } finally {
@@ -169,7 +162,7 @@ export default function ItemsLoLPage() {
           </Link>
           <span className="text-white/10 text-lg font-thin">/</span>
           <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-orange-400">
-            LoL Items
+            Summoner Spells
           </span>
         </div>
       </div>
@@ -179,14 +172,14 @@ export default function ItemsLoLPage() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-              <Swords className="w-5 h-5 text-orange-400" />
+              <Zap className="w-5 h-5 text-orange-400" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">
-                Items Management
+                Summoner Spells
               </h1>
               <p className="text-sm text-zinc-500 mt-0.5">
-                League of Legends — items, stats &amp; game modes
+                League of Legends — cooldowns, descriptions and icon management
               </p>
             </div>
           </div>
@@ -200,10 +193,10 @@ export default function ItemsLoLPage() {
         {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
           <div className="xl:sticky top-20">
-            <ItemsLoLForm />
+            <SummonerSpellsForm />
           </div>
           <div>
-            <ItemsLoLList initialItems={items} />
+            <SummonerSpellsList initialSpells={spells} />
           </div>
         </div>
       </div>
@@ -231,42 +224,42 @@ export default function ItemsLoLPage() {
               <div className="flex items-start gap-3 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                 <AlertCircle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-200">
-                  <p className="font-semibold mb-1">This will add items to your database</p>
-                  <p className="text-yellow-300/70 text-xs">{importPreview.items.length} items will be imported.</p>
+                  <p className="font-semibold mb-1">This will add spells to your database</p>
+                  <p className="text-yellow-300/70 text-xs">{importPreview.spells.length} spells will be imported.</p>
                 </div>
               </div>
 
-              {/* Items Preview */}
+              {/* Spells Preview */}
               <div className="max-h-96 overflow-y-auto space-y-2">
-                {importPreview.items.slice(0, 20).map((item, idx) => (
+                {importPreview.spells.slice(0, 20).map((spell, idx) => (
                   <div key={idx} className="bg-zinc-900/20 rounded-xl p-4 border border-white/5">
                     <div className="flex items-center gap-3">
-                      {item.image ? (
+                      {spell.iconPath ? (
                         <img
-                          src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item.image}`}
-                          alt={item.name}
-                          className="w-10 h-10 rounded-lg object-cover"
+                          src={getSummonerSpellIconUrl(spell.iconPath)}
+                          alt={spell.name}
+                          className="w-10 h-10 rounded-lg object-contain bg-zinc-800 shrink-0"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/noitem.png";
+                            (e.target as HTMLImageElement).src = '/images/noitem.png';
                           }}
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
-                          <Swords className="w-5 h-5 text-zinc-600" />
+                        <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 flex items-center justify-center text-zinc-400 shrink-0">
+                          <Zap className="w-5 h-5" />
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-semibold text-white">{item.name}</p>
-                        <p className="text-xs text-zinc-500">ID: {item.id}</p>
-                        {item.description && (
-                          <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{item.description}</p>
+                        <p className="text-sm font-semibold text-white">{spell.name}</p>
+                        <p className="text-xs text-zinc-500">ID: {spell.id} · {spell.cooldown}s CD</p>
+                        {spell.description && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{spell.description}</p>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
-                {importPreview.items.length > 20 && (
-                  <p className="text-xs text-zinc-500 text-center">...and {importPreview.items.length - 20} more items</p>
+                {importPreview.spells.length > 20 && (
+                  <p className="text-xs text-zinc-500 text-center">...and {importPreview.spells.length - 20} more spells</p>
                 )}
               </div>
             </div>

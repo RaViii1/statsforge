@@ -35,8 +35,8 @@ export async function POST(request: Request) {
 
     const supabase = createServiceClient();
 
-    // Build file path inside bucket (lowercase filename for consistency)
-    const fileName = file.name.toLowerCase();
+    // Build file path inside bucket (use original filename — no casing change)
+    const fileName = file.name;
     const filePath = folder ? `${folder}/${fileName}` : fileName;
 
     const { error: uploadError } = await supabase.storage

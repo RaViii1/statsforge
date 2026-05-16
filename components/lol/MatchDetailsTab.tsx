@@ -11,9 +11,9 @@ import {
   isRemake,
   getChampionImage
 } from "@/lib/lol/lolfunctions";
-import { getSummonerSpellName, getSummonerSpellIcon } from "@/lib/summoner-spells";
+import { getSummonerSpellIconUrl, getSummonerSpellRecordById, SummonerSpell } from "@/lib/summoner-spell";
 import { getRuneIconUrl, getTreeIconUrl } from "@/lib/lol/runes";
-import { getItemImage, getItemDescription } from "@/lib/items";
+import { Item } from "@/lib/items";
 import { MatchRunesTab } from "@/components/lol/MatchRunesTab";
 import { MatchPerformanceTab } from "@/components/lol/MatchPerformanceTab";
 import { RankedIcon } from "@/components/lol/RankedIcon";
@@ -27,17 +27,23 @@ interface MatchDetailsTabProps {
   augments: Augment[];
   onPlayerClick: (gameName: string, tagLine: string) => void;
   runesData?: { runes: any[]; trees: any[] };
+  items?: Item[];
+  summonerSpells?: Record<string, SummonerSpell>;
 }
 
 type TabType = "details" | "performance" | "runes";
 
-export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, onPlayerClick, runesData }: MatchDetailsTabProps) {
+export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, onPlayerClick, runesData, items = [], summonerSpells = {} }: MatchDetailsTabProps) {
   const [activeTab, setActiveTab] = useState<TabType>("details");
   const [rankedDataMap, setRankedDataMap] = useState<Record<string, RankedEntry | null>>({});
   const [isLoadingRanked, setIsLoadingRanked] = useState(true);
   const fetchedMatchIdRef = useRef<string | null>(null);
   const arena = isArena(match.info.queueId);
   const remake = isRemake(match);
+
+  const getItemById = (id: string | number) => {
+    return items.find(i => i.id === String(id));
+  };
   
   // Calculate highest damage dealt and taken in the match
   const highestDamageDealt = Math.max(...match.info.participants.map((p: MatchParticipant) => p.totalDamageDealtToChampions));
@@ -299,248 +305,288 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
           </div>
 
           {/* Arena Teams Display */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {Object.entries(arenaTeams)
-              .sort(([, aPlayers], [, bPlayers]) => {
-                const aPlacement = aPlayers[0]?.subteamPlacement ?? 99;
-                const bPlacement = bPlayers[0]?.subteamPlacement ?? 99;
-                return aPlacement - bPlacement;
-              })
-              .map(([subteamId, players]) => {
-                const teamWon = players[0]?.win;
-                const placement = players[0]?.subteamPlacement ?? Number(subteamId);
-                const teamIconUrl = getTeamIcon(Number(subteamId));
-                
-                return (
-                  <div
-                    key={subteamId}
-                    className="space-y-3"
-                  >
-                    {/* Team Header - Flat Design */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-lg overflow-hidden">
+{/* Arena Teams Display */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {Object.entries(arenaTeams)
+    .sort(([, aPlayers], [, bPlayers]) => {
+      const aPlacement = aPlayers[0]?.subteamPlacement ?? 99;
+      const bPlacement = bPlayers[0]?.subteamPlacement ?? 99;
+      return aPlacement - bPlacement;
+    })
+    .map(([subteamId, players]) => {
+      const teamWon = players[0]?.win;
+      const placement = players[0]?.subteamPlacement ?? Number(subteamId);
+      const teamIconUrl = getTeamIcon(Number(subteamId));
+      
+      return (
+        <div key={subteamId} className="space-y-3">
+          {/* Team Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-lg overflow-hidden">
+                <img
+                  src={teamIconUrl}
+                  alt={`Team ${subteamId}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = getTeamIcon(Number(subteamId));
+                  }}
+                />
+              </div>
+              <span className="text-sm font-bold text-white">
+                Team {getArenaTeamName(Number(subteamId)) || subteamId}
+              </span>
+              {teamWon && (
+                <span className="text-sm font-bold uppercase tracking-wider text-emerald-400">
+                  Won
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-zinc-400 font-medium">
+              Place #{placement}
+            </span>
+          </div>
+
+          {/* Players List */}
+          <div className="space-y-2">
+            {players.map((participant) => {
+              const isPlayer = participant.puuid === summonerPuuid;
+              
+              const augmentIds = [
+                participant.playerAugment1,
+                participant.playerAugment2,
+                participant.playerAugment3,
+                participant.playerAugment4,
+                participant.playerAugment5,
+              ];
+              
+              // Define all 6 item slots in order
+              const itemSlots = [
+                { id: participant.item0, position: 0 },
+                { id: participant.item1, position: 1 },
+                { id: participant.item2, position: 2 },
+                { id: participant.item3, position: 3 },
+                { id: participant.item4, position: 4 },
+                { id: participant.item5, position: 5 },
+              ];
+              
+              // Split into first 3 and last 3 slots
+              const firstRowSlots = itemSlots.slice(0, 3);
+              const secondRowSlots = itemSlots.slice(3, 6);
+              
+              const trinketId = participant.item6;
+
+              return (
+                <div
+                  key={participant.puuid}
+                  className={`p-3 transition-all duration-200 ${
+                    isPlayer
+                      ? 'bg-gradient-to-r from-orange-500/10 to-transparent border-l-2 border-orange-500' 
+                      : 'hover:bg-zinc-800/30'
+                  }`}
+                >
+                  {/* Player Header */}
+                  <div className="flex items-center gap-3 mb-3 pb-2 border-b border-zinc-700/30">
+                    <div className="relative group">
+                      <span className="text-[10px] text-white absolute bottom-0.5 left-0.5 bg-zinc-900/90 rounded px-1 py-0.5 font-bold shadow-sm">{participant.champLevel}</span>
+                      <img
+                        src={getChampionImage(participant.championId.toString())}
+                        alt={participant.championName}
+                        className="w-14 h-14 rounded-lg border-2 border-zinc-600 shrink-0 shadow-md"
+                        onError={(e) => {
+                          e.currentTarget.src = "images/nochampionimage.jpg";
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col gap-1 shrink-0">
+                      {[participant.summoner1Id, participant.summoner2Id].map((spellId, idx) => (
+                        <div 
+                          key={idx} 
+                          className="group relative w-6 h-6 rounded border border-zinc-600 overflow-hidden hover:border-orange-500 transition-colors shadow-sm"
+                          title={getSummonerSpellRecordById(summonerSpells, spellId)?.name || `Spell ${spellId}`}
+                        >
                           <img
-                            src={teamIconUrl}
-                            alt={`Team ${subteamId}`}
+                            src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, spellId)?.icon_path)}
+                            alt={getSummonerSpellRecordById(summonerSpells, spellId)?.name || `Spell ${spellId}`}
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = getTeamIcon(Number(subteamId));
-                            }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-white">
-                          Team {subteamId}
-                        </span>
-                        {teamWon && (
-                          <span className="text-sm font-bold uppercase tracking-wider text-emerald-400">
-                            Won
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-zinc-400 font-medium">
-                        Place #{placement}
-                      </span>
+                      ))}
                     </div>
-
-                    {/* Players List - No Container Border */}
-                    <div className="space-y-2">
-                      {players.map((participant) => {
-                        const isPlayer = participant.puuid === summonerPuuid;
-                        
-                        const augmentIds = [
-                          participant.playerAugment1,
-                          participant.playerAugment2,
-                          participant.playerAugment3,
-                          participant.playerAugment4,
-                          participant.playerAugment5,
-                        ];
-                        const itemIds = [
-                          participant.item0,
-                          participant.item1,
-                          participant.item2,
-                          participant.item3,
-                          participant.item4,
-                          participant.item5,
-                        ];
-                        const normalizedItems = itemIds.map(id => id === 0 ? null : id);
-
-                        return (
-                          <div
-                            key={participant.puuid}
-                            className={`p-3 transition-all duration-200 ${
-                              isPlayer
-                                ? 'bg-gradient-to-r from-orange-500/10 to-transparent border-l-2 border-orange-500' 
-                                : 'hover:bg-zinc-800/30'
-                            }`}
-                          >
-                            {/* Player Header */}
-                            <div className="flex items-center gap-3 mb-3 pb-2 border-b border-zinc-700/30">
-                              <div className="relative group">
-                                <span className="text-[10px] text-white absolute bottom-0.5 left-0.5 bg-zinc-900/90 rounded px-1 py-0.5 font-bold shadow-sm">{participant.champLevel}</span>
-                                <img
-                                  src={getChampionImage(participant.championId.toString())}
-                                  alt={participant.championName}
-                                  className="w-14 h-14 rounded-lg border-2 border-zinc-600 shrink-0 shadow-md"
-                                  onError={(e) => {
-                                    e.currentTarget.src = "images/nochampionimage.jpg";
-                                  }}
-                                />
-                              </div>
-                              
-                              <div className="flex flex-col gap-1 shrink-0">
-                                {[participant.summoner1Id, participant.summoner2Id].map((spellId, idx) => (
-                                  <div 
-                                    key={idx} 
-                                    className="group relative w-6 h-6 rounded border border-zinc-600 overflow-hidden hover:border-orange-500 transition-colors shadow-sm"
-                                    title={getSummonerSpellName(spellId)}
-                                  >
-                                    <img
-                                      src={getSummonerSpellIcon(spellId)}
-                                      alt={getSummonerSpellName(spellId)}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <button
-                                  onClick={() => onPlayerClick(participant.riotIdGameName, participant.riotIdTagline)}
-                                  className="text-sm font-bold text-white truncate hover:text-orange-400 transition-colors cursor-pointer text-left w-full mb-1"
-                                  title={`${participant.riotIdGameName}`}
-                                >
-                                  {participant.riotIdGameName}
-                                </button>
-                                <p className="text-sm font-semibold">
-                                  <span className="text-green-400">{participant.kills}</span>
-                                  <span className="text-zinc-500"> / </span>
-                                  <span className="text-red-400">{participant.deaths}</span>
-                                  <span className="text-zinc-500"> / </span>
-                                  <span className="text-blue-400">{participant.assists}</span>
-                                </p>
-                              </div>
-                            </div>
-
-                            {/* Augments & Items Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {/* Augments */}
-                              <div>
-                                <div className="flex items-center gap-2 mb-2.5">
-                                  <p className="text-xs font-bold text-white uppercase tracking-wide">Augments</p>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {augmentIds.map((augmentId, idx) => {
-                                    const augment = getAugmentById(augmentId, augments);
-                                    const augmentIcon = augment ? getArenaAugmentIcon(augmentId, augments) : '';
-                                    const augmentName = augment?.name ?? `Augment ${augmentId}`;
-                                    const augmentDesc = augment?.description ?? '';
-                                    const hasAugment = augmentId && augmentId !== 0;
-                                    const tier = getArenaAugmentTier(augment);
-                                    const borderColor = hasAugment ? getAugmentTierBorderColor(tier) : '';
-                                    const bgColor = hasAugment ? getAugmentTierBgColor(tier) : '';
-                                    const glow = hasAugment ? getAugmentTierGlow(tier) : '';
-
-                                    return (
-                                      <div
-                                        key={`augment-${idx}`}
-                                        className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
-                                          hasAugment
-                                            ? `border ${borderColor} ${bgColor} ${glow} hover:scale-110`
-                                            : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                                        }`}
-                                        title={hasAugment ? `${augmentName}${augmentDesc ? `\n\n${augmentDesc}` : ''}` : 'Empty Augment Slot'}
-                                      >
-                                        {hasAugment && augmentIcon ? (
-                                          <img
-                                            src={augmentIcon}
-                                            alt={augmentName}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              e.currentTarget.style.display = 'none';
-                                              e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-purple-400 text-sm font-bold">A</div>';
-                                            }}
-                                          />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                                            <span className="text-xs">?</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-
-                              {/* Items */}
-                              <div>
-                                <div className="flex items-center gap-2 mb-2.5">
-                                  <p className="text-xs font-bold text-white uppercase tracking-wide">Items</p>
-                                </div>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {normalizedItems.map((itemId, idx) => {
-                                    const isEmpty = !itemId;
-                                    const itemName = itemId ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
-
-                                    return (
-                                      <div
-                                        key={`item-${idx}`}
-                                        className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
-                                          isEmpty
-                                            ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                                            : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
-                                        }`}
-                                        title={itemName}
-                                      >
-                                        {itemId && (
-                                          <img
-                                            src={getItemImage(itemId.toString())}
-                                            alt={itemName}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              console.log('Item image failed to load:', {
-                                                itemId: itemId,
-                                                itemName: itemName,
-                                                src: e.currentTarget.src
-                                              });
-                                              e.currentTarget.src = "/images/noitem.png";
-                                            }}
-                                          />
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-
-                                  {/* Trinket */}
-                                  <div 
-                                    className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
-                                      participant.item6 && participant.item6 !== 0
-                                        ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
-                                        : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                                    }`}
-                                    title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${getItemDescription(participant.item6.toString())}` : 'Empty Trinket Slot'}
-                                  >
-                                    {participant.item6 && participant.item6 !== 0 && (
-                                      <img
-                                        src={getItemImage(participant.item6.toString())}
-                                        alt={`Trinket ${participant.item6}`}
-                                        className="w-full h-full object-cover"
-                                          onError={(e) => {
-                                              e.currentTarget.src = "/images/noitem.png";
-                                            }}
-                                      />
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    
+                    <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => onPlayerClick(participant.riotIdGameName, participant.riotIdTagline)}
+                        className="text-sm font-bold text-white truncate hover:text-orange-400 transition-colors cursor-pointer text-left w-full mb-1"
+                        title={`${participant.riotIdGameName}`}
+                      >
+                        {participant.riotIdGameName}
+                      </button>
+                      <p className="text-sm font-semibold">
+                        <span className="text-green-400">{participant.kills}</span>
+                        <span className="text-zinc-500"> / </span>
+                        <span className="text-red-400">{participant.deaths}</span>
+                        <span className="text-zinc-500"> / </span>
+                        <span className="text-blue-400">{participant.assists}</span>
+                      </p>
                     </div>
                   </div>
-                );
-              })}
+
+                  {/* Augments & Items Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Augments */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <p className="text-xs font-bold text-white uppercase tracking-wide">Augments</p>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {augmentIds.map((augmentId, idx) => {
+                          const augment = getAugmentById(augmentId, augments);
+                          const augmentIcon = augment ? getArenaAugmentIcon(augmentId, augments) : '';
+                          const augmentName = augment?.name ?? `Augment ${augmentId}`;
+                          const augmentDesc = augment?.description ?? '';
+                          const hasAugment = augmentId && augmentId !== 0;
+                          const tier = getArenaAugmentTier(augment);
+                          const borderColor = hasAugment ? getAugmentTierBorderColor(tier) : '';
+                          const bgColor = hasAugment ? getAugmentTierBgColor(tier) : '';
+                          const glow = hasAugment ? getAugmentTierGlow(tier) : '';
+
+                          return (
+                            <div
+                              key={`augment-${idx}`}
+                              className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
+                                hasAugment
+                                  ? `border ${borderColor} ${bgColor} ${glow} hover:scale-110`
+                                  : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                              }`}
+                              title={hasAugment ? `${augmentName}${augmentDesc ? `\n\n${augmentDesc}` : ''}` : 'Empty Augment Slot'}
+                            >
+                              {hasAugment && augmentIcon ? (
+                                <img
+                                  src={augmentIcon}
+                                  alt={augmentName}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-purple-400 text-sm font-bold">A</div>';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                                  <span className="text-xs">?</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Items - 3x2 Grid with Trinket as 4th column in first row */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <p className="text-xs font-bold text-white uppercase tracking-wide">Items</p>
+                      </div>
+                      
+                      {/* First Row: 3 items + Trinket */}
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        {firstRowSlots.map((slot) => {
+                          const itemId = slot.id;
+                          const isEmpty = !itemId || itemId === 0;
+                          const item = itemId ? getItemById(itemId) : undefined;
+                          const itemName = item?.name || 'Empty Item Slot';
+
+                          return (
+                            <div
+                              key={`item-row1-${slot.position}`}
+                              className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
+                                isEmpty
+                                  ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                  : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                              }`}
+                              title={itemName}
+                            >
+                              {!isEmpty && itemId && (
+                                <img
+                                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item?.image_path || "images/noitem.png"}`}
+                                  alt={itemName}
+                                  className="w-full h-full object-cover"
+                                  title={item?.description || `Item ${itemId} no description`}
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/images/noitem.png";
+                                  }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Trinket as 4th column in first row */}
+                        <div
+                          className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
+                            trinketId && trinketId !== 0
+                              ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
+                              : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                          }`}
+                          title={trinketId && trinketId !== 0 ? `Trinket: ${(getItemById(trinketId)?.name || trinketId)}` : 'Empty Trinket Slot'}
+                        >
+                          {trinketId && trinketId !== 0 && (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${getItemById(trinketId)?.image_path || "images/noitem.png"}`}
+                              alt={`Trinket ${trinketId}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = "/images/noitem.png";
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Second Row: 3 items */}
+                      <div className="flex items-center gap-1.5">
+                        {secondRowSlots.map((slot) => {
+                          const itemId = slot.id;
+                          const isEmpty = !itemId || itemId === 0;
+                          const item = itemId ? getItemById(itemId) : undefined;
+                          const itemName = item?.name || 'Empty Item Slot';
+
+                          return (
+                            <div
+                              key={`item-row2-${slot.position}`}
+                              className={`group relative w-8 h-8 rounded-lg overflow-hidden transition-all duration-200 shadow-sm ${
+                                isEmpty
+                                  ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                  : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                              }`}
+                              title={itemName}
+                            >
+                              {!isEmpty && itemId && (
+                                <img
+                                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item?.image_path || "images/noitem.png"}`}
+                                  alt={itemName}
+                                  className="w-full h-full object-cover"
+                                  title={item?.description || `Item ${itemId} no description`}
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/images/noitem.png";
+                                  }}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
+      );
+    })}
+</div>
         </>
       );
     }
@@ -662,12 +708,12 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                               }}
                             />
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner1Id)}>
-                              <img src={getSummonerSpellIcon(participant.summoner1Id)} alt={getSummonerSpellName(participant.summoner1Id)} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellName(participant.summoner2Id)}>
-                              <img src={getSummonerSpellIcon(participant.summoner2Id)} alt={getSummonerSpellName(participant.summoner2Id)} className="w-full h-full object-cover" />
+                            <div className="flex flex-col gap-1">
+                              <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellRecordById(summonerSpells, participant.summoner1Id)?.name || `Spell ${participant.summoner1Id}`}>
+                                <img src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, participant.summoner1Id)?.icon_path)} alt={getSummonerSpellRecordById(summonerSpells, participant.summoner1Id)?.name || `Spell ${participant.summoner1Id}`} className="w-full h-full object-cover" />
+                              </div>
+                              <div className="w-5 h-5 rounded border border-zinc-700 overflow-hidden hover:border-orange-500 transition-colors shadow-sm" title={getSummonerSpellRecordById(summonerSpells, participant.summoner2Id)?.name || `Spell ${participant.summoner2Id}`}>
+                                <img src={getSummonerSpellIconUrl(getSummonerSpellRecordById(summonerSpells, participant.summoner2Id)?.icon_path)} alt={getSummonerSpellRecordById(summonerSpells, participant.summoner2Id)?.name || `Spell ${participant.summoner2Id}`} className="w-full h-full object-cover" />
                             </div>
                           </div>
                           {!arena && participantPrimaryKeystone && (
@@ -781,96 +827,97 @@ export function MatchDetailsTab({ match, summonerPuuid, playerData, augments, on
                         </div>
                       </div>
 
-                      {/* Bottom Row: Items - RESTORED ORIGINAL BEHAVIOR */}
-                      <div className={`flex items-center gap-3 ${name === 'Blue Team' ? 'justify-start' : 'justify-end'}`}>
-                        <div className={`flex flex-wrap gap-1 ${name === 'Red Team' ? 'flex-row-reverse' : ''}`}>
-                          {name === 'Red Team' ? [...itemIds].reverse().map((itemId, idx) => {
-                            const originalIndex = itemIds.length - 1 - idx;
-                            const itemName = itemId && itemId !== 0 ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
-                            return (
-                              <div
-                                key={`item-${originalIndex}`}
-                                className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
-                                  !itemId || itemId === 0
-                                    ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                                    : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
-                                }`}
-                                title={itemName}
-                              >
-                                {itemId && itemId !== 0 ? (
-                                  <img
-                                    src={getItemImage(itemId.toString())}
-                                    alt={itemName}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      console.log('Item image failed to load:', {
-                                        itemId: itemId,
-                                        itemName: itemName,
-                                        src: e.currentTarget.src
-                                      });
-                                      e.currentTarget.src = "/images/noitem.png";
-                                    }}
-                                  />
-                                ) : null}
-                              </div>
-                            );
-                          }) : itemIds.map((itemId, idx) => {
-                            const itemName = itemId && itemId !== 0 ? getItemDescription(itemId.toString()) : 'Empty Item Slot';
-                            return (
-                              <div
-                                key={`item-${idx}`}
-                                className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
-                                  !itemId || itemId === 0
-                                    ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                                    : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
-                                }`}
-                                title={itemName}
-                              >
-                                {itemId && itemId !== 0 ? (
-                                  <img
-                                    src={getItemImage(itemId.toString())}
-                                    alt={itemName}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      console.log('Item image failed to load:', {
-                                        itemId: itemId,
-                                        itemName: itemName,
-                                        src: e.currentTarget.src
-                                      });
-                                      e.currentTarget.src = "/images/noitem.png";
-                                    }}
-                                  />
-                                ) : null}
-                              </div>
-                            );
-                          })}
-                          {/* Trinket */}
-                          <div
-                            className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
-                              participant.item6 && participant.item6 !== 0
-                                ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
-                                : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
-                            }`}
-                            title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${getItemDescription(participant.item6.toString())}` : 'Empty Trinket Slot'}
-                          >
-                            {participant.item6 && participant.item6 !== 0 ? (
-                              <img
-                                src={getItemImage(participant.item6.toString())}
-                                alt={`Trinket ${participant.item6}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  console.log('Item image failed to load:', {
-                                    itemId: participant.item6,
-                                    itemName: getItemDescription(participant.item6?.toString()),
-                                    src: e.currentTarget.src
-                                  });
-                                  e.currentTarget.src = "/images/noitem.png";
-                                }}
-                              />
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
+                       <div className={`flex items-center gap-3 ${name === 'Blue Team' ? 'justify-start' : 'justify-end'}`}>
+                         <div className={`flex flex-wrap gap-1 ${name === 'Red Team' ? 'flex-row-reverse' : ''}`}>
+                           {name === 'Red Team' ? [...itemIds].reverse().map((itemId, idx) => {
+                             const originalIndex = itemIds.length - 1 - idx;
+                             const item = getItemById(itemId);
+                             const itemName = item?.name || 'Empty Item Slot';
+                             return (
+                               <div
+                                 key={`item-${originalIndex}`}
+                                 className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                                   !itemId || itemId === 0
+                                     ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                     : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                                 }`}
+                                 title={item?.description || itemName}
+                               >
+                                 {itemId && itemId !== 0 ? (
+                                   <img
+                                     src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item?.image_path || "images/noitem.png"}`}
+                                     alt={itemName}
+                                     className="w-full h-full object-cover"
+                                     onError={(e) => {
+                                       console.log('Item image failed to load:', {
+                                         itemId: itemId,
+                                         itemName: itemName,
+                                         src: e.currentTarget.src
+                                       });
+                                       e.currentTarget.src = "/images/noitem.png";
+                                     }}
+                                   />
+                                 ) : null}
+                               </div>
+                             );
+                           }) : itemIds.map((itemId, idx) => {
+                             const item = getItemById(itemId);
+                             const itemName = item?.name || 'Empty Item Slot';
+                             return (
+                               <div
+                                 key={`item-${idx}`}
+                                 className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                                   !itemId || itemId === 0
+                                     ? 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                                     : 'bg-zinc-700 border border-zinc-600 hover:border-orange-500 hover:scale-110 hover:shadow-orange-500/30'
+                                 }`}
+                                 title={itemName}
+                               >
+                                 {itemId && itemId !== 0 ? (
+                                   <img
+                                     src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${item?.image_path || "images/noitem.png"}`}
+                                     alt={itemName}
+                                     className="w-full h-full object-cover"
+                                     onError={(e) => {
+                                       console.log('Item image failed to load:', {
+                                         itemId: itemId,
+                                         itemName: itemName,
+                                         src: e.currentTarget.src
+                                       });
+                                       e.currentTarget.src = "/images/noitem.png";
+                                     }}
+                                   />
+                                 ) : null}
+                               </div>
+                             );
+                           })}
+                           {/* Trinket */}
+                           <div
+                             className={`group relative w-7 h-7 rounded-md overflow-hidden transition-all duration-200 shadow-sm ${
+                               participant.item6 && participant.item6 !== 0
+                                 ? 'bg-zinc-700 border border-amber-600 hover:border-amber-400 hover:scale-110 hover:shadow-amber-500/30'
+                                 : 'bg-zinc-700/40 border border-dashed border-zinc-600/60'
+                             }`}
+                             title={participant.item6 && participant.item6 !== 0 ? `Trinket: ${(getItemById(participant.item6)?.name || participant.item6)}` : 'Empty Trinket Slot'}
+                           >
+                             {participant.item6 && participant.item6 !== 0 ? (
+                               <img
+                                 src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons/${getItemById(participant.item6)?.image_path || "images/noitem.png"}`}
+                                 alt={`Trinket ${participant.item6}`}
+                                 className="w-full h-full object-cover"
+                                 onError={(e) => {
+                                   console.log('Item image failed to load:', {
+                                     itemId: participant.item6,
+                                     itemName: getItemById(participant.item6)?.name || participant.item6,
+                                     src: e.currentTarget.src
+                                   });
+                                   e.currentTarget.src = "/images/noitem.png";
+                                 }}
+                               />
+                             ) : null}
+                           </div>
+                         </div>
+                       </div>
                     </div>
                   </div>
                   </div>

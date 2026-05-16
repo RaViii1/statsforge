@@ -26,7 +26,7 @@ import { CustomTooltip } from '@/components/tft/planner';
 import { TraitTooltip } from '@/components/tft/planner/TraitTooltip';
 import { UnitTooltip } from '@/components/tft/UnitTooltip';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
-import { CurrentSetNumber, getCostBorderColor, getCostColor, getChampionImageUrl } from '@/lib/tft/champions';
+import { CurrentSetNumber, getCostBorderColor, getCostColor, getChampionImageUrl, getTraitIconUrl } from '@/lib/tft/champions';
 import { getItemImageUrl } from '@/lib/tft/itemstft';
 import Footer from '@/components/Footer';
 import { getDifficultyConfig } from '@/lib/tft/difficulty';
@@ -166,9 +166,9 @@ const ReadOnlyHexGrid = ({
             <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
               trait.isHero ? getTierColor('gold').split(' ')[0] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[0] : 'bg-orange-500/60')
             }`}>
-              {trait.iconPath ? (
+               {trait.iconPath ? (
                 <img 
-                  src={trait.iconPath} 
+                  src={getTraitIconUrl(trait.iconPath)} 
                   alt={trait.name} 
                   className="w-3.5 h-3.5 object-contain"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -575,16 +575,16 @@ export default function CompDetailPage({ params }: { params: Promise<{ id: strin
                       <div className={`w-5 h-5 flex items-center justify-center rounded-full ${
                         trait.isHero ? getTierColor('gold').split(' ')[0] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[0] : 'bg-orange-500/60')
                       }`}>
-                        {trait.iconPath ? (
-                          <img 
-                            src={trait.iconPath} 
-                            alt={trait.name} 
-                            className="w-3.5 h-3.5 object-contain"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                        ) : (
-                          <span className="text-[9px] font-black text-white">{trait.count}</span>
-                        )}
+                          {trait.iconPath ? (
+                            <img 
+                              src={getTraitIconUrl(trait.iconPath)} 
+                              alt={trait.name} 
+                              className="w-3.5 h-3.5 object-contain"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                            />
+                          ) : (
+                            <span className="text-[9px] font-black text-white">{trait.count}</span>
+                          )}
                       </div>
                       <span className={`text-[9px] font-black uppercase tracking-widest ${
                         trait.isHero ? getTierColor('gold').split(' ')[1] : (trait.activeTier ? getTierColor(trait.activeTier).split(' ')[1] : 'text-white/60')

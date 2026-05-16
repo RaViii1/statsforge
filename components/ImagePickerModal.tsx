@@ -10,7 +10,7 @@ interface ImagePickerModalProps {
   onClose: () => void;
   onSelect: (url: string, filename: string) => void;
   currentImage?: string;
-  storageBucket?: 'item-icons' | 'TftUnitIcons' | 'Lol_runes';
+  storageBucket?: 'item-icons' | 'TftUnitIcons' | 'Lol_runes' | 'summoner_spells';
   folder?: string;
 }
 
@@ -34,23 +34,39 @@ export default function ImagePickerModal({
   }, []);
 
   const uploadEndpoint = '/api/admin/upload-image';
-  const bucketBaseUrl = storageBucket === 'item-icons'
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons`
-    : storageBucket === 'TftUnitIcons'
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons`
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/Lol_runes`;
+  
+  const getBucketBaseUrl = () => {
+    switch (storageBucket) {
+      case 'item-icons':
+        return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons`;
+      case 'TftUnitIcons':
+        return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons`;
+      case 'Lol_runes':
+        return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/Lol_runes`;
+      case 'summoner_spells':
+        return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/summoner_spells`;
+      default:
+        return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-icons`;
+    }
+  };
+
+  const bucketBaseUrl = getBucketBaseUrl();
 
   useEffect(() => {
-    if (isOpen && storageBucket === 'item-icons') {
-      fetchImages();
-    } else if (isOpen && storageBucket === 'TftUnitIcons' && folder) {
-      fetchTftImages();
-    } else if (isOpen && storageBucket === 'Lol_runes' && folder) {
-      fetchLolRunesImages();
+    if (isOpen) {
+      if (storageBucket === 'item-icons') {
+        fetchItemImages();
+      } else if (storageBucket === 'TftUnitIcons' && folder) {
+        fetchTftImages();
+      } else if (storageBucket === 'Lol_runes' && folder) {
+        fetchLolRunesImages();
+      } else if (storageBucket === 'summoner_spells') {
+        fetchSummonerSpellImages();
+      }
     }
   }, [isOpen, storageBucket, folder]);
 
-  const fetchImages = async () => {
+  const fetchItemImages = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/item-icons');
@@ -79,7 +95,7 @@ export default function ImagePickerModal({
       if (data.files) {
         setImages(data.files.map((f: any) => ({
           name: f.name,
-          url: `${bucketBaseUrl}/${f.name}`
+          url: f.url || `${bucketBaseUrl}/${f.name}`
         })));
       }
       if (data.error) {
@@ -106,6 +122,34 @@ export default function ImagePickerModal({
       }
     } catch (err) {
       // silently fail
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSummonerSpellImages = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/list-summoner-spells-images');
+      const data = await res.json();
+      
+      if (data.error) {
+        toast.error(data.error);
+        setImages([]);
+      } else if (data.files && Array.isArray(data.files)) {
+        // Use the url from the response if available, otherwise construct it
+        const formattedImages = data.files.map((file: any) => ({
+          name: file.name,
+          url: file.url || `${bucketBaseUrl}/${file.name}`
+        }));
+        setImages(formattedImages);
+      } else {
+        setImages([]);
+      }
+    } catch (err) {
+      console.error("Error fetching summoner spell icons:", err);
+      toast.error("Failed to load summoner spell icons");
+      setImages([]);
     } finally {
       setLoading(false);
     }

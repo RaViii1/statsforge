@@ -27,10 +27,15 @@ import {
   Flame,
   Heart,
   TrendingUpIcon,
-  Sparkles
+  Sparkles,
+  Sword
 } from "lucide-react";
-import { getChampionSplashByName } from "@/lib/lol/lolfunctions";
+import { getChampionImage, getChampionSplashByName } from "@/lib/lol/lolfunctions";
 import { MatchTimeline } from "../MatchTimeline";
+import { Item } from "@/lib/items";
+import { getChampionIdByName } from "@/lib/champion-data";
+import SvgIcon from "@/components/SvgIcon";
+import { getCombatWeights, getDragonBonusMultiplier, getEconomyWeights, getMacroScore, getMostAssistsBonus, getMostKillsBonus, getObjectiveMultiplier, getObjectiveWeights, getPerfectDragonSoulBonus, getVisionMultiplier, scoreCategoryWeights, survivalWeights, visionWeights } from "./scoringWeights";
 
 interface MatchAnalyticsProps {
   server: string;
@@ -83,6 +88,10 @@ interface ParticipantData {
   riftHeraldTakedowns: number;
   inhibitorTakedowns: number;
   longestTimeSpentLiving : number;
+  perfectDragonSoulsTaken: number;
+  firstTurretKilled: number;
+  controlWardsPlaced: number;
+
 }
 
 interface MatchData {
@@ -186,53 +195,13 @@ const CircularProgress = ({
   );
 };
 
-// Score Breakdown Component
-const ScoreBreakdown = ({ 
-  title, 
-  icon: Icon, 
-  color,
-  breakdowns 
-}: { 
-  title: string;
-  icon: any;
-  color: string;
-  breakdowns: { label: string; value: string; }[];
-}) => {
-  const colorMap: Record<string, string> = {
-    orange: "border-orange-900/50 bg-orange-950/30 hover:border-orange-900/70",
-    purple: "border-purple-900/50 bg-purple-950/30 hover:border-purple-900/70",
-    green: "border-green-900/50 bg-green-950/30 hover:border-green-900/70",
-    blue: "border-blue-900/50 bg-blue-950/30 hover:border-blue-900/70",
-    yellow: "border-yellow-900/50 bg-yellow-950/30 hover:border-yellow-900/70"
-  };
 
-  const iconColorMap: Record<string, string> = {
-    orange: "text-orange-500 bg-orange-950/50 border-orange-900/30",
-    purple: "text-purple-500 bg-purple-950/50 border-purple-900/30",
-    green: "text-green-500 bg-green-950/50 border-green-900/30",
-    blue: "text-blue-500 bg-blue-950/50 border-blue-900/30",
-    yellow: "text-yellow-500 bg-yellow-950/50 border-yellow-900/30"
-  };
-
-  return (
-    <div className={`rounded-xl border ${colorMap[color]} p-4`}>
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`p-2 rounded-lg border ${iconColorMap[color]}`}>
-          <Icon className="h-4 w-4" />
-        </div>
-        <h4 className="text-sm font-bold text-white">{title}</h4>
-      </div>
-      <div className="space-y-2">
-        {breakdowns.map((item, idx) => (
-          <div key={idx} className="flex justify-between items-center">
-            <span className="text-xs text-zinc-400">{item.label}</span>
-            <span className="text-sm font-semibold text-white">{item.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+const PremiumCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`relative overflow-hidden rounded-2xl border border-orange-500/10 bg-linear-to-br from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm shadow-2xl ${className}`}>
+    <div className="absolute inset-0 bg-linear-to-br from-orange-500/5 via-transparent to-transparent pointer-events-none" />
+    {children}
+  </div>
+);
 
 // Stat Card Component
 const StatCard = ({ 
@@ -281,36 +250,39 @@ const PerformanceBadge = ({ badge }: { badge: PerformanceBadge }) => {
   const { label, type, icon: Icon } = badge;
   
   const styles = {
-    excellent: "bg-green-950/50 border-green-900/50 text-green-400",
-    good: "bg-blue-950/50 border-blue-900/50 text-blue-400",
-    poor: "bg-red-950/50 border-red-900/50 text-red-400"
+    excellent: "from-green-500/20 to-green-600/10 border-green-500/30 text-green-400",
+    good: "from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400",
+    poor: "from-red-500/20 to-red-600/10 border-red-500/30 text-red-400"
   };
 
   return (
-    <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border ${styles[type]} font-semibold text-sm`}>
-      <Icon className="w-4 h-4" />
-      <span>{label}</span>
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-linear-to-br ${styles[type]} border shadow-sm transition-all duration-200 hover:scale-101`}>
+      <Icon className="w-3 h-3" strokeWidth={1.5} />
+      <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
     </div>
   );
 };
-
 // Performance Radar Chart Component
-const PerformanceRadar = ({ playerScore, avgScores }: { playerScore: PlayerScore, avgScores: any }) => {
+const PerformanceRadar = ({ playerScore, avgScores, interactive = true }: { playerScore: PlayerScore, avgScores: any, interactive?: boolean }) => {
+  const [hoveredStat, setHoveredStat] = useState<number | null>(null);
+  const [selectedStat, setSelectedStat] = useState<number | null>(null);
+  
   const stats = [
-    { label: "Combat", value: playerScore.combatScore, max: 25, color: "rgb(249, 115, 22)" },
-    { label: "Objectives", value: playerScore.objectiveScore, max: 20, color: "rgb(168, 85, 247)" },
-    { label: "Economy", value: playerScore.economyScore, max: 15, color: "rgb(34, 197, 94)" },
-    { label: "Survival", value: playerScore.survivalScore, max: 15, color: "rgb(59, 130, 246)" },
-    { label: "Vision", value: playerScore.visionScore, max: 15, color: "rgb(234, 179, 8)" },
+    { label: "Combat", value: playerScore.combatScore || 0, max: 25, avg: avgScores?.combatScore || 0, color: "rgb(249, 115, 22)" },
+    { label: "Objectives", value: playerScore.objectiveScore || 0, max: 20, avg: avgScores?.objectiveScore || 0, color: "rgb(168, 85, 247)" },
+    { label: "Economy", value: playerScore.economyScore || 0, max: 15, avg: avgScores?.economyScore || 0, color: "rgb(34, 197, 94)" },
+    { label: "Survival", value: playerScore.survivalScore || 0, max: 15, avg: avgScores?.survivalScore || 0, color: "rgb(59, 130, 246)" },
+    { label: "Vision", value: playerScore.visionScore || 0, max: 15, avg: avgScores?.visionScore || 0, color: "rgb(234, 179, 8)" },
   ];
 
-  const size = 300;
+  // Increased size by 5% (357 instead of 340)
+  const size = 357;
   const center = size / 2;
-  const maxRadius = size / 2 - 40;
+  const maxRadius = size / 2 - 52; // Slightly adjusted to maintain proportions
   const angleStep = (Math.PI * 2) / stats.length;
 
   const getPoint = (value: number, max: number, index: number) => {
-    const ratio = value / max;
+    const ratio = Math.min(Math.max(value / max, 0), 1);
     const angle = index * angleStep - Math.PI / 2;
     const radius = maxRadius * ratio;
     return {
@@ -319,99 +291,263 @@ const PerformanceRadar = ({ playerScore, avgScores }: { playerScore: PlayerScore
     };
   };
 
-  const points = stats.map((stat, i) => getPoint(stat.value, stat.max, i));
-  const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
+  const getAvgPoint = (avg: number, max: number, index: number) => {
+    const ratio = Math.min(Math.max(avg / max, 0), 1);
+    const angle = index * angleStep - Math.PI / 2;
+    const radius = maxRadius * ratio;
+    return {
+      x: center + radius * Math.cos(angle),
+      y: center + radius * Math.sin(angle),
+    };
+  };
+
+  // Calculate points only if values are valid
+  const playerPoints = stats.map((stat, i) => getPoint(stat.value, stat.max, i));
+  const avgPoints = stats.map((stat, i) => getAvgPoint(stat.avg, stat.max, i));
+  
+  const playerPathData = playerPoints.length > 0 ? playerPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z' : '';
+  const avgPathData = avgPoints.length > 0 ? avgPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z' : '';
+
+  const getLabelPosition = (index: number, offset = 40) => {
+    const angle = index * angleStep - Math.PI / 2;
+    const radius = maxRadius + offset;
+    return {
+      x: center + radius * Math.cos(angle),
+      y: center + radius * Math.sin(angle),
+    };
+  };
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} className="overflow-visible">
-        {/* Grid circles */}
-        {[0.2, 0.4, 0.6, 0.8, 1].map((ratio) => (
-          <circle
-            key={ratio}
-            cx={center}
-            cy={center}
-            r={maxRadius * ratio}
-            fill="none"
-            stroke="rgb(63, 63, 70)"
-            strokeWidth="1"
-            opacity="0.3"
-          />
-        ))}
+    <div className="flex flex-col items-center w-full">
+      <div className="relative">
+        <svg 
+          width={size} 
+          height={size} 
+          className="overflow-visible"
+          viewBox={`0 0 ${size} ${size}`}
+        >
+          <defs>
+            <linearGradient id="playerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgb(249, 115, 22)" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="rgb(249, 115, 22)" stopOpacity="0.08" />
+            </linearGradient>
+            <linearGradient id="avgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgb(113, 113, 122)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="rgb(113, 113, 122)" stopOpacity="0.05" />
+            </linearGradient>
+            
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
 
-        {/* Grid lines */}
-        {stats.map((_, i) => {
-          const angle = i * angleStep - Math.PI / 2;
-          const x = center + maxRadius * Math.cos(angle);
-          const y = center + maxRadius * Math.sin(angle);
-          return (
-            <line
-              key={i}
-              x1={center}
-              y1={center}
-              x2={x}
-              y2={y}
+          {/* Grid circles - clearly visible */}
+          {[0.2, 0.4, 0.6, 0.8, 1].map((ratio) => (
+            <circle
+              key={ratio}
+              cx={center}
+              cy={center}
+              r={maxRadius * ratio}
+              fill="none"
               stroke="rgb(63, 63, 70)"
-              strokeWidth="1"
-              opacity="0.3"
+              strokeWidth="1.5"
+              strokeDasharray={ratio === 1 ? "none" : "4,4"}
+              opacity={ratio === 1 ? 0.6 : 0.4}
             />
-          );
-        })}
+          ))}
 
-        {/* Player performance polygon */}
-        <path
-          d={pathData}
-          fill="rgba(249, 115, 22, 0.3)"
-          stroke="rgb(249, 115, 22)"
-          strokeWidth="2"
-        />
+          {/* Grid lines - clearly visible */}
+          {stats.map((stat, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const x = center + maxRadius * Math.cos(angle);
+            const y = center + maxRadius * Math.sin(angle);
+            return (
+              <line
+                key={i}
+                x1={center}
+                y1={center}
+                x2={x}
+                y2={y}
+                stroke="rgb(63, 63, 70)"
+                strokeWidth="1"
+                opacity="0.4"
+                strokeDasharray="4,4"
+              />
+            );
+          })}
 
-        {/* Points */}
-        {points.map((point, i) => (
-          <circle
-            key={i}
-            cx={point.x}
-            cy={point.y}
-            r="5"
-            fill="rgb(249, 115, 22)"
-            stroke="rgb(255, 255, 255)"
-            strokeWidth="2"
-          />
-        ))}
+          {/* Average player polygon */}
+          {avgPathData && (
+            <path
+              d={avgPathData}
+              fill="url(#avgGradient)"
+              stroke="rgb(113, 113, 122)"
+              strokeWidth="1.5"
+              strokeDasharray="6,4"
+              opacity="0.7"
+            />
+          )}
 
-        {/* Labels */}
-        {stats.map((stat, i) => {
-          const angle = i * angleStep - Math.PI / 2;
-          const labelRadius = maxRadius + 25;
-          const x = center + labelRadius * Math.cos(angle);
-          const y = center + labelRadius * Math.sin(angle);
-          return (
-            <text
-              key={i}
-              x={x}
-              y={y}
-              fill="rgb(161, 161, 170)"
-              fontSize="12"
-              fontWeight="600"
-              textAnchor="middle"
-              dominantBaseline="middle"
-            >
-              {stat.label}
-            </text>
-          );
-        })}
-      </svg>
+          {/* Average player points - no white borders */}
+          {avgPoints.map((point, i) => (
+            point.x && point.y ? (
+              <circle
+                key={`avg-${i}`}
+                cx={point.x}
+                cy={point.y}
+                r="4"
+                fill="rgb(113, 113, 122)"
+                stroke="none"
+                opacity="0.6"
+              />
+            ) : null
+          ))}
 
-      {/* Legend */}
-      {/* <div className="grid grid-cols-3 gap-4 mt-6 w-full">
-        {stats.map((stat, i) => (
-          <div key={i} className="text-center">
-            <div className="text-xs text-zinc-500 mb-1">{stat.label}</div>
-            <div className="text-lg font-bold text-white">{stat.value.toFixed(2)}</div>
-            <div className="text-xs text-zinc-600">/ {stat.max}</div>
+          {/* Player performance polygon */}
+          {playerPathData && (
+            <path
+              d={playerPathData}
+              fill="url(#playerGradient)"
+              stroke="rgb(249, 115, 22)"
+              strokeWidth="2.5"
+              className="transition-all duration-500"
+            />
+          )}
+
+          {/* Player data points - no white borders */}
+          {playerPoints.map((point, i) => {
+            const isSelected = selectedStat === i;
+            const stat = stats[i];
+            
+            return point.x && point.y ? (
+              <g
+                key={i}
+                onMouseEnter={() => setHoveredStat(i)}
+                onMouseLeave={() => setHoveredStat(null)}
+                onClick={() => setSelectedStat(isSelected ? null : i)}
+                className="cursor-pointer transition-all duration-300"
+              >
+                {isSelected && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r="12"
+                    fill="none"
+                    stroke={stat.color}
+                    strokeWidth="2"
+                    opacity="0.5"
+                  />
+                )}
+                
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isSelected ? 7 : 5}
+                  fill={stat.color}
+                  stroke="none"
+                  filter="url(#glow)"
+                  className="transition-all duration-200"
+                />
+              </g>
+            ) : null;
+          })}
+
+          {/* Labels */}
+          {stats.map((stat, i) => {
+            const pos = getLabelPosition(i, 40);
+            const isHovered = hoveredStat === i;
+            const isSelected = selectedStat === i;
+            
+            return (
+              <g
+                key={`label-${i}`}
+                onMouseEnter={() => setHoveredStat(i)}
+                onMouseLeave={() => setHoveredStat(null)}
+                onClick={() => setSelectedStat(isSelected ? null : i)}
+                className="cursor-pointer transition-all duration-300"
+              >
+                <text
+                  x={pos.x}
+                  y={pos.y}
+                  fill={isHovered || isSelected ? stat.color : "rgb(161, 161, 170)"}
+                  fontSize={isHovered || isSelected ? "12" : "11"}
+                  fontWeight={isHovered || isSelected ? "600" : "500"}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="transition-all duration-200"
+                >
+                  {stat.label}
+                </text>
+                
+                {(isHovered || isSelected) && (
+                  <text
+                    x={pos.x}
+                    y={pos.y + 18}
+                    fill={stat.color}
+                    fontSize="10"
+                    fontWeight="600"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    opacity="0.8"
+                  >
+                    {stat.value.toFixed(1)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Center value indicator */}
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+          <div className="text-[10px] font-bold text-zinc-200 uppercase tracking-wider pb-2">Total</div>
+          <div className="text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+            {stats.reduce((sum, stat) => sum + stat.value, 0).toFixed(0)}
           </div>
-        ))}
-      </div> */}
+        </div>
+      </div>
+
+      {/* Selected stat detailed view - only appears when a stat is clicked */}
+      {selectedStat !== null && stats[selectedStat] && (
+        <div className="w-full mt-4 p-3 rounded-lg bg-orange-500/5 border border-orange-500/15 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[8px] text-zinc-500 uppercase tracking-wider">Selected</div>
+              <div className="text-sm font-semibold text-white">{stats[selectedStat].label}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[8px] text-zinc-500">Your Score</div>
+              <div className="text-xl font-bold text-orange-400">{stats[selectedStat].value.toFixed(1)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[8px] text-zinc-500">Average</div>
+              <div className="text-base font-semibold text-zinc-400">{stats[selectedStat].avg.toFixed(1)}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[8px] text-zinc-500">vs Avg</div>
+              <div className={`text-sm font-bold ${stats[selectedStat].value > stats[selectedStat].avg ? 'text-green-400' : 'text-red-400'}`}>
+                {stats[selectedStat].value > stats[selectedStat].avg ? '+' : ''}{(stats[selectedStat].value - stats[selectedStat].avg).toFixed(1)}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-2">
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${Math.min(Math.max((stats[selectedStat].value / stats[selectedStat].max) * 100, 0), 100)}%`, 
+                  backgroundColor: stats[selectedStat].color 
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -429,48 +565,71 @@ const PlayerComparisonChart = ({ players, metric, label }: { players: Participan
     return typeof val === 'number' ? val : 0;
   }));
 
+  const formatValue = (value: number) => {
+    if (label === 'KDA') return value.toFixed(2);
+    if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+    return value.toFixed(0);
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {sortedPlayers.map((player, index) => {
         const value = typeof player[metric] === 'number' ? player[metric] as number : 0;
         const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
+        const isTop3 = index <= 2;
         
         return (
           <div key={player.puuid} className="group">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className={`font-mono text-[10px] font-bold w-6 shrink-0 ${
+                {/* Rank Badge */}
+                <div className={`w-5 shrink-0 ${
                   index === 0 ? 'text-orange-400' :
                   index === 1 ? 'text-zinc-400' :
-                  index === 2 ? 'text-zinc-500' :
+                  index === 2 ? 'text-amber-600' :
                   'text-zinc-600'
                 }`}>
-                  #{index + 1}
-                </span>
+                  {index === 0 && <Crown className="h-3 w-3" strokeWidth={1.5} />}
+                  {index === 1 && <Trophy className="h-3 w-3" strokeWidth={1.5} />}
+                  {index === 2 && <Award className="h-3 w-3" strokeWidth={1.5} />}
+                  {index > 2 && <span className="text-[9px] font-mono font-bold">#{index + 1}</span>}
+                </div>
+                
+                {/* Player Name */}
                 <span className={`font-medium truncate text-xs ${
-                  index === 0 ? 'text-white' :
+                  index === 0 ? 'text-white font-semibold' :
                   index === 1 ? 'text-zinc-300' :
                   index === 2 ? 'text-zinc-400' :
                   'text-zinc-500'
                 }`}>
                   {player.summonerName}
                 </span>
+                
+                {/* Champion Name */}
+                <span className="text-[9px] text-zinc-600 truncate hidden sm:inline-block">
+                  {player.championName}
+                </span>
               </div>
-              <span className={`font-bold text-xs ml-2 shrink-0 ${
+              
+              {/* Value */}
+              <span className={`text-xs font-mono font-bold ml-2 shrink-0 ${
                 index === 0 ? 'text-orange-400' :
                 index === 1 ? 'text-zinc-400' :
-                'text-zinc-500'
+                index === 2 ? 'text-amber-500' :
+                'text-zinc-600'
               }`}>
-                {typeof value === 'number' ? value.toFixed(2) : '0.00'}
+                {formatValue(value)}
               </span>
             </div>
-            <div className="relative h-1 bg-zinc-800/50 rounded-full overflow-hidden">
+            
+            {/* Progress Bar */}
+            <div className="relative h-1.5 bg-zinc-800/50 rounded-full overflow-hidden">
               <div
                 className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${
-                  index === 0 ? 'bg-orange-500/80' :
-                  index === 1 ? 'bg-zinc-600/60' :
-                  index === 2 ? 'bg-zinc-700/50' :
-                  'bg-zinc-800/40'
+                  index === 0 ? 'bg-linear-to-r from-orange-500/50 to-orange-400/90' :
+                  index === 1 ? 'bg-linear-to-r from-zinc-500/50 to-zinc-400' :
+                  index === 2 ? 'bg-linear-to-r from-amber-600/50 to-amber-500' :
+                  'bg-zinc-700/50'
                 }`}
                 style={{ width: `${percentage}%` }}
               />
@@ -492,49 +651,71 @@ const DamageBreakdownChart = ({ participant }: { participant: ParticipantData })
   const othersPercentage = 100 - playerPercentage;
 
   return (
-    <div className="flex items-center justify-center gap-8">
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 100 100" className="transform -rotate-90">
-          {/* Others damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(63, 63, 70)"
-            strokeWidth="20"
-          />
-          {/* Player damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(249, 115, 22)"
-            strokeWidth="20"
-            strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-3xl font-bold text-orange-500">{playerPercentage.toFixed(1)}%</div>
-          <div className="text-xs text-zinc-500">of team</div>
+    <div className="flex flex-col gap-4">
+      {/* Chart Header */}
+      <div className="flex items-center gap-2 pb-2 border-b border-orange-500/20">
+        <div className="p-1 rounded-lg bg-orange-500/10">
+          <PieChart className="h-3.5 w-3.5 text-orange-400" strokeWidth={1.5} />
         </div>
+        <span className="text-xs font-semibold text-white uppercase tracking-wider">Damage Share</span>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-orange-500"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Your Damage</div>
-            <div className="text-lg font-bold text-white">{totalDamage.toLocaleString()}</div>
+      <div className="flex items-center justify-center gap-6">
+        {/* Donut Chart */}
+        <div className="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" className="transform -rotate-90">
+            {/* Background circle (others damage) */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="rgb(63, 63, 70)"
+              strokeWidth="16"
+            />
+            {/* Player damage circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="url(#damageGradient)"
+              strokeWidth="16"
+              strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
+              strokeLinecap="round"
+              className="transition-all duration-500"
+            />
+            {/* Gradient Definition */}
+            <defs>
+              <linearGradient id="damageGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#f97316" />
+                <stop offset="100%" stopColor="#ea580c" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-xl font-bold bg-linear-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+              {playerPercentage.toFixed(1)}%
+            </div>
+            <div className="text-[9px] text-zinc-500">of team</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-zinc-700"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Team Total</div>
-            <div className="text-lg font-bold text-white">{teamDamage.toFixed(0).toLocaleString()}</div>
+
+        {/* Legend */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-linear-to-r from-orange-500 to-orange-600 shadow-sm" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Your Damage</div>
+              <div className="text-xs font-bold text-white">{(totalDamage / 1000).toFixed(1)}k</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Team Total</div>
+              <div className="text-xs font-bold text-white">{(teamDamage / 1000).toFixed(1)}k</div>
+            </div>
           </div>
         </div>
       </div>
@@ -553,49 +734,71 @@ const DamageTakenBreakdownChart = ({ participant, allParticipants }: { participa
   const playerPercentage = teamDamageTaken > 0 ? (totalDamageTaken / teamDamageTaken) * 100 : 0;
 
   return (
-    <div className="flex items-center justify-center gap-8">
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 100 100" className="transform -rotate-90">
-          {/* Others damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(63, 63, 70)"
-            strokeWidth="20"
-          />
-          {/* Player damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(59, 130, 246)"
-            strokeWidth="20"
-            strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-3xl font-bold text-blue-500">{playerPercentage.toFixed(1)}%</div>
-          <div className="text-xs text-zinc-500">of team</div>
+    <div className="flex flex-col gap-4">
+      {/* Chart Header */}
+      <div className="flex items-center gap-2 pb-2 border-b border-orange-500/20">
+        <div className="p-1 rounded-lg bg-blue-500/10">
+          <Shield className="h-3.5 w-3.5 text-blue-400" strokeWidth={1.5} />
         </div>
+        <span className="text-xs font-semibold text-white uppercase tracking-wider">Damage Taken Share</span>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-blue-500"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Your Damage Taken</div>
-            <div className="text-lg font-bold text-white">{totalDamageTaken.toLocaleString()}</div>
+      <div className="flex items-center justify-center gap-6">
+        {/* Donut Chart */}
+        <div className="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" className="transform -rotate-90">
+            {/* Background circle (others damage) */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="rgb(63, 63, 70)"
+              strokeWidth="16"
+            />
+            {/* Player damage circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="url(#damageTakenGradient)"
+              strokeWidth="16"
+              strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
+              strokeLinecap="round"
+              className="transition-all duration-500"
+            />
+            {/* Gradient Definition */}
+            <defs>
+              <linearGradient id="damageTakenGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#2563eb" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-xl font-bold bg-linear-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">
+              {playerPercentage.toFixed(1)}%
+            </div>
+            <div className="text-[9px] text-zinc-500">of team</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-zinc-700"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Team Total Taken</div>
-            <div className="text-lg font-bold text-white">{teamDamageTaken.toLocaleString()}</div>
+
+        {/* Legend */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-linear-to-r from-blue-500 to-blue-600 shadow-sm" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Your Damage Taken</div>
+              <div className="text-xs font-bold text-white">{(totalDamageTaken / 1000).toFixed(1)}k</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Team Total Taken</div>
+              <div className="text-xs font-bold text-white">{(teamDamageTaken / 1000).toFixed(1)}k</div>
+            </div>
           </div>
         </div>
       </div>
@@ -613,51 +816,72 @@ const DamageHealedBreakdownChart = ({ participant, allParticipants }: { particip
   // Safety check for division by zero
   const playerPercentage = teamDamageHealed > 0 ? (totalHeal / teamDamageHealed) * 100 : 0;
 
-
   return (
-    <div className="flex items-center justify-center gap-8">
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 100 100" className="transform -rotate-90">
-          {/* Others damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(63, 63, 70)"
-            strokeWidth="20"
-          />
-          {/* Player damage */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgb(34, 197, 94)"
-            strokeWidth="20"
-            strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-3xl font-bold text-green-500">{playerPercentage.toFixed(1)}%</div>
-          <div className="text-xs text-zinc-500">of team</div>
+    <div className="flex flex-col gap-4">
+      {/* Chart Header */}
+      <div className="flex items-center gap-2 pb-2 border-b border-orange-500/20">
+        <div className="p-1 rounded-lg bg-green-500/10">
+          <Heart className="h-3.5 w-3.5 text-green-400" strokeWidth={1.5} />
         </div>
+        <span className="text-xs font-semibold text-white uppercase tracking-wider">Healing Share</span>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-green-500"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Your Healing</div>
-            <div className="text-lg font-bold text-white">{totalHeal.toLocaleString()}</div>
+      <div className="flex items-center justify-center gap-6">
+        {/* Donut Chart */}
+        <div className="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" className="transform -rotate-90">
+            {/* Background circle (others healing) */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="rgb(63, 63, 70)"
+              strokeWidth="16"
+            />
+            {/* Player healing circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="url(#healingGradient)"
+              strokeWidth="16"
+              strokeDasharray={`${playerPercentage * 2.513} ${100 * 2.513}`}
+              strokeLinecap="round"
+              className="transition-all duration-500"
+            />
+            {/* Gradient Definition */}
+            <defs>
+              <linearGradient id="healingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#22c55e" />
+                <stop offset="100%" stopColor="#16a34a" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-xl font-bold bg-linear-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
+              {playerPercentage.toFixed(1)}%
+            </div>
+            <div className="text-[9px] text-zinc-500">of team</div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded bg-zinc-700"></div>
-          <div>
-            <div className="text-sm text-zinc-400">Team Total Healed</div>
-            <div className="text-lg font-bold text-white">{teamDamageHealed.toLocaleString()}</div>
+
+        {/* Legend */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-linear-to-r from-green-500 to-green-600 shadow-sm" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Your Healing</div>
+              <div className="text-xs font-bold text-white">{(totalHeal / 1000).toFixed(1)}k</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-zinc-700" />
+            <div>
+              <div className="text-[9px] text-zinc-500">Team Total Healed</div>
+              <div className="text-xs font-bold text-white">{(teamDamageHealed / 1000).toFixed(1)}k</div>
+            </div>
           </div>
         </div>
       </div>
@@ -672,10 +896,10 @@ const ObjectivesDetail = ({ participant }: { participant: ParticipantData }) => 
       label: "Dragons", 
       value: participant.dragonKills, 
       image: "/images/elder.png",
-      color: "from-teal-500 to-emerald-500",
-      bgColor: "bg-teal-950/30",
+      color: "from-green-500 to-emerald-500",
+      bgColor: "bg-green-950/30",
       borderColor: "border-emerald-900/50",
-      dropShadow: "group-hover:drop-shadow-[0_0_15px_rgba(20,184,166,0.8)]" // teal-500
+      dropShadow: "group-hover:drop-shadow-[0_0_15px_rgba(20,184,166,0.8)]" // green-500
     },
     { 
       label: "Barons", 
@@ -698,7 +922,7 @@ const ObjectivesDetail = ({ participant }: { participant: ParticipantData }) => 
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ">
       {objectives.map((obj, idx) => (
         <div key={idx} className={`relative overflow-visible rounded-xl border ${obj.borderColor} ${obj.bgColor} p-4 pr-20 group hover:scale-[1.02] transition-transform duration-300 z-40`}>
           <div className="flex items-center justify-between">
@@ -728,7 +952,7 @@ const ObjectivesDetail = ({ participant }: { participant: ParticipantData }) => 
 
           {/* Decorative SVG pattern */}
           <svg className="absolute right-0 top-0 w-20 h-20 opacity-10 pointer-events-none" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" fill="currentColor" className={obj.color.includes('teal') ? 'text-teal-500' : obj.color.includes('purple') ? 'text-purple-500' : obj.color.includes('blue') ? 'text-blue-500' : 'text-yellow-500'} />
+            <circle cx="50" cy="50" r="40" fill="currentColor" className={obj.color.includes('green') ? 'text-green-500' : obj.color.includes('purple') ? 'text-purple-500' : obj.color.includes('blue') ? 'text-blue-500' : 'text-yellow-500'} />
           </svg>
         </div>
       ))}
@@ -785,188 +1009,112 @@ const MultikillsDisplay = ({ participant }: { participant: ParticipantData }) =>
 
   if (!hasMultikills) {
     return (
-      <div className="text-center py-8 px-4 rounded-xl bg-zinc-900/30 border border-zinc-800">
-        <div className="text-4xl mb-2">🎯</div>
-        <p className="text-sm text-zinc-500">No multikills this match</p>
+      <div className="rounded-xl p-6 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+            <Sword className="h-6 w-6 text-orange-400/50" strokeWidth={1.5} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">No Multikills</p>
+            <p className="text-xs text-zinc-500 mt-0.5">No consecutive champion eliminations recorded in this match</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="space-y-4 ">
       {/* Header with Biggest Multikill Badge */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Your Multikills</h3>
-        {biggestMultikill && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-orange-500/20 to-red-500/20 border-2 border-orange-500/50 backdrop-blur-sm animate-pulse">
+      <div className="flex items-center justify-between ">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+            <Sword className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-white">Multikill Streak</h3>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">Consecutive champion eliminations</p>
+          </div>
+        </div>
         
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">Best: {biggestMultikill.name}</span>
-              <span className="text-[10px] text-zinc-400">x{biggestMultikill.count}</span>
+        {biggestMultikill && (
+          <div className="relative group ">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/40 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity" />
+            <div className="relative px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/40 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-semibold text-zinc-200 uppercase tracking-wider">Best Streak</span>
+                  <span className="text-sm font-bold text-orange-400">{biggestMultikill.name}</span>
+                </div>
+                <div className="w-px h-8 bg-orange-500/30" />
+                <div className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                  x{biggestMultikill.count}
+                </div>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Multikill Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {multikills.map((mk, idx) => (
-          <div
-            key={idx}
-            className={`relative overflow-hidden rounded-xl border ${mk.borderColor} ${mk.bgColor} p-4 transition-all duration-300 ${
-              mk.value > 0 ? 'hover:scale-105 opacity-100' : 'opacity-40'
-            }`}
-          >
-            <div className="flex flex-row justify-center items-baseline space-x-2 text-center w-full">
-            <div className="text-xs text-zinc-400 inline-block">
-                {mk.label}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {multikills.map((mk, idx) => {
+          const isActive = mk.value > 0;
+          
+          return (
+            <div
+              key={idx}
+              className={`relative overflow-hidden rounded-xl border transition-all duration-300 ${
+                isActive 
+                  ? 'border-orange-500/30 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 hover:scale-105 hover:border-orange-500/60 cursor-pointer' 
+                  : 'border-zinc-800/50 bg-zinc-900/30 opacity-40'
+              }`}
+            >
+              {/* Glow effect on active */}
+              {isActive && (
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
+              
+              <div className="p-4 text-center">
+                {/* Kill streak label with icon */}
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  {mk.label === 'Double Kill' && <Sword className="w-3 h-3 text-orange-400" strokeWidth={2} />}
+                  {mk.label === 'Triple Kill' && <Sword className="w-3 h-3 text-orange-400" strokeWidth={2} />}
+                  {mk.label === 'Quadra Kill' && <Sword className="w-3 h-3 text-orange-400" strokeWidth={2} />}
+                  {mk.label === 'Penta Kill' && <Crown className="w-3 h-3 text-orange-400" strokeWidth={2} />}
+                  <span className={`text-[11px] font-semibold uppercase tracking-wider ${
+                    isActive ? 'text-zinc-300' : 'text-zinc-600'
+                  }`}>
+                    {mk.label}
+                  </span>
+                </div>
+                
+                {/* Kill count */}
+                <div className={`text-3xl font-bold tracking-tight ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent' 
+                    : 'text-zinc-700'
+                }`}>
+                  x{mk.value}
+                </div>
+                
+                {/* Decorative line */}
+                {isActive && (
+                  <div className="mt-2 h-px bg-gradient-to-r from-transparent via-orange-500/30 to-transparent" />
+                )}
+              </div>
+              
+              {/* Animated pulse for active */}
+              {isActive && mk.value === biggestMultikill?.count && (
+                <div className="absolute inset-0 border-2 border-orange-500/30 rounded-xl animate-pulse pointer-events-none" />
+              )}
             </div>
-            <div className={`text-3xl font-bold bg-linear-to-r ${mk.color} bg-clip-text text-transparent inline-block`}>
-                x{mk.value}
-            </div>
-            </div>
-
-
-            {/* Decorative glow */}
-            {mk.value > 0 && (
-              <div className={`absolute inset-0 bg-linear-to-br ${mk.color} opacity-5 blur-xl pointer-events-none`}></div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 };
-
-// // Game Phase Performance Component
-// const GamePhasePerformance = ({ participant }: { participant: ParticipantData }) => {
-//   const gameDurationMinutes = participant.timePlayed / 60;
-  
-//   // Estimate phase performance based on available data
-//   const phases = [
-//     {
-//       name: "Early Game",
-//       time: "0-15 min",
-//       icon: "🌅",
-//       color: "from-blue-500 to-cyan-500",
-//       bgColor: "bg-blue-950/30",
-//       borderColor: "border-blue-900/50",
-//       // Early game metrics estimation
-//       score: Math.min(100, (participant.goldPerMinute * 15 / participant.goldEarned) * 100 * 1.5),
-//       metrics: {
-//         focus: "Laning Phase",
-//         strength: participant.goldPerMinute > 400 ? "Strong economy" : participant.kills > participant.deaths ? "Good trades" : "Needs improvement",
-//         tip: participant.goldPerMinute > 400 
-//           ? "Great CS! Keep up the farming." 
-//           : "Focus on last-hitting minions and avoid unnecessary trades."
-//       }
-//     },
-//     {
-//       name: "Mid Game",
-//       time: "15-25 min",
-//       icon: "⚔️",
-//       color: "from-orange-500 to-red-500",
-//       bgColor: "bg-orange-950/30",
-//       borderColor: "border-orange-900/50",
-//       // Mid game metrics estimation
-//       score: Math.min(100, (participant.killParticipation * 100 + participant.teamDamagePercentage * 100) / 2),
-//       metrics: {
-//         focus: "Team Fights",
-//         strength: participant.killParticipation > 0.6 
-//           ? "High impact" 
-//           : participant.objectivesStolen > 0 
-//           ? "Good objective control" 
-//           : "Low presence",
-//         tip: participant.killParticipation > 0.6
-//           ? "Excellent teamfight participation!"
-//           : "Group with your team for objectives and fights."
-//       }
-//     },
-//     {
-//       name: "Late Game",
-//       time: "25+ min",
-//       icon: "👑",
-//       color: "from-purple-500 to-pink-500",
-//       bgColor: "bg-purple-950/30",
-//       borderColor: "border-purple-900/50",
-//       // Late game metrics estimation
-//       score: Math.min(100, (participant.baronKills * 25 + (100 - (participant.timeSpentDead / gameDurationMinutes)) + participant.win ? 50 : 0)),
-//       metrics: {
-//         focus: "Game Closing",
-//         strength: participant.win 
-//           ? "Victory secured" 
-//           : participant.deaths <= 3 
-//           ? "Good positioning" 
-//           : "Risky plays",
-//         tip: participant.deaths > 7
-//           ? "Avoid risky plays late game - death timers are crucial."
-//           : participant.win
-//           ? "Perfect! You helped close out the game."
-//           : "Focus on Baron and Elder Dragon for comeback potential."
-//       }
-//     }
-//   ];
-
-//   return (
-//     <div className="relative">
-//       {/* Hero Image */}
-//       <div className="absolute inset-0 rounded-xl overflow-hidden opacity-10">
-//         <img 
-//           src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/project-uploads/5e6a9517-f9f8-4974-960e-9e39c19d8424/generated_images/abstract-illustration-of-game-phases-and-b7d5ed8b-20251125173921.jpg"
-//           alt="Game Phases"
-//           className="w-full h-full object-cover"
-//         />
-//       </div>
-
-//       <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-//         {phases.map((phase, idx) => (
-//           <div key={idx} className={`relative overflow-hidden rounded-xl border ${phase.borderColor} ${phase.bgColor} p-5 backdrop-blur-sm group hover:scale-105 transition-all duration-300`}>
-//             <div className="mb-4">
-//               <div className="text-3xl mb-2">{phase.icon}</div>
-//               <h4 className={`text-lg font-bold bg-linear-to-r ${phase.color} bg-clip-text text-transparent mb-1`}>
-//                 {phase.name}
-//               </h4>
-//               <p className="text-xs text-zinc-500 font-mono">{phase.time}</p>
-//             </div>
-
-//             {/* Phase Score */}
-//             <div className="mb-4">
-//               <div className="flex items-center justify-between mb-2">
-//                 <span className="text-xs text-zinc-400">Phase Score</span>
-//                 <span className="text-sm font-bold text-white">{phase.score.toFixed(0)}%</span>
-//               </div>
-//               <div className="relative h-2 bg-zinc-800/50 rounded-full overflow-hidden">
-//                 <div
-//                   className={`absolute inset-y-0 left-0 rounded-full bg-linear-to-r ${phase.color} transition-all duration-1000`}
-//                   style={{ width: `${phase.score}%` }}
-//                 />
-//               </div>
-//             </div>
-
-//             {/* Phase Metrics */}
-//             <div className="space-y-2 border-t border-zinc-800 pt-4">
-//               <div>
-//                 <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Focus</div>
-//                 <div className="text-sm font-semibold text-zinc-300">{phase.metrics.focus}</div>
-//               </div>
-//               <div>
-//                 <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Performance</div>
-//                 <div className="text-sm font-semibold text-zinc-300">{phase.metrics.strength}</div>
-//               </div>
-//               <div>
-//                 <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Tip</div>
-//                 <div className="text-xs text-zinc-400 leading-relaxed">{phase.metrics.tip}</div>
-//               </div>
-//             </div>
-
-//             {/* Decorative element */}
-//             <div className={`absolute -right-8 -bottom-8 w-32 h-32 bg-linear-to-br ${phase.color} opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity`}></div>
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
 
 // Combat Efficiency Analysis Component
 const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participant: ParticipantData, allParticipants: ParticipantData[] }) => {
@@ -975,7 +1123,6 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
   // Calculate efficiency metrics
   const damagePerGold = participant.totalDamageDealtToChampions / participant.goldEarned;
   const damageEfficiency = (participant.totalDamageDealtToChampions / participant.totalDamageTaken) * 100;
-  // FIX: Handle 0 deaths for gold efficiency to avoid Infinity
   const goldEfficiency = participant.deaths > 0 ? participant.goldEarned / participant.deaths : participant.goldEarned;
   const survivalRate = ((gameDurationMinutes * 60 - participant.timeSpentDead) / (gameDurationMinutes * 60)) * 100;
   const damagePerDeath = participant.deaths > 0 ? participant.totalDamageDealtToChampions / participant.deaths : participant.totalDamageDealtToChampions;
@@ -990,9 +1137,7 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
       value: damagePerGold.toFixed(2),
       subtitle: `${damagePerGold > avgDamagePerGold ? '+' : ''}${((damagePerGold / avgDamagePerGold - 1) * 100).toFixed(1)}% vs avg`,
       icon: Swords,
-      color: damagePerGold > avgDamagePerGold ? "text-green-400" : "text-zinc-400",
-      bgColor: damagePerGold > avgDamagePerGold ? "bg-green-950/30" : "bg-zinc-900/30",
-      borderColor: damagePerGold > avgDamagePerGold ? "border-green-900/50" : "border-zinc-800",
+      color: damagePerGold > avgDamagePerGold ? "from-orange-400 to-orange-500" : "from-white to-zinc-600",
       description: "Damage dealt per gold spent"
     },
     {
@@ -1000,9 +1145,7 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
       value: `${damageEfficiency.toFixed(0)}%`,
       subtitle: damageEfficiency > 100 ? "Positive trades" : "Negative trades",
       icon: Crosshair,
-      color: damageEfficiency > 100 ? "text-green-400" : "text-red-400",
-      bgColor: damageEfficiency > 100 ? "bg-green-950/30" : "bg-red-950/30",
-      borderColor: damageEfficiency > 100 ? "border-green-900/50" : "border-red-900/50",
+      color: damageEfficiency > 100 ? "from-green-500 to-emerald-500" : "from-red-500 to-rose-500",
       description: "Damage dealt vs damage taken ratio"
     },
     {
@@ -1010,92 +1153,101 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
       value: goldEfficiency.toFixed(0),
       subtitle: `${participant.goldPerMinute.toFixed(0)}/min`,
       icon: Coins,
-      color: participant.goldPerMinute > avgGoldPerMin ? "text-green-400" : "text-zinc-400",
-      bgColor: participant.goldPerMinute > avgGoldPerMin ? "bg-green-950/30" : "bg-zinc-900/30",
-      borderColor: participant.goldPerMinute > avgGoldPerMin ? "border-green-900/50" : "border-zinc-800",
+      color: participant.goldPerMinute > avgGoldPerMin ? "from-amber-400 to-yellow-500" : "from-zinc-500 to-zinc-600",
       description: "Gold earned per death (higher is better)"
     },
     {
       label: "Survival Rate",
       value: `${survivalRate.toFixed(1)}%`,
       subtitle: survivalRate > 85 ? "Excellent" : survivalRate > 70 ? "Good" : "Needs work",
-      icon: Heart,
-      color: survivalRate > 85 ? "text-green-400" : survivalRate > 70 ? "text-yellow-400" : "text-red-400",
-      bgColor: survivalRate > 85 ? "bg-green-950/30" : survivalRate > 70 ? "bg-yellow-950/30" : "bg-red-950/30",
-      borderColor: survivalRate > 85 ? "border-green-900/50" : survivalRate > 70 ? "border-yellow-900/50" : "border-red-900/50",
+      icon: Shield,
+      color: survivalRate > 85 ? "from-green-400 to-emerald-500" : survivalRate > 70 ? "from-yellow-500 to-amber-500" : "from-red-500 to-rose-500",
       description: "Time alive vs time dead"
     }
   ];
 
   return (
-    <div className="relative">
-      {/* Hero Image */}
-      <div className="absolute inset-0 rounded-xl overflow-hidden opacity-10">
-        <img 
-          src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/project-uploads/5e6a9517-f9f8-4974-960e-9e39c19d8424/generated_images/abstract-illustration-of-combat-efficien-fa21c811-20251125173921.jpg"
-          alt="Combat Efficiency"
-          className="w-full h-full object-cover"
-        />
-      </div>
+    <div className="rounded-2xl border border-orange-500/10 bg-linear-to-br from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm shadow-2xl overflow-hidden">
+      {/* Decorative gradient line at top */}
+      <div className="h-0.5 w-full bg-linear-to-r from-transparent via-orange-500/50 to-transparent" />
+      
+      <div className="p-6">
+        {/* Header */}
+        <div className="flex items-start gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+            <Activity className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-white">Combat Efficiency</h3>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">Advanced performance metrics and analysis</p>
+          </div>
+        </div>
 
-      <div className="relative z-10">
-        {/* Main Metrics Grid */}
+        {/* Efficiency Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {efficiencyMetrics.map((metric, idx) => (
-            <div key={idx} className={`rounded-xl border ${metric.borderColor} ${metric.bgColor} p-5 backdrop-blur-sm hover:scale-105 transition-all duration-300`}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2 rounded-lg ${metric.color}`}>
-                  <metric.icon className="h-5 w-5" />
+            <div 
+              key={idx} 
+              className="group relative rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300 hover:scale-105"
+            >
+              <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider">{metric.label}</div>
+                  <metric.icon className="h-4 w-4 text-orange-400/60" strokeWidth={1.5} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-zinc-500 mb-0.5">{metric.label}</div>
-                  <div className={`text-2xl font-bold ${metric.color}`}>{metric.value}</div>
+                <div className={`text-2xl font-bold bg-linear-to-r ${metric.color} bg-clip-text text-transparent mb-1`}>
+                  {metric.value}
+                </div>
+                <div className="text-[10px] text-zinc-500 mb-2">{metric.subtitle}</div>
+                <div className="text-[9px] text-zinc-600 leading-relaxed border-t border-orange-500/10 pt-2 mt-1">
+                  {metric.description}
                 </div>
               </div>
-              <div className="text-xs text-zinc-400 mb-2">{metric.subtitle}</div>
-              <div className="text-[10px] text-zinc-600 leading-relaxed">{metric.description}</div>
             </div>
           ))}
         </div>
 
-        {/* Advanced Combat Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Damage Analysis */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Flame className="h-5 w-5 text-orange-500" />
-              <h4 className="text-sm font-bold text-white">Damage Analysis</h4>
+        {/* Advanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Damage Analysis Card */}
+          <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-5">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+              <div className="p-1.5 rounded-lg bg-orange-500/10">
+                <Flame className="h-4 w-4 text-orange-400" strokeWidth={1.5} />
+              </div>
+              <h4 className="text-xs font-semibold text-white uppercase tracking-wider">Damage Analysis</h4>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Damage per Death</span>
-                <span className="text-sm font-bold text-white">{damagePerDeath.toFixed(0)}</span>
+                <span className="text-[10px] text-zinc-500">Damage per Death</span>
+                <span className="text-xs font-bold text-white">{damagePerDeath.toFixed(0)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Damage per Minute</span>
-                <span className="text-sm font-bold text-white">{participant.damagePerMinute.toFixed(0)}</span>
+                <span className="text-[10px] text-zinc-500">Damage per Minute</span>
+                <span className="text-xs font-bold text-white">{participant.damagePerMinute.toFixed(0)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Mitigated Damage</span>
-                <span className="text-sm font-bold text-white">{participant.damageSelfMitigated.toLocaleString()}</span>
+                <span className="text-[10px] text-zinc-500">Mitigated Damage</span>
+                <span className="text-xs font-bold text-white">{(participant.damageSelfMitigated / 1000).toFixed(1)}k</span>
               </div>
-              <div className="pt-2 border-t border-zinc-800">
-                <div className="text-[10px] text-zinc-500 mb-1">Combat Rating</div>
+              <div className="pt-2 border-t border-orange-500/10">
+                <div className="text-[9px] text-zinc-600 mb-1">Combat Rating</div>
                 <div className="flex items-center gap-2">
                   {damagePerDeath > 10000 ? (
                     <>
-                      <TrendingUpIcon className="h-4 w-4 text-green-400" />
-                      <span className="text-xs font-semibold text-green-400">Excellent Impact</span>
+                      <TrendingUpIcon className="h-3.5 w-3.5 text-green-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-green-400">Excellent Impact</span>
                     </>
                   ) : damagePerDeath > 5000 ? (
                     <>
-                      <TrendingUp className="h-4 w-4 text-yellow-400" />
-                      <span className="text-xs font-semibold text-yellow-400">Good Impact</span>
+                      <TrendingUp className="h-3.5 w-3.5 text-yellow-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-yellow-400">Good Impact</span>
                     </>
                   ) : (
                     <>
-                      <TrendingDown className="h-4 w-4 text-red-400" />
-                      <span className="text-xs font-semibold text-red-400">Low Impact</span>
+                      <TrendingDown className="h-3.5 w-3.5 text-red-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-red-400">Low Impact</span>
                     </>
                   )}
                 </div>
@@ -1103,44 +1255,46 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
             </div>
           </div>
 
-          {/* Survivability Analysis */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-5 w-5 text-blue-500" />
-              <h4 className="text-sm font-bold text-white">Survivability</h4>
+          {/* Survivability Analysis Card */}
+          <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-5">
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+              <div className="p-1.5 rounded-lg bg-blue-500/10">
+                <Shield className="h-4 w-4 text-blue-400" strokeWidth={1.5} />
+              </div>
+              <h4 className="text-xs font-semibold text-white uppercase tracking-wider">Survivability</h4>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Time Alive</span>
-                <span className="text-sm font-bold text-white">{((gameDurationMinutes * 60 - participant.timeSpentDead) / 60).toFixed(1)} min</span>
+                <span className="text-[10px] text-zinc-500">Time Alive</span>
+                <span className="text-xs font-bold text-white">{((gameDurationMinutes * 60 - participant.timeSpentDead) / 60).toFixed(1)} min</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Time Dead</span>
-                <span className="text-sm font-bold text-white">{(participant.timeSpentDead / 60).toFixed(1)} min</span>
+                <span className="text-[10px] text-zinc-500">Time Dead</span>
+                <span className="text-xs font-bold text-white">{(participant.timeSpentDead / 60).toFixed(1)} min</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs text-zinc-400">Death Timer Impact</span>
-                <span className={`text-sm font-bold ${participant.timeSpentDead > 180 ? 'text-red-400' : 'text-green-400'}`}>
+                <span className="text-[10px] text-zinc-500">Death Timer Impact</span>
+                <span className={`text-xs font-bold ${participant.timeSpentDead > 180 ? 'text-red-400' : 'text-green-400'}`}>
                   {participant.timeSpentDead > 180 ? 'High' : 'Low'}
                 </span>
               </div>
-              <div className="pt-2 border-t border-zinc-800">
-                <div className="text-[10px] text-zinc-500 mb-1">Survivability Rating</div>
+              <div className="pt-2 border-t border-orange-500/10">
+                <div className="text-[9px] text-zinc-600 mb-1">Survivability Rating</div>
                 <div className="flex items-center gap-2">
                   {survivalRate > 85 ? (
                     <>
-                      <Star className="h-4 w-4 text-green-400" />
-                      <span className="text-xs font-semibold text-green-400">Excellent Positioning</span>
+                      <Star className="h-3.5 w-3.5 text-green-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-green-400">Excellent Positioning</span>
                     </>
                   ) : survivalRate > 70 ? (
                     <>
-                      <Award className="h-4 w-4 text-yellow-400" />
-                      <span className="text-xs font-semibold text-yellow-400">Good Positioning</span>
+                      <Award className="h-3.5 w-3.5 text-yellow-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-yellow-400">Good Positioning</span>
                     </>
                   ) : (
                     <>
-                      <AlertCircle className="h-4 w-4 text-red-400" />
-                      <span className="text-xs font-semibold text-red-400">Risky Positioning</span>
+                      <AlertCircle className="h-3.5 w-3.5 text-red-400" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-red-400">Risky Positioning</span>
                     </>
                   )}
                 </div>
@@ -1149,40 +1303,42 @@ const CombatEfficiencyAnalysis = ({ participant, allParticipants }: { participan
           </div>
         </div>
 
-        {/* Key Insights */}
-        <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Brain className="h-5 w-5 text-orange-500" />
-            <h4 className="text-sm font-bold text-white">Efficiency Insights</h4>
+        {/* Efficiency Insights */}
+        <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-5">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+            <div className="p-1.5 rounded-lg bg-orange-500/10">
+              <Brain className="h-4 w-4 text-orange-400" strokeWidth={1.5} />
+            </div>
+            <h4 className="text-xs font-semibold text-white uppercase tracking-wider">Efficiency Insights</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
-              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-zinc-900/50 border border-orange-500/10">
+              <div className="w-1 h-4 rounded-full bg-orange-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
                 {damagePerGold > avgDamagePerGold 
                   ? "You're converting gold into damage efficiently. Keep building high-impact items."
                   : "Consider building more damage-focused items to improve your combat effectiveness."}
               </p>
             </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
-              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-zinc-900/50 border border-orange-500/10">
+              <div className="w-1 h-4 rounded-full bg-orange-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
                 {damageEfficiency > 100
                   ? "Great trading! You're dealing more damage than you take in fights."
                   : "Focus on positioning to take less damage while maintaining your damage output."}
               </p>
             </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
-              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-zinc-900/50 border border-orange-500/10">
+              <div className="w-1 h-4 rounded-full bg-orange-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
                 {participant.deaths <= 3
                   ? "Excellent death control! Your cautious playstyle is paying off."
                   : `With ${participant.deaths} deaths, focus on map awareness and safer positioning.`}
               </p>
             </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
-              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-zinc-900/50 border border-orange-500/10">
+              <div className="w-1 h-4 rounded-full bg-orange-500 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-zinc-300 leading-relaxed">
                 {survivalRate > 85
                   ? "Your uptime is excellent - you're maximizing your impact on the game."
                   : "Reduce time dead by playing safer during crucial moments and death timers."}
@@ -1203,10 +1359,26 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
   const [mvp, setMvp] = useState<PlayerScore | null>(null);
   const [ace, setAce] = useState<PlayerScore | null>(null);
   const [targetPlayer, setTargetPlayer] = useState<PlayerScore | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
     fetchMatchData();
+    fetchItemsData();
   }, [server, matchid]);
+
+  const fetchItemsData = async () => {
+    try {
+      const response = await fetch(`/api/lol/lol-items`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch items data');
+      }
+      const data = await response.json();
+      setItems(data);
+    } catch (err) {
+      console.error('Failed to fetch items data:', err);
+      setItems([]); // Set empty array as fallback
+    }
+  };
 
   const fetchMatchData = async () => {
     setLoading(true);
@@ -1250,81 +1422,233 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
     }
   };
 
-  const calculatePlayerScores = (participants: ParticipantData[]): PlayerScore[] => {
-    const gameDurationMinutes = participants[0]?.timePlayed / 60 || 1;
-    
-    const normalize = (value: number, max: number) => {
-      return max > 0 ? (value / max) * 100 : 0;
-    };
-    
-    const maxKDA = Math.max(...participants.map(p => p.kda));
-    const maxDPM = Math.max(...participants.map(p => p.damagePerMinute));
-    const maxGoldPerMin = Math.max(...participants.map(p => p.goldPerMinute));
-    const maxVisionScore = Math.max(...participants.map(p => p.visionScore));
-    const maxObjectives = Math.max(...participants.map(p => 
-      p.baronKills + p.dragonKills + p.turretTakedowns
-    ));
-    
-    const scores = participants.map(p => {
-      const combatScore = (
-        normalize(p.kda, maxKDA) * 0.3 +
-        normalize(p.damagePerMinute, maxDPM) * 0.25 +
-        (p.teamDamagePercentage * 100) * 0.2 +
-        (p.killParticipation * 100) * 0.25
-      ) * 0.25;
-      
-      const totalObjectives = p.baronKills + p.dragonKills + p.turretTakedowns;
-      const objectiveScore = (
-        normalize(totalObjectives, maxObjectives) * 0.5 +
-        normalize(p.objectivesStolen, 5) * 0.3 +
-        normalize(p.baronKills, 3) * 0.2
-      ) * 0.20;
-      
-      const economyScore = (
-        normalize(p.goldPerMinute, maxGoldPerMin) * 0.6 +
-        normalize(p.totalMinionsKilled + p.neutralMinionsKilled, 400) * 0.4
-      ) * 0.15;
-      
-      const deathPenalty = Math.max(0, 100 - (p.deaths * 10));
-      const survivalScore = (
-        deathPenalty * 0.5 +
-        normalize(p.damageSelfMitigated, 40000) * 0.3 +
-        normalize(100 - (p.timeSpentDead / gameDurationMinutes), 100) * 0.2
-      ) * 0.15;
-      
-      const visionScore = (
-        normalize(p.visionScore, maxVisionScore) * 0.5 +
-        normalize(p.wardsPlaced, 50) * 0.25 +
-        normalize(p.wardsKilled, 30) * 0.25
-      ) * 0.15;
-      
-      const macroScore = (p.win ? 50 : 0) * 0.10;
-      
-      const totalScore = combatScore + objectiveScore + economyScore + survivalScore + visionScore + macroScore;
-      
-      return {
-        puuid: p.puuid,
-        summonerName: p.summonerName,
-        championName: p.championName,
-        teamPosition: p.teamPosition,
-        win: p.win,
-        combatScore,
-        objectiveScore,
-        economyScore,
-        survivalScore,
-        visionScore,
-        totalScore,
-        rank: 0,
-      };
-    });
-    
-    scores.sort((a, b) => b.totalScore - a.totalScore);
-    scores.forEach((score, index) => {
-      score.rank = index + 1;
-    });
-    
-    return scores;
+
+
+const calculatePlayerScores = (participants: ParticipantData[]): PlayerScore[] => {
+  const gameDurationMinutes = participants[0]?.timePlayed / 60 || 1;
+  
+  const normalize = (value: number, max: number) => {
+    return max > 0 ? (value / max) * 100 : 0;
   };
+  
+  // Get max values for normalization
+  const maxKDA = Math.max(...participants.map(p => p.kda));
+  const maxDPM = Math.max(...participants.map(p => p.damagePerMinute));
+  const maxGoldPerMin = Math.max(...participants.map(p => p.goldPerMinute));
+  const maxVisionScore = Math.max(...participants.map(p => p.visionScore));
+  const maxObjectives = Math.max(...participants.map(p => 
+    p.baronKills + p.dragonKills + p.turretTakedowns + (p.riftHeraldTakedowns || 0)
+  ));
+  const maxCC = Math.max(...participants.map(p => p.timeCCingOthers || 0));
+  const maxHealing = Math.max(...participants.map(p => (p.totalHealsOnTeammates || 0) + (p.totalDamageShieldedOnTeammates || 0)));
+  const maxMultikills = Math.max(...participants.map(p => p.multikills || 0));
+  const maxLongestLiving = Math.max(...participants.map(p => p.longestTimeSpentLiving || 0));
+  const maxInhibitors = Math.max(...participants.map(p => p.inhibitorTakedowns || 0));
+  const maxControlWards = Math.max(...participants.map(p => p.controlWardsPlaced || 0));
+  
+  // Get highest kills and assists in the game
+  const highestKills = Math.max(...participants.map(p => p.kills));
+  const highestAssists = Math.max(...participants.map(p => p.assists));
+  
+  const scores = participants.map(p => {
+    const position = p.teamPosition;
+    
+    // Check if player has most kills or assists
+    const hasMostKills = p.kills === highestKills && highestKills > 0;
+    const hasMostAssists = p.assists === highestAssists && highestAssists > 0;
+    
+    // Get weights from config
+    const combatWeights = getCombatWeights(position);
+    const economyWeights = getEconomyWeights(position);
+    
+    // Get bonus points
+    const killsBonus = getMostKillsBonus(position, hasMostKills);
+    const assistsBonus = getMostAssistsBonus(position, hasMostAssists);
+    
+    // COMBAT SCORE (25%) - Now includes kill/assist bonuses as direct points
+    let combatScore = (
+      ((p.killParticipation * 100)) * combatWeights.killParticipation +
+      normalize(p.kda, maxKDA) * combatWeights.kda +
+      normalize(p.damagePerMinute, maxDPM) * combatWeights.damage +
+      (p.teamDamagePercentage * 100) * combatWeights.teamDamage +
+      normalize(p.timeCCingOthers || 0, maxCC) * combatWeights.cc +
+      normalize((p.totalHealsOnTeammates || 0) + (p.totalDamageShieldedOnTeammates || 0), maxHealing) * combatWeights.healingShielding +
+      normalize(p.multikills || 0, maxMultikills) * combatWeights.multikills
+    ) * scoreCategoryWeights.combat;
+    
+    // Add direct bonus points for most kills/assists (these are flat additions, not percentage-based)
+    combatScore += killsBonus;
+    combatScore += assistsBonus;
+
+    // OBJECTIVE SCORE (25%)
+    const totalObjectives = (p.baronKills || 0) + (p.dragonKills || 0) + (p.turretTakedowns || 0) + (p.riftHeraldTakedowns || 0);
+
+    // Get role-specific objective weights
+    const objectiveWeights = getObjectiveWeights(position);
+    const objectiveMultiplier = getObjectiveMultiplier(position);
+    const dragonBonusMultiplier = getDragonBonusMultiplier(position);
+
+    // Calculate dragon score with bonus for junglers
+    const dragonScore = normalize(p.dragonKills || 0, 6) * objectiveWeights.dragonKills * dragonBonusMultiplier;
+
+    // Calculate base objective score (without perfect dragon soul)
+    let objectiveScore = (
+      normalize(totalObjectives, maxObjectives) * objectiveWeights.totalObjectives +
+      normalize(p.objectivesStolen || 0, 5) * objectiveWeights.objectivesStolen +
+      normalize(p.baronKills || 0, 3) * objectiveWeights.baronKills +
+      dragonScore +
+      normalize(p.riftHeraldTakedowns || 0, 1) * objectiveWeights.riftHerald +
+      normalize(p.turretTakedowns || 0, 10) * objectiveWeights.turretTakedowns +
+      normalize(p.inhibitorTakedowns || 0, maxInhibitors) * objectiveWeights.inhibitors +
+      ((p.firstTurretKilled || 0) * 10) * objectiveWeights.firstTurret
+    ) * scoreCategoryWeights.objectives * objectiveMultiplier;
+
+    // Add perfect dragon soul as PURE BONUS
+    const dragonSoulBonus = getPerfectDragonSoulBonus(position, p.perfectDragonSoulsTaken === 1);
+    objectiveScore += dragonSoulBonus;
+
+    // ECONOMY SCORE (15%)
+    const economyScore = (
+      normalize(p.goldPerMinute, maxGoldPerMin) * economyWeights.goldPerMin +
+      normalize(p.totalMinionsKilled + p.neutralMinionsKilled, 400) * economyWeights.cs
+    ) * scoreCategoryWeights.economy;
+    
+    // SURVIVAL SCORE (15%)
+    const deathPenalty = Math.max(0, 100 - (p.deaths * 10));
+    const survivalScore = (
+      deathPenalty * survivalWeights.deathPenalty +
+      normalize(p.damageSelfMitigated, 40000) * survivalWeights.damageMitigated +
+      normalize(100 - (p.timeSpentDead / gameDurationMinutes), 100) * survivalWeights.timeAlive +
+      normalize(p.longestTimeSpentLiving || 0, maxLongestLiving) * survivalWeights.longestLiving
+    ) * scoreCategoryWeights.survival;
+    
+    // VISION SCORE (10%)
+    const visionPercent = normalize(p.visionScore, maxVisionScore);
+    const visionMultiplier = getVisionMultiplier(position, visionPercent);
+    
+    const visionScore = (
+      normalize(p.visionScore, maxVisionScore) * visionWeights.visionScore +
+      normalize(p.wardsPlaced, 30) * visionWeights.wardsPlaced +
+      normalize(p.wardsKilled, 25) * visionWeights.wardsKilled +
+      normalize(p.controlWardsPlaced || 0, maxControlWards) * visionWeights.controlWards
+    ) * scoreCategoryWeights.vision * visionMultiplier;
+    
+    // MACRO SCORE (10%)
+    const macroScore = getMacroScore(p.win, p.perfectDragonSoulsTaken, p.firstTurretKilled);
+    
+    const totalScore = combatScore + objectiveScore + economyScore + survivalScore + visionScore + macroScore;
+    
+    return {
+      puuid: p.puuid,
+      summonerName: p.summonerName,
+      championName: p.championName,
+      teamPosition: p.teamPosition,
+      win: p.win,
+      combatScore,
+      objectiveScore,
+      economyScore,
+      survivalScore,
+      visionScore,
+      totalScore,
+      rank: 0,
+    };
+  });
+  
+  scores.sort((a, b) => b.totalScore - a.totalScore);
+  scores.forEach((score, index) => {
+    score.rank = index + 1;
+  });
+  
+  return scores;
+};
+
+
+const calculateMVPAndACE = (scores: PlayerScore[], participants: ParticipantData[]) => {
+  if (scores.length === 0) return { mvp: null, ace: null };
+  
+  const weightedScores = scores.map(score => {
+    const participant = participants.find(p => p.puuid === score.puuid);
+    if (!participant) return { ...score, weightedTotal: score.totalScore };
+    
+    let weightMultiplier = 1.0;
+    const position = participant.teamPosition;
+    const isSupport = position === "UTILITY" || position === "SUPPORT";
+    const isJungle = position === "JUNGLE";
+    
+    // HIGHEST PRIORITY: Kill Participation
+    if (participant.killParticipation > 0.75) {
+      weightMultiplier *= 1.20; // +20% for 75%+ KP
+    } else if (participant.killParticipation > 0.6) {
+      weightMultiplier *= 1.10; // +10% for 60%+ KP
+    } else if (participant.killParticipation < 0.4) {
+      weightMultiplier *= 0.85; // -15% for low KP
+    }
+    
+    // Objective priority for junglers
+    if (isJungle) {
+      const totalObjectives = (participant.baronKills || 0) + (participant.dragonKills || 0) + (participant.riftHeraldTakedowns || 0);
+      if (totalObjectives > 6) {
+        weightMultiplier *= 1.20;
+      } else if (totalObjectives > 3) {
+        weightMultiplier *= 1.10;
+      } else {
+        weightMultiplier *= 0.85; // Penalty for junglers with poor objective control
+      }
+    }
+    
+    // Support penalties for low KP
+    if (isSupport) {
+      if (participant.killParticipation < 0.5) {
+        weightMultiplier *= 0.70; // Heavy penalty for supports with low KP
+      }
+      
+      // Vision bonus for supports
+      const avgVision = scores.reduce((sum, s) => {
+        const p = participants.find(p2 => p2.puuid === s.puuid);
+        return sum + (p?.visionScore || 0);
+      }, 0) / scores.length;
+      
+      if (participant.visionScore > avgVision * 1.5) {
+        weightMultiplier *= 1.10;
+      }
+    }
+    
+    // Universal bonuses
+    if (participant.deaths === 0 && participant.kills > 0) {
+      weightMultiplier *= 1.10;
+    }
+    
+    if (participant.pentaKills > 0) {
+      weightMultiplier *= 1.08;
+    }
+    
+    if (participant.perfectDragonSoulsTaken) {
+      weightMultiplier *= 1.10;
+    }
+    
+    if (participant.firstTurretKilled) {
+      weightMultiplier *= 1.05;
+    }
+    
+    if (participant.deaths > 8) {
+      weightMultiplier *= 0.80;
+    }
+    
+    return { ...score, weightedTotal: score.totalScore * weightMultiplier };
+  });
+  
+  weightedScores.sort((a, b) => b.weightedTotal - a.weightedTotal);
+  const mvp = weightedScores[0];
+  
+  const losingPlayers = weightedScores.filter(s => !s.win);
+  const ace = losingPlayers.length > 0 ? losingPlayers.reduce((prev, current) => 
+    current.weightedTotal > prev.weightedTotal ? current : prev
+  ) : null;
+  
+  return { mvp, ace };
+};
+
+
 
   const getPerformanceBadges = (participant: ParticipantData, allParticipants: ParticipantData[]): PerformanceBadge[] => {
     const badges: PerformanceBadge[] = [];
@@ -1379,7 +1703,7 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
     }
 
     const csPerMin = (participant.totalMinionsKilled + participant.neutralMinionsKilled) / gameDurationMinutes;
-    if (csPerMin >= 8) {
+    if (csPerMin >= 8.5) {
       badges.push({ label: "CS Master", type: "excellent", icon: Target });
     } else if (csPerMin < 4 && !["UTILITY", "SUPPORT"].includes(participant.teamPosition)) {
       badges.push({ label: "Low CS", type: "poor", icon: TrendingDown });
@@ -1387,12 +1711,12 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
 
     if (participant.deaths >= 10) {
       badges.push({ label: "Too Many Deaths", type: "poor", icon: Skull });
-    } else if (participant.deaths <= 2) {
+    } else if (participant.deaths <= 2 && participant.kda > 3) {
       badges.push({ label: "Great Survival", type: "excellent", icon: Shield });
     }
 
     const totalObjectives = participant.baronKills + participant.dragonKills + participant.turretTakedowns;
-    if (totalObjectives >= 10) {
+    if (totalObjectives >= 5) {
       badges.push({ label: "Objective Focused", type: "excellent", icon: Trophy });
     }
 
@@ -1400,6 +1724,22 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
     if (performanceScore > 1.5) {
       badges.push({ label: "Carry Performance", type: "excellent", icon: Crown });
     }
+
+    const DragonStealer = participant.objectivesStolen || 0;
+    if (DragonStealer >= 1) {
+      badges.push({ label: "Dragon Stealer", type: "excellent", icon: Trophy });
+    }
+
+    const DpsThreat = participant.totalDamageDealtToChampions / gameDurationMinutes;
+    if (DpsThreat >= 850) {
+      badges.push({ label: "Dps Threat", type: "excellent", icon: Trophy });
+    }
+
+    const FirstTurretDestroyer = participant.firstTurretKilled / gameDurationMinutes;
+    if (FirstTurretDestroyer >= 1) {
+      badges.push({ label: "First Turret Destroyer", type: "excellent", icon: Trophy });
+    }
+
 
     return badges;
   };
@@ -1512,591 +1852,847 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
   return (
     <div className="space-y-6">
       {/* Match Overview */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 relative overflow-hidden">
-        {/* Background Image with Opacity */}
-        <div 
-          className="absolute inset-0 bg-center bg-cover opacity-70 pointer-events-none"
-          style={{backgroundImage: `url(${getChampionSplashByName(mvp.championName.toLowerCase())})`}}
-        />
-        
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-linear-to-br from-zinc-900/95 via-zinc-900/90 to-zinc-900/80 pointer-events-none"></div>
+<div className="rounded-2xl border border-orange-500/10 bg-linear-to-br from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm shadow-2xl overflow-hidden relative">
+  {/* Background Champion Splash */}
+  <div 
+    className="absolute inset-0 bg-center bg-cover opacity-40 pointer-events-none"
+    style={{backgroundImage: `url(${getChampionSplashByName(mvp.championName.toLowerCase())})`}}
+  />
+  
+  {/* Gradient Overlay */}
+  <div className="absolute inset-0 bg-linear-to-br from-zinc-900/95 via-zinc-900/85 to-zinc-900/90 pointer-events-none" />
+  
+  <div className="relative z-10 p-6">
+    {/* Header Section */}
+    <div className="flex items-start justify-between mb-6 pb-5 border-b border-orange-500/10">
+      <div className="flex items-start gap-3">
+        <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+          <Activity className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-white">Match Overview</h2>
+          <p className="text-[10px] text-zinc-500 font-mono mt-0.5">{matchid}</p>
+        </div>
+      </div>
       
-        <div className="relative z-10 p-6">
-          {/* Header Section */}
-          <div className="flex items-start justify-between mb-8 pb-6 border-b border-zinc-800/50">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-orange-950/30 border border-orange-900/30 backdrop-blur-sm">
-                <Activity className="h-7 w-7 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white mb-1">Match Overview</h2>
-                <p className="text-xs text-zinc-500 font-mono tracking-wider">{matchid}</p>
+      <div className="text-right">
+        <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">Duration</div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-white tabular-nums">{gameDurationMinutes}</span>
+          <span className="text-sm text-zinc-500">:</span>
+          <span className="text-2xl font-bold text-white tabular-nums">{gameDurationSeconds.toString().padStart(2, '0')}</span>
+          <span className="text-xs text-zinc-600 ml-1">min</span>
+        </div>
+      </div>
+    </div>
+
+    {/* MVP Display - Premium Redesign */}
+    <div className="relative rounded-xl border border-orange-500/20 overflow-hidden bg-linear-to-br from-orange-950/20 to-transparent">
+      {/* Decorative Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-br from-orange-500/10 to-transparent rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-yellow-500/5 to-transparent rounded-full blur-2xl" />
+      
+      {/* MVP Content */}
+      <div className="relative p-6">
+        <div className="flex items-center justify-between flex-wrap gap-6">
+          {/* Left Section - MVP Info */}
+          <div className="flex items-center gap-5">
+            {/* MVP Crown Icon with Glow */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-orange-500 rounded-xl blur-xl opacity-40 animate-pulse" />
+              <div className="relative p-3 rounded-xl bg-linear-to-br from-orange-500 to-orange-600 shadow-lg">
+                <Crown className="h-7 w-7 text-white drop-shadow-md" strokeWidth={1.5} />
               </div>
             </div>
-            <div className="text-right backdrop-blur-sm bg-zinc-900/50 border border-zinc-800 rounded-xl px-6 py-4">
-              <div className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Duration</div>
-              <div className="text-3xl font-bold text-white tabular-nums">
-                {gameDurationMinutes}:{gameDurationSeconds.toString().padStart(2, '0')}
+            
+            {/* MVP Details */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider">Match MVP</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-1 tracking-tight">{mvp.summonerName}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-orange-400">{mvp.championName}</span>
+                <span className="w-1 h-1 rounded-full bg-zinc-600" />
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wide">{mvp.teamPosition}</span>
               </div>
             </div>
           </div>
-
-          {/* MVP Display - Redesigned */}
-          <div className="relative rounded-2xl border border-orange-900/30 overflow-hidden backdrop-blur-sm">
-            {/* MVP Background Gradient */}
-            <div className="absolute inset-0 bg-linear-to-r from-orange-950/40 via-orange-900/20 via-orange-900/10 to-transparent"></div>
-            
-            {/* Decorative Elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-500/5 rounded-full blur-2xl"></div>
-
-            <div className="relative p-8">
-              <div className="flex items-center justify-between flex-wrap gap-6">
-                {/* Left: MVP Info */}
-                <div className="flex items-center gap-6">
-                  {/* Icon with Glow Effect */}
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-orange-500 rounded-2xl blur-xl opacity-50 animate-pulse"></div>
-                    <div className="relative p-5 rounded-2xl bg-linear-to-br from-orange-500 to-yellow-600 border-2 border-orange-400/50 shadow-2xl">
-                      <Crown className="h-10 w-10 text-white drop-shadow-lg" />
-                    </div>
-                  </div>
-                  
-                  {/* MVP Details */}
-                  <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 backdrop-blur-sm mb-3">
-                      <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
-                      <span className="text-xs text-orange-400 font-bold uppercase tracking-widest">Match MVP</span>
-                    </div>
-                    <h3 className="text-3xl font-black text-white mb-2 tracking-tight">{mvp.summonerName}</h3>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-zinc-900/50 border border-zinc-700/50">
-                        <span className="text-white font-semibold">{mvp.championName}</span>
-                      </div>
-                      <div className="w-1 h-1 rounded-full bg-zinc-600"></div>
-                      <span className="text-zinc-400 uppercase text-xs font-medium tracking-wide">{mvp.teamPosition}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right: Performance Score */}
-                <div className="text-right">
-                  <div className="inline-flex flex-col items-end px-8 py-6 rounded-2xl bg-linear-to-br from-zinc-900/80 to-zinc-900/50 border border-orange-900/30 backdrop-blur-sm">
-                    <div className="text-xs text-zinc-400 uppercase tracking-widest mb-2 font-semibold">Performance Score</div>
-                    <div className="text-5xl font-black bg-linear-to-r from-orange-400 via-orange-500 to-yellow-500 bg-clip-text text-transparent drop-shadow-lg">
-                      {mvp.totalScore.toFixed(2)}
-                    </div>
-                    <div className="mt-2 text-xs text-zinc-500 font-medium">/ 100.00</div>
-                  </div>
-                </div>
+          
+          {/* Right Section - Performance Score */}
+          <div className="text-right">
+            <div className="px-5 py-3 rounded-xl ">
+              <div className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">Performance Score</div>
+              <div className="flex items-baseline justify-end gap-1">
+                <span className="text-4xl font-black bg-linear-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+                  {mvp.totalScore.toFixed(2)}
+                </span>
+                <span className="text-xs text-zinc-600">/ 100</span>
+              </div>
+              {/* Mini progress bar */}
+              <div className="mt-2 w-full h-0.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-linear-to-r from-orange-500 to-yellow-500 rounded-full"
+                  style={{ width: `${(mvp.totalScore / 100) * 100}%` }}
+                />
               </div>
             </div>
           </div>
         </div>
+      
       </div>
+    </div>
+  </div>
+</div>
 
       {/* Target Player Performance */}
       {targetPlayer && targetPlayerData && (
         <>
-          {/* Performance Badges */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Star className="h-5 w-5 text-orange-500" />
-              </div>
-              <h3 className="text-xl font-bold text-white">Performance Highlights</h3>
+        <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm shadow-2xl overflow-hidden">
+  <div className="p-6">
+    {/* Header */}
+    <div className="flex items-start gap-3 mb-6">
+      <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+        <Star className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold tracking-tight text-white">Performance Highlights</h3>
+        <p className="text-xs text-zinc-500 font-medium mt-0.5">Key metrics and achievements</p>
+      </div>
+    </div>
+    
+    {/* Performance Badges */}
+    <div className="flex flex-wrap gap-2 mb-6">
+      {getPerformanceBadges(targetPlayerData, matchData.participants).map((badge, idx) => (
+        <PerformanceBadge key={idx} badge={badge} />
+      ))}
+    </div>
+    
+    {/* Key Metrics Grid */}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* KDA Card */}
+      <div className="group relative p-4 rounded-xl bg-linear-to-br from-zinc-800/30 to-zinc-900/30 border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:scale-105 cursor-pointer">
+        <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+        <div className="relative">
+          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">KDA Ratio</div>
+          <div className="flex items-baseline gap-1 mb-2">
+            <span className="text-3xl font-bold text-white">{targetPlayerData.kills}</span>
+            <span className="text-lg text-zinc-600">/</span>
+            <span className="text-2xl font-semibold text-red-400">{targetPlayerData.deaths}</span>
+            <span className="text-lg text-zinc-600">/</span>
+            <span className="text-2xl font-semibold text-blue-400">{targetPlayerData.assists}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-bold text-orange-400">{targetPlayerData.kda.toFixed(2)}</div>
+            <div className="text-[10px] text-zinc-500">KDA</div>
+          </div>
+          <div className="mt-2 h-px bg-linear-to-r from-orange-500/20 to-transparent" />
+        </div>
+      </div>
+      
+      {/* Damage Card */}
+      <div className="group relative p-4 rounded-xl bg-linear-to-br from-zinc-800/30 to-zinc-900/30 border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:scale-105 cursor-pointer">
+        <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+        <div className="relative">
+          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Damage Dealt</div>
+          <div className="text-3xl font-bold text-white mb-1">
+            {(targetPlayerData.totalDamageDealtToChampions / 1000).toFixed(1)}k
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-orange-400 font-semibold">{(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}%</span>
+            <span className="text-zinc-500">of team damage</span>
+          </div>
+          <div className="mt-3">
+            <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-linear-to-r from-orange-500 to-red-500 rounded-full"
+                style={{ width: `${targetPlayerData.teamDamagePercentage * 100}%` }}
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {getPerformanceBadges(targetPlayerData, matchData.participants).map((badge, idx) => (
-                <PerformanceBadge key={idx} badge={badge} />
-              ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Gold Card */}
+      <div className="group relative p-4 rounded-xl bg-linear-to-br from-zinc-800/30 to-zinc-900/30 border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:scale-105 cursor-pointer">
+        <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+        <div className="relative">
+          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Gold Earned</div>
+          <div className="text-3xl font-bold text-white mb-1">
+            {(targetPlayerData.goldEarned / 1000).toFixed(1)}k
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-1">
+              <SvgIcon size={10} type="gold" className="text-amber-400" />
+              <span className="text-orange-400 font-semibold">{targetPlayerData.goldPerMinute.toFixed(0)}</span>
+              <span className="text-zinc-500">/min</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
-
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1">KDA</div>
-                <div className="text-2xl font-bold text-white">
-                  {targetPlayerData.kills}/{targetPlayerData.deaths}/{targetPlayerData.assists}
-                </div>
-                <div className="text-sm text-orange-500 mt-1">{targetPlayerData.kda.toFixed(2)} ratio</div>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-500">CS: {targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled}</span>
+          </div>
+          <div className="mt-2 h-px bg-linear-to-r from-amber-500/20 to-transparent" />
+        </div>
+      </div>
+      
+      {/* Vision Card */}
+      <div className="group relative p-4 rounded-xl bg-linear-to-br from-zinc-800/30 to-zinc-900/30 border border-orange-500/10 hover:border-orange-500/30 transition-all duration-300 hover:scale-105 cursor-pointer">
+        <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+        <div className="relative">
+          <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Vision Score</div>
+          <div className="text-3xl font-bold text-white mb-1">{targetPlayerData.visionScore}</div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-blue-400 font-semibold">{targetPlayerData.visionScorePerMinute.toFixed(1)}</span>
+            <span className="text-zinc-500">per minute</span>
+          </div>
+          <div className="mt-2 h-px bg-linear-to-r from-blue-500/20 to-transparent" />
+        </div>
+      </div>
+    </div>
+    
+            <div className="border-t border-orange-500/10 pt-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-4 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full" />
+                <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Objective Contributions</h4>
               </div>
-              
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1">Damage</div>
-                <div className="text-2xl font-bold text-white">{targetPlayerData.totalDamageDealtToChampions.toLocaleString()}</div>
-                <div className="text-sm text-zinc-400 mt-1">{(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}% of team</div>
-              </div>
-              
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1">Gold</div>
-                <div className="text-2xl font-bold text-white">{targetPlayerData.goldEarned.toLocaleString()}</div>
-                <div className="text-sm text-zinc-400 mt-1">{targetPlayerData.goldPerMinute.toFixed(2)}/min</div>
-              </div>
-              
-              <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                <div className="text-xs text-zinc-500 mb-1">Vision</div>
-                <div className="text-2xl font-bold text-white">{targetPlayerData.visionScore}</div>
-                <div className="text-sm text-zinc-400 mt-1">{targetPlayerData.visionScorePerMinute.toFixed(2)}/min</div>
-              </div>
-            </div>
-
-            {/* Objectives Detail */}
-            <div className="border-t border-zinc-800 pt-6">
-              <h3 className="text-sm font-semibold text-zinc-400 mb-4 uppercase tracking-wider">Objective Contributions</h3>
               <ObjectivesDetail participant={targetPlayerData} />
             </div>
           </div>
-
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+        </div>
+          <PremiumCard className="mb-6">
+          <div className="rounded-xl border border-orange-500/10 bg-gradient-to-br from-zinc-800/30 to-zinc-900/30 p-6">
             <MultikillsDisplay participant={targetPlayerData} />
           </div>
+          </PremiumCard>
 
-            <MatchTimeline 
-              server={server} 
-              matchId={matchid} 
-              puuid={targetPlayerData.puuid}
-            />
+             <MatchTimeline 
+               server={server} 
+               matchId={matchid} 
+               puuid={targetPlayerData.puuid}
+               items={items}
+             />
 
-          {/* COMBINED Performance Analysis Section - Radar + Circular Progress + Breakdown */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Activity className="h-6 w-6 text-orange-500" />
+          
+          <div className="rounded-2xl border border-orange-500/10 bg-linear-to-br from-zinc-900/95 to-zinc-900/80 backdrop-blur-sm shadow-2xl overflow-hidden">
+            <div className="h-0.5 w-full bg-linear-to-r from-transparent via-orange-500/50 to-transparent" />
+            <div className="p-6">
+              
+              <div className="flex items-start gap-3 mb-8">
+                <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+                  <Activity className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-white">Performance Analysis</h2>
+                  <p className="text-xs text-zinc-500 font-medium mt-0.5">Complete breakdown of your match performance</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Performance Analysis</h2>
-                <p className="text-sm text-zinc-400">Complete breakdown of your match performance</p>
+
+             
+              <div className="relative mb-8 p-4 rounded-xl bg-linear-to-br from-zinc-800/30 to-zinc-900/30 border border-orange-500/10">
+                <PerformanceRadar playerScore={targetPlayer} avgScores={avgScores} />
               </div>
-            </div>
 
-            {/* Performance Radar Chart */}
-            <div className="mb-8">
-              <PerformanceRadar playerScore={targetPlayer} avgScores={avgScores} />
-            </div>
 
-            {/* Circular Progress Scores */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
-              <CircularProgress
-                value={targetPlayer.combatScore}
-                maxValue={25}
-                label="Combat"
-                color="orange"
-              />
-              <CircularProgress
-                value={targetPlayer.objectiveScore}
-                maxValue={20}
-                label="Objectives"
-                color="purple"
-              />
-              <CircularProgress
-                value={targetPlayer.economyScore}
-                maxValue={15}
-                label="Economy"
-                color="green"
-              />
-              <CircularProgress
-                value={targetPlayer.survivalScore}
-                maxValue={15}
-                label="Survival"
-                color="blue"
-              />
-              <CircularProgress
-                value={targetPlayer.visionScore}
-                maxValue={15}
-                label="Vision"
-                color="yellow"
-              />
-            </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                <div className="group">
+                  <CircularProgress
+                    value={targetPlayer.combatScore}
+                    maxValue={25}
+                    label="Combat"
+                    color="orange"
+                  />
+                </div>
+                <div className="group">
+                  <CircularProgress
+                    value={targetPlayer.objectiveScore}
+                    maxValue={20}
+                    label="Objectives"
+                    color="purple"
+                  />
+                </div>
+                <div className="group">
+                  <CircularProgress
+                    value={targetPlayer.economyScore}
+                    maxValue={15}
+                    label="Economy"
+                    color="green"
+                  />
+                </div>
+                <div className="group">
+                  <CircularProgress
+                    value={targetPlayer.survivalScore}
+                    maxValue={15}
+                    label="Survival"
+                    color="blue"
+                  />
+                </div>
+                <div className="group">
+                  <CircularProgress
+                    value={targetPlayer.visionScore}
+                    maxValue={15}
+                    label="Vision"
+                    color="yellow"
+                  />
+                </div>
+              </div>
 
-            {/* Score Breakdowns - What contributes to each score */}
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-400 mb-4 uppercase tracking-wider">
-                Score Breakdown - How to Improve
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <ScoreBreakdown
-                  title="Combat Score"
-                  icon={Swords}
-                  color="orange"
-                  breakdowns={[
-                    { label: "KDA Ratio", value: `${targetPlayerData.kda.toFixed(2)}` },
-                    { label: "Damage/Min", value: `${targetPlayerData.damagePerMinute.toFixed(0)}` },
-                    { label: "Team Damage %", value: `${(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}%` },
-                    { label: "Kill Participation", value: `${(targetPlayerData.killParticipation * 100).toFixed(0)}%` }
-                  ]}
-                />
-                <ScoreBreakdown
-                  title="Objective Score"
-                  icon={Trophy}
-                  color="purple"
-                  breakdowns={[
-                    { label: "Baron Kills", value: `${targetPlayerData.baronKills}` },
-                    { label: "Dragon Kills", value: `${targetPlayerData.dragonKills}` },
-                    { label: "Turret Takedowns", value: `${targetPlayerData.turretTakedowns}` },
-                    { label: "Objectives Stolen", value: `${targetPlayerData.objectivesStolen}` }
-                  ]}
-                />
-                <ScoreBreakdown
-                  title="Economy Score"
-                  icon={Coins}
-                  color="green"
-                  breakdowns={[
-                    { label: "Gold/Min", value: `${targetPlayerData.goldPerMinute.toFixed(0)}` },
-                    { label: "Total Gold", value: `${(targetPlayerData.goldEarned / 1000).toFixed(1)}k` },
-                    { label: "CS/Min", value: `${((targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled) / (targetPlayerData.timePlayed / 60)).toFixed(1)}` },
-                    { label: "Total CS", value: `${targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled}` }
-                  ]}
-                />
-                <ScoreBreakdown
-                  title="Survival Score"
-                  icon={Shield}
-                  color="blue"
-                  breakdowns={[
-                    { label: "Deaths", value: `${targetPlayerData.deaths}` },
-                    { label: "Time Dead", value: `${(targetPlayerData.timeSpentDead / 60).toFixed(1)} min` },
-                    { label: "Damage Mitigated", value: `${(targetPlayerData.damageSelfMitigated / 1000).toFixed(1)}k` },
-                    { label: "Damage Taken", value: `${(targetPlayerData.totalDamageTaken / 1000).toFixed(1)}k` }
-                  ]}
-                />
-                <ScoreBreakdown
-                  title="Vision Score"
-                  icon={Eye}
-                  color="yellow"
-                  breakdowns={[
-                    { label: "Vision Score", value: `${targetPlayerData.visionScore}` },
-                    { label: "Vision/Min", value: `${targetPlayerData.visionScorePerMinute.toFixed(2)}` },
-                    { label: "Wards Placed", value: `${targetPlayerData.wardsPlaced}` },
-                    { label: "Wards Destroyed", value: `${targetPlayerData.wardsKilled}` }
-                  ]}
-                />
+
+              <div className="border-t border-orange-500/10 pt-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 rounded-lg bg-linear-to-br from-orange-500/15 to-orange-600/5 border border-orange-500/15">
+                    <BarChart3 className="h-4 w-4 text-orange-400" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Score Breakdown</h3>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Key metrics and improvement areas</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Combat Score Card */}
+                  <div className="group relative rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-linear-to-br from-orange-500/0 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-orange-500/20">
+                        <div className="p-1.5 rounded-lg bg-orange-500/10">
+                          <Swords className="h-3.5 w-3.5 text-orange-400" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">Combat Score</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Kill Participation", value: `${(targetPlayerData.killParticipation * 100).toFixed(0)}%`, highlight: targetPlayerData.killParticipation > 0.6 },
+                          { label: "Kills", value: `${targetPlayerData.kills || 0}`, highlight: (targetPlayerData.kills || 0) > 10 },
+                          { label: "Assists", value: `${targetPlayerData.assists || 0}`, highlight: (targetPlayerData.assists || 0) > 10 },
+                          { label: "KDA Ratio", value: `${targetPlayerData.kda.toFixed(2)}`, highlight: targetPlayerData.kda > 3 },
+                          { label: "Damage/Min", value: `${targetPlayerData.damagePerMinute.toFixed(0)}`, highlight: targetPlayerData.damagePerMinute > 600 },
+                          { label: "Team Damage %", value: `${(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}%`, highlight: (targetPlayerData.teamDamagePercentage * 100) > 25 },
+                          { label: "CC Score", value: `${(targetPlayerData.timeCCingOthers || 0).toFixed(1)}s`, highlight: (targetPlayerData.timeCCingOthers || 0) > 10 },
+                          { label: "Heal/Shield", value: `${((targetPlayerData.totalHealsOnTeammates || 0) + (targetPlayerData.totalDamageShieldedOnTeammates || 0) / 1000).toFixed(1)}k`, highlight: ((targetPlayerData.totalHealsOnTeammates || 0) + (targetPlayerData.totalDamageShieldedOnTeammates || 0)) > 5000 },
+                          { label: "Multikills", value: `${targetPlayerData.multikills || 0}`, highlight: (targetPlayerData.multikills || 0) > 0 }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group/item">
+                            <span className="text-[10px] text-zinc-500">{item.label}</span>
+                            <span className={`text-[11px] font-semibold transition-all duration-200 ${item.highlight ? 'text-green-400 group-hover/item:text-green-300' : 'text-white'}`}>
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Objective Score Card */}
+                  <div className="group relative rounded-xl border border-purple-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/0 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-purple-500/20">
+                        <div className="p-1.5 rounded-lg bg-purple-500/10">
+                          <Trophy className="h-3.5 w-3.5 text-purple-400" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">Objective Score</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Total Objectives", value: `${(targetPlayerData.baronKills || 0) + (targetPlayerData.dragonKills || 0) + (targetPlayerData.turretTakedowns || 0) + (targetPlayerData.riftHeraldTakedowns || 0)}`, highlight: true },
+                          { label: "Baron Kills", value: `${targetPlayerData.baronKills || 0}`, highlight: (targetPlayerData.baronKills || 0) > 0 },
+                          { label: "Dragon Kills", value: `${targetPlayerData.dragonKills || 0}`, highlight: (targetPlayerData.dragonKills || 0) > 1 },
+                          { label: "Rift Herald", value: `${targetPlayerData.riftHeraldTakedowns || 0}`, highlight: (targetPlayerData.riftHeraldTakedowns || 0) > 0 },
+                          { label: "Turret Takedowns", value: `${targetPlayerData.turretTakedowns || 0}`, highlight: (targetPlayerData.turretTakedowns || 0) > 2 },
+                          { label: "Inhibitors", value: `${targetPlayerData.inhibitorTakedowns || 0}`, highlight: (targetPlayerData.inhibitorTakedowns || 0) > 0 },
+                          { label: "Objectives Stolen", value: `${targetPlayerData.objectivesStolen || 0}`, highlight: (targetPlayerData.objectivesStolen || 0) > 0 },
+                          { label: "First Turret", value: `${targetPlayerData.firstTurretKilled ? 'Yes' : 'No'}`, highlight: targetPlayerData.firstTurretKilled === 1 },
+                          { label: "Perfect Dragon Soul", value: `${targetPlayerData.perfectDragonSoulsTaken ? 'Yes' : 'No'}`, highlight: targetPlayerData.perfectDragonSoulsTaken === 1 }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group/item">
+                            <span className="text-[10px] text-zinc-500">{item.label}</span>
+                            <span className={`text-[11px] font-semibold transition-all duration-200 ${item.highlight ? 'text-green-400 group-hover/item:text-green-300' : 'text-white'}`}>
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Economy Score Card */}
+                  <div className="group relative rounded-xl border border-green-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-green-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/0 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-500/20">
+                        <div className="p-1.5 rounded-lg bg-green-500/10">
+                          <Coins className="h-3.5 w-3.5 text-green-400" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Economy Score</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Gold/Min", value: `${targetPlayerData.goldPerMinute.toFixed(0)}`, highlight: targetPlayerData.goldPerMinute > 400 },
+                          { label: "Total Gold", value: `${(targetPlayerData.goldEarned / 1000).toFixed(1)}k`, highlight: targetPlayerData.goldEarned > 10000 },
+                          { label: "CS/Min", value: `${((targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled) / (targetPlayerData.timePlayed / 60)).toFixed(1)}`, highlight: true },
+                          { label: "Total CS", value: `${targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled}`, highlight: true }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group/item">
+                            <span className="text-[10px] text-zinc-500">{item.label}</span>
+                            <span className="text-[11px] font-semibold text-white group-hover/item:text-zinc-200">
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Survival Score Card */}
+                  <div className="group relative rounded-xl border border-blue-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-blue-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/0 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-500/20">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10">
+                          <Shield className="h-3.5 w-3.5 text-blue-400" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Survival Score</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Deaths", value: `${targetPlayerData.deaths}`, highlight: targetPlayerData.deaths <= 3 },
+                          { label: "Time Dead", value: `${(targetPlayerData.timeSpentDead / 60).toFixed(1)} min`, highlight: targetPlayerData.timeSpentDead < 180 },
+                          { label: "Longest Living", value: `${(targetPlayerData.longestTimeSpentLiving / 60).toFixed(1)} min`, highlight: (targetPlayerData.longestTimeSpentLiving / 60) > 10 },
+                          { label: "Damage Mitigated", value: `${(targetPlayerData.damageSelfMitigated / 1000).toFixed(1)}k`, highlight: true }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group/item">
+                            <span className="text-[10px] text-zinc-500">{item.label}</span>
+                            <span className={`text-[11px] font-semibold transition-all duration-200 ${item.highlight ? 'text-green-400 group-hover/item:text-green-300' : 'text-white'}`}>
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vision Score Card */}
+                  <div className="group relative rounded-xl border border-yellow-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-yellow-500/30 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="absolute inset-0 bg-linear-to-br from-yellow-500/0 to-yellow-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-yellow-500/20">
+                        <div className="p-1.5 rounded-lg bg-yellow-500/10">
+                          <Eye className="h-3.5 w-3.5 text-yellow-400" strokeWidth={1.5} />
+                        </div>
+                        <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider">Vision Score</span>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Vision Score", value: `${targetPlayerData.visionScore}`, highlight: targetPlayerData.visionScore > 30 },
+                          { label: "Vision/Min", value: `${targetPlayerData.visionScorePerMinute.toFixed(1)}`, highlight: targetPlayerData.visionScorePerMinute > 1 },
+                          { label: "Wards Placed", value: `${targetPlayerData.wardsPlaced}`, highlight: targetPlayerData.wardsPlaced > 15 },
+                          { label: "Wards Destroyed", value: `${targetPlayerData.wardsKilled}`, highlight: targetPlayerData.wardsKilled > 5 },
+                          { label: "Control Wards", value: `${targetPlayerData.controlWardsPlaced || 0}`, highlight: (targetPlayerData.controlWardsPlaced || 0) > 3 }
+                        ].map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group/item">
+                            <span className="text-[10px] text-zinc-500">{item.label}</span>
+                            <span className={`text-[11px] font-semibold transition-all duration-200 ${item.highlight ? 'text-green-400 group-hover/item:text-green-300' : 'text-white'}`}>
+                              {item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Your Stats Overview */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                  <Target className="h-6 w-6 text-orange-500" />
+          <PremiumCard>
+            <div className="p-6">
+              {/* Section Header with Score */}
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+                    <Target className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold tracking-tight text-white">Your Performance</h3>
+                    <p className="text-xs text-zinc-500 font-medium mt-0.5">Ranked #{targetPlayer.rank} out of 10 players</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-white">Your Performance</h2>
-                  <p className="text-sm text-zinc-400">Ranked #{targetPlayer.rank} out of 10 players</p>
+                
+                {/* Score Badge */}
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-br from-orange-500/10 to-orange-600/5 border border-orange-500/20">
+                  <Zap className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+                  <span className="font-bold text-2xl bg-linear-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+                    {targetPlayer.totalScore.toFixed(2)}
+                  </span>
+                  <span className="text-xs text-zinc-500">pts</span>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Zap className="h-5 w-5 text-orange-500" />
-                <span className="font-bold text-2xl text-orange-500">{targetPlayer.totalScore.toFixed(2)}</span>
-                <span className="text-xs text-zinc-400">pts</span>
-              </div>
-            </div>
 
-            {/* MVP Comparison Section */}
-            {mvp && (
-              <div className="relative mb-8">
-                {/* MVP Badge - Shows when player IS the MVP */}
-                {targetPlayer.puuid === mvp.puuid && (
-                  <div className="absolute -top-3 -right-3 z-10">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-linear-to-r from-orange-500 to-yellow-500 blur-xl opacity-75 animate-pulse"></div>
-                      <div className="relative px-6 py-3 bg-linear-to-r from-orange-500 to-yellow-500 rounded-xl border-2 border-yellow-400 shadow-2xl">
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-6 w-6 text-white" />
-                          <span className="text-2xl font-black text-white uppercase tracking-wider">MVP</span>
+
+              {mvp && (
+                <div className="relative mt-4">
+                  {targetPlayer.puuid === mvp.puuid ? (
+
+                    <div className="relative overflow-hidden rounded-xl border border-orange-500/30 bg-linear-to-br from-orange-950/15 to-amber-950/10 p-6">
+
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-2xl" />
+                      <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/5 rounded-full blur-2xl" />
+                      
+                      <div className="relative z-10">
+                        {/* MVP Crown */}
+                        <div className="flex justify-center mb-4">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-orange-500/20 rounded-full blur-xl" />
+                            <div className="relative w-16 h-16 rounded-full bg-linear-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/30 flex items-center justify-center">
+                              <Crown className="h-8 w-8 text-orange-400" strokeWidth={1.5} />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* MVP Text */}
+                        <div className="text-center mb-3">
+                          <span className="text-3xl font-bold bg-linear-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent">
+                            MVP
+                          </span>
+                        </div>
+                        <h2 className="text-xl font-semibold text-white text-center mb-1">You are the MVP!</h2>
+                        <p className="text-xs text-orange-400/80 text-center mb-6">Outstanding performance this match</p>
+                        
+                        {/* Stats Highlight - Subtle Card */}
+                        <div className="max-w-sm mx-auto grid grid-cols-3 gap-3 p-3 rounded-lg bg-zinc-900/40 border border-orange-500/15 backdrop-blur-sm">
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-white">{targetPlayerData.kills}</div>
+                            <div className="text-[9px] text-zinc-500 uppercase tracking-wider">Kills</div>
+                          </div>
+                          <div className="text-center border-x border-orange-500/15">
+                            <div className="text-xl font-bold text-orange-400">{targetPlayerData.kda.toFixed(1)}</div>
+                            <div className="text-[9px] text-zinc-500 uppercase tracking-wider">KDA</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xl font-bold text-white">{targetPlayerData.assists}</div>
+                            <div className="text-[9px] text-zinc-500 uppercase tracking-wider">Assists</div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* ACE Badge - Shows when player IS the ACE (best on losing team) */}
-                {ace && targetPlayer.puuid === ace.puuid && targetPlayer.puuid !== mvp.puuid && (
-                  <div className="absolute -top-3 -right-3 z-10">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-linear-to-r from-purple-500 to-pink-500 blur-xl opacity-75 animate-pulse"></div>
-                      <div className="relative px-6 py-3 bg-linear-to-r from-purple-500 to-pink-500 rounded-xl border-2 border-purple-400 shadow-2xl">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-6 w-6 text-white" />
-                          <span className="text-2xl font-black text-white uppercase tracking-wider">ACE</span>
+                  ) : ace && targetPlayer.puuid === ace.puuid ? (
+                    /* ELEGANT ACE DESIGN */
+                    <div className="relative overflow-hidden rounded-xl border border-purple-500/30 bg-linear-to-br from-purple-950/15 to-pink-950/10 p-5">
+                      <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/5 rounded-full blur-2xl" />
+                      <div className="absolute bottom-0 left-0 w-48 h-48 bg-pink-500/5 rounded-full blur-2xl" />
+                      
+                      <div className="relative z-10">
+                        <div className="flex justify-center mb-3">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-purple-500/20 rounded-full blur-xl" />
+                            <div className="relative w-12 h-12 rounded-full bg-linear-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
+                              <Star className="h-6 w-6 text-purple-400" strokeWidth={1.5} />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="text-center">
+                          <span className="text-2xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">ACE</span>
+                          <h2 className="text-lg font-semibold text-white mt-2 mb-1">You are the ACE!</h2>
+                          <p className="text-xs text-purple-400/80">Best player on the losing team</p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                <div className={`rounded-xl border ${
-                  targetPlayer.puuid === mvp.puuid 
-                    ? 'border-orange-500/50 bg-orange-950/20' 
-                    : ace && targetPlayer.puuid === ace.puuid
-                    ? 'border-purple-500/50 bg-purple-950/20'
-                    : 'border-zinc-800 bg-zinc-900/50'
-                } p-6`}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className={`p-2.5 rounded-xl ${
-                      ace && targetPlayer.puuid === ace.puuid && targetPlayer.puuid !== mvp.puuid
-                        ? 'bg-purple-950/50 border-purple-900/30'
-                        : 'bg-orange-950/50 border-orange-900/30'
-                    }`}>
-                      <Sparkles className={`h-6 w-6 ${
-                        ace && targetPlayer.puuid === ace.puuid && targetPlayer.puuid !== mvp.puuid
-                          ? 'text-purple-500'
-                          : 'text-orange-500'
-                      }`} />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-white">
-                        {targetPlayer.puuid === mvp.puuid 
-                          ? "You are the MVP!" 
-                          : ace && targetPlayer.puuid === ace.puuid
-                          ? "You are the ACE!"
-                          : "Compare to MVP"}
-                      </h2>
-                      <p className="text-sm text-zinc-400">
-                        {targetPlayer.puuid === mvp.puuid 
-                          ? "Outstanding performance this match!" 
-                          : ace && targetPlayer.puuid === ace.puuid
-                          ? "Best player on the losing team - exceptional effort!"
-                          : `See how you stack up against ${mvp.summonerName}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {targetPlayer.puuid !== mvp.puuid && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Your Stats */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-4">
+                  ) : (
+                    /* NORMAL COMPARISON DESIGN */
+                    <div className={`rounded-lg ${
+                      targetPlayer.puuid === mvp.puuid 
+                        ? 'border border-orange-500/30 bg-orange-950/10' 
+                        : ace && targetPlayer.puuid === ace.puuid
+                        ? 'border border-purple-500/30 bg-purple-950/10'
+                        : ''
+                    } p-5`}>
+                      
+                      {/* Comparison Header */}
+                      <div className="grid grid-cols-2 gap-6 mb-5 pb-4 border-b border-orange-500/20">
+                        <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                             <span className="text-lg">👤</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">Your Stats</p>
+                            <p className="text-base font-bold text-white">Your Stats</p>
                             <p className="text-xs text-zinc-500">{targetPlayer.summonerName}</p>
                           </div>
                         </div>
-                        {[
-                          { label: "KDA", value: `${targetPlayerData.kills}/${targetPlayerData.deaths}/${targetPlayerData.assists}`, sub: `${targetPlayerData.kda.toFixed(2)} ratio` },
-                          { label: "Damage", value: targetPlayerData.totalDamageDealtToChampions.toLocaleString(), sub: `${(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}% of team` },
-                          { label: "Gold", value: targetPlayerData.goldEarned.toLocaleString(), sub: `${targetPlayerData.goldPerMinute.toFixed(0)}/min` },
-                          { label: "CS", value: `${targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled}`, sub: `${((targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled) / (targetPlayerData.timePlayed / 60)).toFixed(1)}/min` },
-                          { label: "Vision", value: `${targetPlayerData.visionScore}`, sub: `${targetPlayerData.visionScorePerMinute.toFixed(2)}/min` }
-                        ].map((stat, idx) => (
-                          <div key={idx} className="p-3 rounded-lg bg-zinc-900/50 border border-zinc-800">
-                            <div className="flex justify-between items-baseline mb-1">
-                              <span className="text-xs text-zinc-500">{stat.label}</span>
-                              <span className="text-lg font-bold text-white">{stat.value}</span>
-                            </div>
-                            <div className="text-xs text-zinc-600">{stat.sub}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* MVP Stats */}
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-4">
+                        <div className="flex items-center gap-3">
                           <div className="relative">
-                            <div className="absolute inset-0 bg-orange-500 blur-md opacity-50"></div>
+                            <div className="absolute inset-0 bg-orange-500 blur-md opacity-40 rounded-lg" />
                             <div className="relative w-10 h-10 rounded-lg bg-linear-to-br from-orange-500 to-yellow-500 border border-orange-400 flex items-center justify-center">
-                              <Crown className="h-5 w-5 text-white" />
+                              <Crown className="h-5 w-5 text-white" strokeWidth={1.5} />
                             </div>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-orange-400">MVP Stats</p>
+                            <p className="text-base font-bold text-orange-400">MVP Stats</p>
                             <p className="text-xs text-zinc-500">{mvp.summonerName}</p>
                           </div>
                         </div>
-                        {(() => {
-                          const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
-                          if (!mvpData) return null;
-                          return [
-                            { label: "KDA", value: `${mvpData.kills}/${mvpData.deaths}/${mvpData.assists}`, sub: `${mvpData.kda.toFixed(2)} ratio` },
-                            { label: "Damage", value: mvpData.totalDamageDealtToChampions.toLocaleString(), sub: `${(mvpData.teamDamagePercentage * 100).toFixed(1)}% of team` },
-                            { label: "Gold", value: mvpData.goldEarned.toLocaleString(), sub: `${mvpData.goldPerMinute.toFixed(0)}/min` },
-                            { label: "CS", value: `${mvpData.totalMinionsKilled + mvpData.neutralMinionsKilled}`, sub: `${((mvpData.totalMinionsKilled + mvpData.neutralMinionsKilled) / (mvpData.timePlayed / 60)).toFixed(1)}/min` },
-                            { label: "Vision", value: `${mvpData.visionScore}`, sub: `${mvpData.visionScorePerMinute.toFixed(2)}/min` }
-                          ].map((stat, idx) => (
-                            <div key={idx} className="p-3 rounded-lg bg-orange-950/30 border border-orange-900/50">
-                              <div className="flex justify-between items-baseline mb-1">
-                                <span className="text-xs text-orange-400/70">{stat.label}</span>
-                                <span className="text-lg font-bold text-orange-400">{stat.value}</span>
-                              </div>
-                              <div className="text-xs text-orange-600/70">{stat.sub}</div>
-                            </div>
-                          ));
-                        })()}
+                      </div>
+
+                      <div className="space-y-3">
+                        {/* KDA Row */}
+                        <div className="grid grid-cols-2 gap-6 p-3 rounded-lg bg-zinc-800/20 border border-orange-500/5 hover:border-orange-500/20 transition-all duration-200">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">KDA</div>
+                            <div className="text-lg font-bold text-white">{targetPlayerData.kills}/{targetPlayerData.deaths}/{targetPlayerData.assists}</div>
+                            <div className="text-[10px] text-zinc-500">{targetPlayerData.kda.toFixed(2)} ratio</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-orange-400/70 mb-1">KDA</div>
+                            <div className="text-lg font-bold text-orange-400">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${mvpData.kills}/${mvpData.deaths}/${mvpData.assists}` : '—';
+                            })()}</div>
+                            <div className="text-[10px] text-orange-600/50">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${mvpData.kda.toFixed(2)} ratio` : '—';
+                            })()}</div>
+                          </div>
+                        </div>
+
+                        {/* Damage Row */}
+                        <div className="grid grid-cols-2 gap-6 p-3 rounded-lg bg-zinc-800/20 border border-orange-500/5 hover:border-orange-500/20 transition-all duration-200">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">Damage</div>
+                            <div className="text-lg font-bold text-white">{(targetPlayerData.totalDamageDealtToChampions / 1000).toFixed(1)}k</div>
+                            <div className="text-[10px] text-zinc-500">{(targetPlayerData.teamDamagePercentage * 100).toFixed(1)}% of team</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-orange-400/70 mb-1">Damage</div>
+                            <div className="text-lg font-bold text-orange-400">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${(mvpData.totalDamageDealtToChampions / 1000).toFixed(1)}k` : '—';
+                            })()}</div>
+                            <div className="text-[10px] text-orange-600/50">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${(mvpData.teamDamagePercentage * 100).toFixed(1)}% of team` : '—';
+                            })()}</div>
+                          </div>
+                        </div>
+
+                        {/* Gold Row */}
+                        <div className="grid grid-cols-2 gap-6 p-3 rounded-lg bg-zinc-800/20 border border-orange-500/5 hover:border-orange-500/20 transition-all duration-200">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">Gold</div>
+                            <div className="text-lg font-bold text-white">{(targetPlayerData.goldEarned / 1000).toFixed(1)}k</div>
+                            <div className="text-[10px] text-zinc-500">{targetPlayerData.goldPerMinute.toFixed(0)}/min</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-orange-400/70 mb-1">Gold</div>
+                            <div className="text-lg font-bold text-orange-400">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${(mvpData.goldEarned / 1000).toFixed(1)}k` : '—';
+                            })()}</div>
+                            <div className="text-[10px] text-orange-600/50">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${mvpData.goldPerMinute.toFixed(0)}/min` : '—';
+                            })()}</div>
+                          </div>
+                        </div>
+
+                        {/* CS Row */}
+                        <div className="grid grid-cols-2 gap-6 p-3 rounded-lg bg-zinc-800/20 border border-orange-500/5 hover:border-orange-500/20 transition-all duration-200">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">CS</div>
+                            <div className="text-lg font-bold text-white">{targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled}</div>
+                            <div className="text-[10px] text-zinc-500">{((targetPlayerData.totalMinionsKilled + targetPlayerData.neutralMinionsKilled) / (targetPlayerData.timePlayed / 60)).toFixed(1)}/min</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-orange-400/70 mb-1">CS</div>
+                            <div className="text-lg font-bold text-orange-400">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? mvpData.totalMinionsKilled + mvpData.neutralMinionsKilled : '—';
+                            })()}</div>
+                            <div className="text-[10px] text-orange-600/50">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${((mvpData.totalMinionsKilled + mvpData.neutralMinionsKilled) / (mvpData.timePlayed / 60)).toFixed(1)}/min` : '—';
+                            })()}</div>
+                          </div>
+                        </div>
+
+                        {/* Vision Row */}
+                        <div className="grid grid-cols-2 gap-6 p-3 rounded-lg bg-zinc-800/20 border border-orange-500/5 hover:border-orange-500/20 transition-all duration-200">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">Vision</div>
+                            <div className="text-lg font-bold text-white">{targetPlayerData.visionScore}</div>
+                            <div className="text-[10px] text-zinc-500">{targetPlayerData.visionScorePerMinute.toFixed(1)}/min</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-orange-400/70 mb-1">Vision</div>
+                            <div className="text-lg font-bold text-orange-400">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? mvpData.visionScore : '—';
+                            })()}</div>
+                            <div className="text-[10px] text-orange-600/50">{(() => {
+                              const mvpData = matchData.participants.find(p => p.puuid === mvp.puuid);
+                              return mvpData ? `${mvpData.visionScorePerMinute.toFixed(1)}/min` : '—';
+                            })()}</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-          </div>
-
+              )}
+            </div>
+          </PremiumCard>
           
-          {/* <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Clock className="h-6 w-6 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Game Phase Performance</h2>
-                <p className="text-sm text-zinc-400">How you performed throughout different stages of the game</p>
-              </div>
-            </div>
-            <GamePhasePerformance participant={targetPlayerData} />
-          </div> */}
+          <div className="">
 
-          {/* NEW: Combat Efficiency Analysis */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Flame className="h-6 w-6 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Combat Efficiency Analysis</h2>
-                <p className="text-sm text-zinc-400">Detailed breakdown of your combat effectiveness and resource utilization</p>
-              </div>
-            </div>
             <CombatEfficiencyAnalysis participant={targetPlayerData} allParticipants={matchData.participants} />
           </div>
 
 
           {/* Damage Breakdown Pie Chart */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <PieChart className="h-6 w-6 text-orange-500" />
+        <PremiumCard>
+          <div className="p-6">
+            <div className="flex items-start gap-3 mb-6">
+              <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+                <PieChart className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Damage Contribution</h2>
-                <p className="text-sm text-zinc-400">Your damage output compared to team total</p>
+                <h2 className="text-lg font-semibold tracking-tight text-white">Damage Contribution</h2>
+                <p className="text-xs text-zinc-500 font-medium mt-0.5">Your damage output compared to team total</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DamageBreakdownChart participant={targetPlayerData} />
-            <DamageTakenBreakdownChart participant={targetPlayerData} allParticipants={matchData.participants} />
-            <DamageHealedBreakdownChart participant={targetPlayerData} allParticipants={matchData.participants} />
-            </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
+              <div className="rounded-xl ">
+                <DamageBreakdownChart participant={targetPlayerData} />
+              </div>
+              <div className="rounded-xl ">
+                <DamageTakenBreakdownChart participant={targetPlayerData} allParticipants={matchData.participants} />
+              </div>
+              <div className="rounded-xl ">
+                <DamageHealedBreakdownChart participant={targetPlayerData} allParticipants={matchData.participants} />
+              </div>
+            </div>
           </div>
+        </PremiumCard>
 
           
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <BarChart3 className="h-6 w-6 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Player Rankings</h2>
-                <p className="text-sm text-zinc-400">Performance comparison across all players</p>
-              </div>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+              <BarChart3 className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* KDA Comparison */}
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
-                 
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="p-1.5 rounded-lg bg-orange-950/50 border border-orange-900/30">
-                      <Trophy className="h-4 w-4 text-orange-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">KDA Rankings</h3>
-                      <p className="text-[10px] text-zinc-500">Kill/Death/Assist performance</p>
-                    </div>
-                  </div>
-                  <PlayerComparisonChart players={matchData.participants} metric="kda" label="KDA" />
-                </div>
-              </div>
-
-              {/* Damage Comparison */}
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
-                 
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="p-1.5 rounded-lg bg-red-950/50 border border-red-900/30">
-                      <Swords className="h-4 w-4 text-red-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Damage Output</h3>
-                      <p className="text-[10px] text-zinc-500">Total damage to champions</p>
-                    </div>
-                  </div>
-                  <PlayerComparisonChart players={matchData.participants} metric="totalDamageDealtToChampions" label="Damage" />
-                </div>
-              </div>
-
-              {/* Gold Comparison */}
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
-                
-
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="p-1.5 rounded-lg bg-yellow-950/50 border border-yellow-900/30">
-                      <Coins className="h-4 w-4 text-yellow-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Gold Earned</h3>
-                      <p className="text-[10px] text-zinc-500">Total gold accumulated</p>
-                    </div>
-                  </div>
-                  <PlayerComparisonChart players={matchData.participants} metric="goldEarned" label="Gold" />
-                </div>
-              </div>
-
-              {/* Vision Comparison */}
-              <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
-                 
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="p-1.5 rounded-lg bg-blue-950/50 border border-blue-900/30">
-                      <Eye className="h-4 w-4 text-blue-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Vision Control</h3>
-                      <p className="text-[10px] text-zinc-500">Ward placement & clearing</p>
-                    </div>
-                  </div>
-                  <PlayerComparisonChart players={matchData.participants} metric="visionScore" label="Vision" />
-                </div>
-              </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-white">Player Rankings</h2>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">Performance comparison across all players</p>
             </div>
           </div>
+
+          {/* Rankings Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* KDA Comparison */}
+            <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-orange-500/10">
+                  <Trophy className="h-3.5 w-3.5 text-orange-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-white uppercase tracking-wider">KDA Rankings</h3>
+                  <p className="text-[9px] text-zinc-500">Kill/Death/Assist performance</p>
+                </div>
+              </div>
+              <PlayerComparisonChart players={matchData.participants} metric="kda" label="KDA" />
+            </div>
+
+            {/* Damage Comparison */}
+            <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-red-500/10">
+                  <Swords className="h-3.5 w-3.5 text-red-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Damage Output</h3>
+                  <p className="text-[9px] text-zinc-500">Total damage to champions</p>
+                </div>
+              </div>
+              <PlayerComparisonChart players={matchData.participants} metric="totalDamageDealtToChampions" label="Damage" />
+            </div>
+
+            {/* Gold Comparison */}
+            <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-yellow-500/10">
+                  <Coins className="h-3.5 w-3.5 text-yellow-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Gold Earned</h3>
+                  <p className="text-[9px] text-zinc-500">Total gold accumulated</p>
+                </div>
+              </div>
+              <PlayerComparisonChart players={matchData.participants} metric="goldEarned" label="Gold" />
+            </div>
+
+            {/* Vision Comparison */}
+            <div className="rounded-xl border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-blue-500/10">
+                  <Eye className="h-3.5 w-3.5 text-blue-400" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Vision Control</h3>
+                  <p className="text-[9px] text-zinc-500">Ward placement & clearing</p>
+                </div>
+              </div>
+              <PlayerComparisonChart players={matchData.participants} metric="visionScore" label="Vision" />
+            </div>
+          </div>
+        </div>
 
           {/* Personalized Tips */}
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-                <Brain className="h-6 w-6 text-orange-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Personalized Tips</h2>
-                <p className="text-sm text-zinc-400">AI-analyzed suggestions based on your performance</p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              {getPersonalizedTips(targetPlayerData, matchData.participants, targetPlayer).map((tip, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800">
-                  <div className="w-6 h-6 rounded-full bg-orange-950/50 border border-orange-900/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-orange-500 text-xs font-bold">{index + 1}</span>
-                  </div>
-                  <span className="text-sm text-zinc-300 leading-relaxed">{tip}</span>
+          <PremiumCard>
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start gap-3 mb-6">
+                <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+                  <Brain className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
                 </div>
-              ))}
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-white">Personalized Tips</h2>
+                  <p className="text-xs text-zinc-500 font-medium mt-0.5">AI-analyzed suggestions based on your performance</p>
+                </div>
+              </div>
+              
+              {/* Tips List */}
+              <div className="space-y-3">
+                {getPersonalizedTips(targetPlayerData, matchData.participants, targetPlayer).map((tip, index) => (
+                  <div 
+                    key={index} 
+                    className="group rounded-lg border border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30 p-4 hover:border-orange-500/30 transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Tip Number Badge */}
+                      <div className="w-6 h-6 rounded-full bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/30 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                        <span className="text-[10px] font-bold text-orange-400">{index + 1}</span>
+                      </div>
+                      
+                      {/* Tip Content */}
+                      <div className="flex flex-col flex-1">
+                        <span className="text-xs text-zinc-300 leading-relaxed group-hover:text-zinc-200 transition-colors duration-200">
+                          {tip}
+                        </span>
+                        
+                        {/* Decorative gradient line */}
+                        <div className="h-px w-full mt-3 bg-linear-to-r from-orange-500/40 via-orange-500/10 to-transparent" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Detailed Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Combat Details */}
+          </PremiumCard>
+          
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
@@ -2124,7 +2720,7 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
               </div>
             </div>
 
-            {/* Objectives Details */}
+            
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2.5 rounded-xl bg-purple-950/50 border border-purple-900/30">
@@ -2152,7 +2748,7 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
               </div>
             </div>
 
-            {/* Vision Details */}
+            
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2.5 rounded-xl bg-blue-950/50 border border-blue-900/30">
@@ -2180,7 +2776,7 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
               </div>
             </div>
 
-            {/* Economy Details */}
+            
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2.5 rounded-xl bg-green-950/50 border border-green-900/30">
@@ -2207,105 +2803,149 @@ export function MatchAnalytics({ server, matchid, targetPuuid }: MatchAnalyticsP
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
         </>
       )}
 
       {/* All Players Leaderboard */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-xl bg-orange-950/50 border border-orange-900/30">
-            <Trophy className="h-6 w-6 text-orange-500" />
+      <PremiumCard>
+        <div className="p-6">
+          <div className="flex items-start gap-3 mb-6">
+            <div className="p-2.5 rounded-xl bg-linear-to-br from-orange-500/20 to-orange-600/10 border border-orange-500/20 shadow-lg">
+              <Trophy className="h-5 w-5 text-orange-400" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-white">Match Leaderboard</h2>
+              <p className="text-xs text-zinc-500 font-medium mt-0.5">Player rankings based on performance score</p>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-white">Match Leaderboard</h2>
-        </div>
-        
-        <div className="space-y-2">
-          {playerScores.map((player) => {
-            const participant = matchData.participants.find(p => p.puuid === player.puuid);
-            if (!participant) return null;
-            
-            const isMVP = mvp && player.puuid === mvp.puuid;
-            const isACE = ace && player.puuid === ace.puuid && !isMVP;
-            
-            return (
-              <div
-                key={player.puuid}
-                className={`rounded-xl border transition-all ${
-                  player.puuid === targetPuuid 
-                    ? 'border-orange-500/40 bg-orange-950/20' 
-                    : isMVP
-                    ? 'border-orange-500/30 bg-orange-950/10'
-                    : isACE
-                    ? 'border-purple-500/30 bg-purple-950/10'
-                    : 'border-zinc-800 bg-zinc-900/50'
-                }`}
-              >
-                <div className="flex items-center justify-between p-4 flex-wrap gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg border ${
-                      isMVP ? 'bg-linear-to-br from-orange-500/20 to-yellow-500/20 border-orange-500/50 text-orange-500' :
-                      isACE ? 'bg-linear-to-br from-purple-500/20 to-pink-500/20 border-purple-500/50 text-purple-500' :
-                      player.rank === 2 ? 'bg-zinc-800/50 border-zinc-500/50 text-zinc-300' :
-                      player.rank === 3 ? 'bg-orange-900/30 border-orange-600/50 text-orange-400' :
-                      'bg-zinc-900/50 border-zinc-700/50 text-zinc-400'
-                    }`}>
-                      #{player.rank}
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-white">{player.summonerName}</p>
-                        {player.puuid === targetPuuid && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                            You
-                          </span>
-                        )}
-                        {isMVP && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
-                            <Crown className="w-3 h-3" />
-                            MVP
-                          </span>
-                        )}
-                        {isACE && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-1">
-                            <Star className="w-3 h-3" />
-                            ACE
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <span className="text-zinc-300">{player.championName}</span>
-                        <span className="text-zinc-600">•</span>
-                        <span className="text-zinc-500">{participant.kills}/{participant.deaths}/{participant.assists}</span>
-                        <span className="text-zinc-600">•</span>
-                        <span className="text-zinc-500">{participant.kda.toFixed(2)} KDA</span>
-                      </div>
-                    </div>
-                  </div>
+          
+          <div className="space-y-2">
+            {playerScores.map((player) => {
+              const participant = matchData.participants.find(p => p.puuid === player.puuid);
+              if (!participant) return null;
+              
+              const isMVP = mvp && player.puuid === mvp.puuid;
+              const isACE = ace && player.puuid === ace.puuid && !isMVP;
+              const isCurrentUser = player.puuid === targetPuuid;
+              
+              return (
+                <div
+                  key={player.puuid}
+                  className={`relative overflow-hidden rounded-xl border transition-all duration-300 ${
+                    isCurrentUser 
+                      ? 'border-orange-500/40 bg-linear-to-r from-orange-950/20 to-transparent' 
+                      : isMVP
+                      ? 'border-orange-500/30 bg-orange-950/10'
+                      : isACE
+                      ? 'border-purple-500/30 bg-purple-950/10'
+                      : 'border-orange-500/10 bg-linear-to-br from-zinc-800/30 to-zinc-900/30'
+                  } hover:border-opacity-60 group`}
+                >
+                  {/* Champion Splash Art on Hover */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-no-repeat opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${getChampionSplashByName(player.championName.toLowerCase())})`,
+                      backgroundPosition: 'top 20% center',
+                      backgroundSize: 'cover'
+                    }}
+                  />
                   
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-white mb-1">
-                      {player.totalScore.toFixed(2)}
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
-                      {getPerformanceBadges(participant, matchData.participants).slice(0, 2).map((badge, idx) => (
-                        <span key={idx} className={`px-2 py-0.5 rounded-md text-xs font-semibold ${
-                          badge.type === "excellent" ? "bg-green-950/50 text-green-400 border border-green-900/50" :
-                          badge.type === "good" ? "bg-blue-950/50 text-blue-400 border border-blue-900/50" :
-                          "bg-red-950/50 text-red-400 border border-red-900/50"
-                        }`}>
-                          {badge.label}
-                        </span>
-                      ))}
+                  {/* Gradient Overlay on Hover */}
+                  <div className="absolute inset-0 bg-linear-to-r from-transparent via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between p-4 gap-4">
+                      {/* Left Section - Player Info (takes remaining space) */}
+                      <div className="flex items-center gap-4 flex-1">
+                        {/* Champion Image */}
+                        <div className="relative shrink-0">
+                          <div className={`w-12 h-12 rounded-xl overflow-hidden border-2 ${
+                            isMVP
+                              ? 'border-orange-500/70 shadow-lg shadow-orange-500/20'
+                              : isACE
+                              ? 'border-purple-500/70 shadow-lg shadow-purple-500/20'
+                              : isCurrentUser
+                              ? 'border-orange-500/50'
+                              : 'border-zinc-700'
+                          }`}>
+                            <img
+                              src={getChampionImage(getChampionIdByName(player.championName.toString())?.toString() || "")}
+                              alt={player.championName}
+                              title={player.championName}
+                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                              onError={(e) => {
+                                e.currentTarget.src = `/images/nochampionimage.jpg`;
+                              }}
+                            />
+                          </div>
+                          {/* Rank Badge */}
+                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-zinc-400">
+                            #{player.rank}
+                          </div>
+                        </div>
+                        
+                        {/* Player Name and Tags */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="font-bold text-white group-hover:text-orange-400 transition-colors duration-300 truncate">{player.summonerName}</p>
+                            {isCurrentUser && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 shrink-0">
+                                You
+                              </span>
+                            )}
+                            {isMVP && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1 shrink-0">
+                                <Crown className="w-3 h-3" strokeWidth={1.5} />
+                                MVP
+                              </span>
+                            )}
+                            {isACE && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center gap-1 shrink-0">
+                                <Star className="w-3 h-3" strokeWidth={1.5} />
+                                ACE
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-zinc-500 group-hover:text-zinc-400 transition-colors duration-300">{participant.championName}</span>
+                            <span className="text-zinc-600">•</span>
+                            <span className="text-zinc-500 group-hover:text-zinc-400 transition-colors duration-300 whitespace-nowrap">{participant.kills}/{participant.deaths}/{participant.assists}</span>
+                            <span className="text-zinc-600">•</span>
+                            <span className="text-zinc-500 group-hover:text-zinc-400 transition-colors duration-300 whitespace-nowrap">{participant.kda.toFixed(2)} KDA</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Right Section - Score & Badges (always aligned to right) */}
+                      <div className="text-right shrink-0">
+                        <div className="flex items-baseline justify-end gap-1 mb-1">
+                          <span className="text-2xl font-bold bg-linear-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-orange-400 transition-all duration-300">
+                            {player.totalScore.toFixed(2)}
+                          </span>
+                          <span className="text-[10px] text-zinc-500">pts</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          {getPerformanceBadges(participant, matchData.participants).slice(0, 2).map((badge, idx) => (
+                            <span key={idx} className={`px-2 py-0.5 rounded-md text-[9px] font-semibold whitespace-nowrap ${
+                              badge.type === "excellent" ? "bg-green-950/50 text-green-400 border border-green-900/50" :
+                              badge.type === "good" ? "bg-blue-950/50 text-blue-400 border border-blue-900/50" :
+                              "bg-red-950/50 text-red-400 border border-red-900/50"
+                            }`}>
+                              {badge.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </PremiumCard>
     </div>
   );
 }
