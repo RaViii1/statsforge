@@ -2,17 +2,17 @@ import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Users } from "lucide-react";
 import ChampionForm from "./ChampionsForm";
 import ChampionList from "./ChampionList";
-import { TFTSet } from "@/lib/tft/champions";
+import ChampionImport from "./ChampionImport";
 import Link from "next/link";
-
+import { TFTSet } from "@/lib/tft/champions";
 
 export default async function AdminChampionsPage() {
   const supabase = await createClient();
-  
-    const { data: champions } = await supabase
-      .from("tft_champions")
-      .select("*, tft_sets(name, set_number), tft_champion_traits(trait_id, tft_traits(name, icon_path))")
-      .order("cost", { ascending: true });
+
+  const { data: champions } = await supabase
+    .from("tft_champions")
+    .select("*, tft_sets(name, set_number), tft_champion_traits(trait_id, tft_traits(name, icon_path))")
+    .order("cost", { ascending: true });
 
   const { data: sets } = await supabase
     .from("tft_sets")
@@ -21,8 +21,7 @@ export default async function AdminChampionsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] pb-24">
-      {/* Top bar */}
-      <div className="border-b border-white/6 bg-[#0d0d0f]/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-white/[0.06] bg-[#0d0d0f]/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-[1600px] mx-auto px-6 h-14 flex items-center gap-6">
           <Link
             href="/admin"
@@ -39,7 +38,6 @@ export default async function AdminChampionsPage() {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-6 pt-10 space-y-10">
-        {/* Page header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
@@ -54,9 +52,10 @@ export default async function AdminChampionsPage() {
               </p>
             </div>
           </div>
+
+          <ChampionImport sets={(sets as (TFTSet & { id: number })[]) || []} />
         </div>
 
-        {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-8 items-start">
           <div className="xl:sticky top-20">
             <ChampionForm sets={(sets as (TFTSet & { id: number })[]) || []} />

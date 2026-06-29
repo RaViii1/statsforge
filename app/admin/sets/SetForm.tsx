@@ -1,20 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Hash, Type, Power, X, Save } from "lucide-react";
+import { Plus, Hash, Type, Power, X, Save, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { TFTSet } from "@/lib/tft/champions";
+import ImagePickerModal from "@/components/ImagePickerModal";
 
 export default function SetForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
 
   const [formData, setFormData] = useState<Partial<TFTSet>>({
     name: "",
     set_number: 0,
     description: "",
+    image_path: "",
     is_active: true,
   });
 
@@ -32,6 +35,7 @@ export default function SetForm() {
         name: setData.name || "",
         description: setData.description || "",
         set_number: setData.set_number || 0,
+        image_path: setData.image_path || "",
         is_active: setData.is_active ?? true,
       });
     };
@@ -42,7 +46,7 @@ export default function SetForm() {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setFormData({ name: "", description: "", set_number: 0, is_active: true });
+    setFormData({ name: "", description: "", set_number: 0, image_path: "", is_active: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,15 +58,16 @@ export default function SetForm() {
 
     setLoading(true);
     try {
-      const submitData: any = {
+      const submitData = {
         name: formData.name,
         description: formData.description,
         set_number: Number(formData.set_number) || 0,
         is_active: Boolean(formData.is_active),
+        image_path: formData.image_path || "",
       };
       
       if (isEditing && formData.id) {
-        submitData.id = formData.id;
+        (submitData as any).id = formData.id;
       }
 
       const res = await fetch("/api/admin/sets", {
@@ -78,7 +83,7 @@ export default function SetForm() {
 
       toast.success(isEditing ? "Set updated successfully!" : "Set created successfully!");
       setIsEditing(false);
-      setFormData({ name: "", description: "", set_number: 0, is_active: true });
+      setFormData({ name: "", description: "", set_number: 0, image_path: "", is_active: true });
       router.refresh();
     } catch (error: any) {
       toast.error(error.message || "Failed to save set");
@@ -87,8 +92,22 @@ export default function SetForm() {
     }
   };
 
+  const handleImageSelect = (url: string, filename: string) => {
+    const parts = filename.split('/');
+    const cleanFilename = parts.length > 1 ? parts[1] : filename;
+    setFormData(prev => ({ ...prev, image_path: cleanFilename }));
+  };
+
+  const previewUrl = formData.image_path
+    ? formData.image_path.startsWith('http')
+      ? formData.image_path
+      : formData.image_path.includes('/')
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${formData.image_path}`
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/set-banners/${formData.image_path}`
+    : null;
+
   return (
-    <div className=" p-6 space-y-8 overflow-y-auto max-h-[85vh] scrollbar-hide bg-[#111112] border border-white/5 rounded-2xl overflow-hidden">
+    <div className="p-6 space-y-8 overflow-y-auto max-h-[85vh] scrollbar-hide bg-[#111112] border border-white/5 rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           {isEditing ? (
@@ -142,11 +161,34 @@ export default function SetForm() {
               />
             </div>
           </div>
+
+          {/* Banner Image */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Banner Image</label>
+            <div className="flex gap-3 items-start">
+              <div className="relative w-24 h-16 rounded-xl overflow-hidden bg-zinc-900 border border-white/5 group cursor-pointer">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="banner" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }} />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <ImageIcon className="w-4 h-4 text-zinc-600" />
+                    <span className="text-[9px] text-zinc-700">Select</span>
+                  </div>
+                )}
+                <button type="button" onClick={() => setShowImagePicker(true)} className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              {previewUrl && (
+                <button type="button" onClick={() => setFormData(prev => ({ ...prev, image_path: '' }))} className="text-[9px] text-red-400 hover:text-red-300 transition-colors self-center">Remove</button>
+              )}
+            </div>
+          </div>
           
-        <div className="space-y-1.5">
-          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Description</label>
-          <textarea name="description" value={formData.description}  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors" placeholder="Item description..." />
-        </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Description</label>
+            <textarea name="description" value={formData.description} onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))} rows={3} className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors" placeholder="Item description..." />
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -180,6 +222,8 @@ export default function SetForm() {
           )}
         </button>
       </form>
+
+      <ImagePickerModal isOpen={showImagePicker} onClose={() => setShowImagePicker(false)} onSelect={handleImageSelect} currentImage={formData.image_path} storageBucket="TftUnitIcons" folder="set-banners" />
     </div>
   );
 }

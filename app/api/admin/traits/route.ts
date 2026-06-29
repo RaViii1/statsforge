@@ -19,105 +19,118 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const body = await request.json() as TFTTrait;
+    const body = await request.json() as TFTTrait | TFTTrait[];
 
-    const { id, name, set_id, icon_path, description, tiers } = body;
-    
-    // First, get the set number from the tft_sets table using set_id
-    const { data: setData, error: setError } = await supabase
-      .from("tft_sets")
-      .select("set_number")
-      .eq("id", set_id)
-      .single();
+    const isArray = Array.isArray(body);
+    const traits = isArray ? body : [body];
 
-    if (setError) {
-      console.error("Error fetching set data:", setError);
-      return NextResponse.json({ error: "Invalid set" }, { status: 400 });
+    if (traits.length === 0) {
+      return NextResponse.json({ error: "No traits provided" }, { status: 400 });
     }
 
-    const setNumber = setData.set_number;
-    
-    // Ensure traitId is always a string
-    const traitId = String(id || `${setNumber}_${name.toLowerCase().replace(/\s+/g, "_")}`);
+    const results = [];
 
-    let riotApiName = body.riot_api_name;
-    if (!riotApiName) {
-      riotApiName = `TFT${setNumber}_${name.replace(/[\s_]+/g, '_').split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
-    }
+    for (const trait of traits) {
+      const { id, name, set_id, icon_path, description, tiers, champions, is_Hero, riot_api_name } = trait;
 
-    const dbData = {
-      id: traitId,
-      name,
-      set_id,
-      icon_path,
-      description,
-      is_Hero: body.is_Hero || false,
-      riot_api_name: riotApiName
-    };
-
-    // Upsert trait
-    const { error: traitError } = await supabase
-      .from("tft_traits")
-      .upsert([dbData]);
-
-    if (traitError) {
-      console.error("Trait upsert error:", traitError);
-      return NextResponse.json({ error: traitError.message }, { status: 500 });
-    }
-
-    // Upsert tiers
-    if (tiers && tiers.length > 0) {
-      const tierData = tiers.map(tier => ({
-        trait_id: traitId,
-        tier: tier.tier,
-        units_required: tier.units_required,
-        description: tier.description
-      }));
-
-      // Delete existing tiers first
-      await supabase
-        .from("tft_trait_tiers")
-        .delete()
-        .eq("trait_id", traitId);
-
-      // Insert new tiers
-      const { error: tiersError } = await supabase
-        .from("tft_trait_tiers")
-        .upsert(tierData);
-
-      if (tiersError) {
-        console.error("Tiers upsert error:", tiersError);
-        return NextResponse.json({ error: tiersError.message }, { status: 500 });
+      if (!name) {
+        results.push({ success: false, id: id || null, error: "Name is required" });
+        continue;
       }
-    }
 
-    // Handle champion associations
-    if (body.champions && Array.isArray(body.champions)) {
-      // Delete existing associations
-      await supabase
-        .from("tft_champion_traits")
-        .delete()
-        .eq("trait_id", traitId);
+      // Get set number
+      const { data: setData, error: setError } = await supabase
+        .from("tft_sets")
+        .select("set_number")
+        .eq("id", set_id)
+        .single();
 
-      // Insert new associations
-      if (body.champions.length > 0) {
-        const associations = body.champions.map((champion: any) => ({
+      if (setError) {
+        results.push({ success: false, id: id || null, error: "Invalid set" });
+        continue;
+      }
+
+      const setNumber = setData.set_number;
+      const traitId = String(id || `${setNumber}_${name.toLowerCase().replace(/\s+/g, "_")}`);
+
+      let finalRiotApiName = riot_api_name;
+      if (!finalRiotApiName) {
+        finalRiotApiName = `TFT${setNumber}_${name.replace(/[\s_]+/g, '_').split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join('')}`;
+      }
+
+      const dbData = {
+        id: traitId,
+        name,
+        set_id,
+        icon_path,
+        description,
+        is_Hero: is_Hero || false,
+        riot_api_name: finalRiotApiName
+      };
+
+      // Upsert trait
+      const { error: traitError } = await supabase
+        .from("tft_traits")
+        .upsert([dbData]);
+
+      if (traitError) {
+        results.push({ success: false, id: traitId, error: traitError.message });
+        continue;
+      }
+
+      // Upsert tiers
+      if (tiers && tiers.length > 0) {
+        const tierData = tiers.map((tier: any) => ({
           trait_id: traitId,
-          champion_id: champion.id
+          tier: tier.tier,
+          units_required: tier.units_required,
+          description: tier.description
         }));
 
-        const { error: championError } = await supabase
-          .from("tft_champion_traits")
-          .insert(associations);
+        await supabase
+          .from("tft_trait_tiers")
+          .delete()
+          .eq("trait_id", traitId);
 
-        if (championError) {
-          console.error("Champion associations error:", championError);
-          return NextResponse.json({ error: championError.message }, { status: 500 });
+        const { error: tiersError } = await supabase
+          .from("tft_trait_tiers")
+          .upsert(tierData);
+
+        if (tiersError) {
+          results.push({ success: false, id: traitId, error: tiersError.message });
+          continue;
         }
       }
+
+      // Handle champion associations
+      if (champions && Array.isArray(champions)) {
+        await supabase
+          .from("tft_champion_traits")
+          .delete()
+          .eq("trait_id", traitId);
+
+        if (champions.length > 0) {
+          const associations = champions.map((champion: any) => ({
+            trait_id: traitId,
+            champion_id: champion.id
+          }));
+
+          const { error: championError } = await supabase
+            .from("tft_champion_traits")
+            .insert(associations);
+
+          if (championError) {
+            results.push({ success: false, id: traitId, error: championError.message });
+            continue;
+          }
+        }
+      }
+
+      results.push({ success: true, id: traitId });
     }
 
-    return NextResponse.json({ success: true });
+    const successCount = results.filter(r => r.success).length;
+    return NextResponse.json({ success: true, count: successCount, results });
   } catch (error: any) {
     console.error("POST endpoint error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });

@@ -288,97 +288,196 @@ export default function TFTPage() {
         </div>
 
       
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto relative" style={{ zIndex: 1 }}>
+<div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto relative" style={{ zIndex: 1 }}>
+  {/* Team Planner */}
+  <Link 
+    href="/tft/planner"
+    className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full block no-underline"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+    
+    <div className="absolute inset-0 opacity-20 group-hover:opacity-50 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center" />
 
-          <Link 
-              href="/tft/planner"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-50 transition-opacity duration-500 bg-[url('/images/planner.png')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Search className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Team Planner</h3>
-                <p className="text-zinc-400 text-sm mb-6">Build and save your perfect compositions with our interactive hex-grid tool.</p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Team Planner
-                </div>
-              </div>
-            </Link>
-          <Link 
-              href="/tft/comps"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Meta Comps</h3>
-                <p className="text-zinc-400 text-sm mb-6">
-                  {loading ? 'Loading...' : (
-                    <>
-                      {stats.activeSetNumbers.length === 1 
-                        ? `Check most popular team comps in Set ${stats.activeSetNumbers[0]}`
-                        : `Check most popular team comps in Sets ${stats.activeSetNumbers.join(', ')}`}
-                    </>
-                  )}
-                </p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Meta
-                </div>
-              </div>
-            </Link>
-          <Link 
-              href="/tft/shop-odds"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Store className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Shop Odds</h3>
-                <p className="text-zinc-400 text-sm mb-6">Know exactly when to roll with our detailed champion drop rate reference.</p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Check Shop Odds
-                </div>
-              </div>
-            </Link>            
-          <Link 
-              href="/tft/units"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-                  <Users2 className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Units</h3>
-                <p className="text-zinc-400 text-sm mb-6">
-                  {loading ? 'Loading...' : (
-                    <>
-                      {stats.activeSetNumbers.length === 1 
-                        ? `Explore all champions in Set ${stats.activeSetNumbers[0]} with stats`
-                        : `Explore all champions in Sets ${stats.activeSetNumbers.join(', ')} with stats`}
-                    </>
-                  )}
-                </p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Units
-                </div>
-              </div>
-            </Link> 
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+
+    <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+
+    <div className="relative z-10 h-full flex flex-col justify-end">
+      <div className="space-y-4">
+        <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+          <Search className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
         </div>
+        
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+            Tool
+          </span>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+            Team Planner
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-sm leading-relaxed">
+          Build and save your perfect compositions with our interactive hex-grid tool.
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+            Launch tool <span className="text-orange-500">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {/* Bottom glow on hover */}
+    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+  </Link>
+
+  {/* Meta Comps */}
+  <Link 
+    href="/tft/comps"
+    className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full block no-underline"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+    
+    {/* Background image - kept */}
+    <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center" />
+    
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+    <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+    
+    <div className="relative z-10 h-full flex flex-col justify-end">
+      <div className="space-y-4">
+        <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+          <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+        </div>
+        
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+            Meta
+          </span>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+            Meta Comps
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-sm leading-relaxed">
+          {loading ? 'Loading...' : (
+            <>
+              {stats.activeSetNumbers.length === 1 
+                ? `Check most popular team comps in Set ${stats.activeSetNumbers[0]}`
+                : `Check most popular team comps in Sets ${stats.activeSetNumbers.join(', ')}`}
+            </>
+          )}
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+            View Meta <span className="text-orange-500">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+  </Link>
+
+  {/* Shop Odds */}
+  <Link 
+    href="/tft/shop-odds"
+    className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full block no-underline"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+    
+    {/* Background image - kept */}
+    <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center" />
+    
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+    <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+    
+    <div className="relative z-10 h-full flex flex-col justify-end">
+      <div className="space-y-4">
+        <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+          <Store className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+        </div>
+        
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+            Info
+          </span>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+            Shop Odds
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-sm leading-relaxed">
+          Know exactly when to roll with our detailed champion drop rate reference.
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+            Check Odds <span className="text-orange-500">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+  </Link>
+
+  {/* Units */}
+  <Link 
+    href="/tft/units"
+    className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full block no-underline"
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+    
+    {/* Background image - kept */}
+    <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center" />
+    
+    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+    <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+    
+    <div className="relative z-10 h-full flex flex-col justify-end">
+      <div className="space-y-4">
+        <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+          <Users2 className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
+        </div>
+        
+        <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+            Info
+          </span>
+          <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+            Units
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-sm leading-relaxed">
+          {loading ? 'Loading...' : (
+            <>
+              {stats.activeSetNumbers.length === 1 
+                ? `Explore all champions in Set ${stats.activeSetNumbers[0]} with stats`
+                : `Explore all champions in Sets ${stats.activeSetNumbers.join(', ')} with stats`}
+            </>
+          )}
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+            View Units <span className="text-orange-500">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+  </Link>
+</div>
 
         
         <div className="grid md:grid-cols-3 gap-12 mt-20 pt-20 border-t border-zinc-900">

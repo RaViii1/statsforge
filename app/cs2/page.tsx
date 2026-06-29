@@ -230,37 +230,120 @@ export default function CS2Page() {
           </form>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-16">
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-950/70 transition-colors">
-              <Users className="w-6 h-6 text-orange-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Player Profiles</h3>
-            <p className="text-zinc-400">
-              Comprehensive player statistics including K/D ratio, headshot percentage, match history, and competitive rank progression
-            </p>
-          </div>
+      <div className="grid md:grid-cols-3 gap-6 mb-16">
+        <div className="relative h-[320px] rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
 
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-yellow-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-yellow-950/50 border border-yellow-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-yellow-950/70 transition-colors">
-              <Crosshair className="w-6 h-6 text-yellow-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Weapon Analytics</h3>
-            <p className="text-zinc-400">
-              Detailed weapon statistics with accuracy metrics, kill counts, damage per round, and spray control analysis
-            </p>
-          </div>
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
 
-          <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-orange-900/50 hover:bg-zinc-900/80 transition-all group">
-            <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-950/70 transition-colors">
-              <BarChart3 className="w-6 h-6 text-orange-500" />
+          <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+
+          <div className="absolute inset-0 p-8 flex flex-col justify-end">
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center group-hover:bg-orange-950/70 transition-colors">
+                <Users className="w-6 h-6 text-orange-500" />
+              </div>
+              
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                  Feature
+                </span>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                  Player Profiles
+                </h3>
+              </div>
+              
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Comprehensive player statistics including K/D ratio, headshot percentage, match history, and competitive rank progression
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                  Access <span className="text-orange-500">→</span>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Match Insights</h3>
-            <p className="text-zinc-400">
-              In-depth match breakdowns with round-by-round analysis, economy management, and performance heatmaps
-            </p>
           </div>
+          
+          {/* Bottom glow on hover */}
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
         </div>
+
+        {/* Weapon Analytics */}
+        <div className="relative h-[320px] rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-yellow-500/30 hover:-translate-y-1 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(234,179,8,0.05),transparent_60%)]" />
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+          <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-yellow-500/40 transition-all duration-700" />
+          
+          <div className="absolute inset-0 p-8 flex flex-col justify-end">
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-yellow-950/50 border border-yellow-900/30 rounded-lg flex items-center justify-center group-hover:bg-yellow-950/70 transition-colors">
+                <Crosshair className="w-6 h-6 text-yellow-500" />
+              </div>
+              
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-yellow-500 transition-colors duration-500">
+                  Feature
+                </span>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                  Weapon Analytics
+                </h3>
+              </div>
+              
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Detailed weapon statistics with accuracy metrics, kill counts, damage per round, and spray control analysis
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-yellow-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                  Access <span className="text-yellow-500">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-yellow-500/0 to-transparent group-hover:via-yellow-500/30 transition-all duration-700" />
+        </div>
+
+        {/* Match Insights */}
+        <div className="relative h-[320px] rounded-[2rem] overflow-hidden border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 group">
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+          <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+          
+          <div className="absolute inset-0 p-8 flex flex-col justify-end">
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-orange-950/50 border border-orange-900/30 rounded-lg flex items-center justify-center group-hover:bg-orange-950/70 transition-colors">
+                <BarChart3 className="w-6 h-6 text-orange-500" />
+              </div>
+              
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                  Feature
+                </span>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                  Match Insights
+                </h3>
+              </div>
+              
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                In-depth match breakdowns with round-by-round analysis, economy management, and performance heatmaps
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                  Access <span className="text-orange-500">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+        </div>
+      </div>
 
       </main>
 

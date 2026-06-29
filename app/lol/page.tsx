@@ -294,81 +294,184 @@ export default function LolPage() {
           </form>
 
           {/* Quick Links */}
-          <div className="flex flex-wrap items-center justify-center gap-8 relative z-1 text-left">
-            {/* Multi Search Button */}
-            <Link 
-              href="/lol/multisearch"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+        <div className="flex flex-wrap items-center justify-center gap-8 relative z-10 text-left">
+          {/* Multi Search Button */}
+          <Link 
+            href="/lol/multisearch"
+            className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full max-w-sm block no-underline"
+          >
+            {/* Background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+            
+            {/* Background image - kept */}
+            <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center" />
+            
+            {/* Noise texture */}
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+            
+            {/* Top line accent */}
+            <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+            
+            {/* Content */}
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                   <Users className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Multi Search</h3>
-                <p className="text-zinc-400 text-sm mb-6">Search and compare multiple League of Legends players at once.</p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Launch Search Tool
+                
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                    Tool
+                  </span>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                    Multi Search
+                  </h3>
+                </div>
+                
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  Search and compare multiple League of Legends players at once.
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                    Launch <span className="text-orange-500">→</span>
+                  </div>
                 </div>
               </div>
-            </Link>
+            </div>
             
-            {/* Leaderboard Button */}
-            <Link 
-              href="/lol/leaderboard"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/lol/leaderboards.webp')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+            {/* Bottom glow on hover */}
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+          </Link>
+          
+          {/* Leaderboard Button */}
+          <Link 
+            href="/lol/leaderboard"
+            className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full max-w-sm block no-underline"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+            
+            {/* Background image - kept */}
+            <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/lol/leaderboards.webp')] bg-cover bg-center" />
+            
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+            <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+            
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                   <Layers className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Leaderboard</h3>
-                <p className="text-zinc-400 text-sm mb-6">View the top ranked players across all regions and queues.</p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Leaderboard
+                
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                    Rankings
+                  </span>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                    Leaderboard
+                  </h3>
+                </div>
+                
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  View the top ranked players across all regions and queues.
+                </p>
+                
+                <div className="flex items-center justify-between">
+
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                    View <span className="text-orange-500">→</span>
+                  </div>
                 </div>
               </div>
-            </Link>
+            </div>
             
-            {/* Tier Lists Button */}
-            <Link 
-              href="/lol/champions"
-              className="group relative overflow-hidden bg-linear-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-[3rem] hover:border-orange-500/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-4 sm:p-6 w-full max-w-sm"
-            >
-              <div className="absolute inset-0 bg-linear-to-br from-orange-600/20 via-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center"></div>
-              
-              <div className="relative z-10">
-                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+          </Link>
+          
+          {/* Tier Lists Button */}
+          <Link 
+            href="/lol/champions"
+            className="group relative h-[320px] overflow-hidden rounded-[2rem] border border-zinc-900 bg-zinc-900/30 transition-all duration-700 hover:border-orange-500/30 hover:-translate-y-1 p-8 w-full max-w-sm block no-underline"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-80" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.05),transparent_60%)]" />
+            
+            {/* Background image - kept */}
+            <div className="absolute inset-0 opacity-20 group-hover:opacity-20 transition-opacity duration-500 bg-[url('/images/Texture.jpg')] bg-cover bg-center" />
+            
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+            <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+            
+            <div className="relative z-10 h-full flex flex-col justify-end">
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-orange-950/80 border border-orange-900/50 rounded-2xl flex items-center justify-center group-hover:bg-orange-600 group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
                   <TrendingUp className="w-8 h-8 text-orange-500 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-3 italic uppercase tracking-tight">Tier Lists</h3>
-                <p className="text-zinc-400 text-sm mb-6">Explore champion tier lists for all regions and patches. Follow the meta!</p>
-                <div className="flex items-center gap-2 text-orange-500 font-bold text-xs uppercase tracking-widest group-hover:gap-3 transition-all">
-                  View Tier Lists
+                
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                    Meta
+                  </span>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                    Tier Lists
+                  </h3>
+                </div>
+                
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  Explore champion tier lists for all regions and patches. Follow the meta!
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                    View <span className="text-orange-500">→</span>
+                  </div>
                 </div>
               </div>
-            </Link>
-          </div>
+            </div>
+            
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+          </Link>
+        </div>
         </div>
 
-        {/* Background Image */}
-        <div className="relative rounded-2xl overflow-hidden border border-zinc-800 mt-16">
+        <div className="relative h-[400px] rounded-[2rem] overflow-hidden border border-zinc-900 mt-16 group">
+          {/* Background image */}
           <img
             src="https://cmsassets.rgpub.io/sanity/images/dsfx7636/news_live/5255b8c8fc9946d9313a244ef6f1a91d046b0bde-1920x1080.jpg?auto=format&fit=fill&q=80&w=1184"
             alt="League of Legends"
-            className="w-full h-96 object-cover opacity-20"
+            className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-700"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-zinc-950 via-zinc-950/80 to-transparent"></div>
+          
+          {/* Background gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black opacity-60" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(249,115,22,0.08),transparent_60%)]" />
+          
+          {/* Noise texture */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")', mixBlendMode: 'overlay' }} />
+          
+          {/* Top line accent */}
+          <div className="absolute top-0 left-8 w-12 h-px bg-white/10 group-hover:w-20 group-hover:bg-orange-500/40 transition-all duration-700" />
+          
+          {/* Bottom glow on hover */}
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/30 transition-all duration-700" />
+          
+          {/* Content */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-white mb-3">Ready to Analyze Your Performance?</h2>
-              <p className="text-zinc-400">Search for any summoner to get started</p>
+            <div className="text-center space-y-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 group-hover:text-orange-500 transition-colors duration-500">
+                Get Started
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight group-hover:translate-x-1 transition-transform duration-500">
+                Ready to Analyze Your Performance?
+              </h2>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto leading-relaxed">
+                Search for any summoner to get started
+              </p>
+              <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 group-hover:text-orange-500 transition-all duration-500 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0">
+                Begin Search <span className="text-orange-500">→</span>
+              </div>
             </div>
           </div>
         </div>

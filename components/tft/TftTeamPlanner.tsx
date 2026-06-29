@@ -7,7 +7,8 @@ import {
   Share2,
   Save,
   ArrowLeft,
-  ChevronLeft
+  ChevronLeft,
+  ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -955,40 +956,59 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
                 </div>
 
                  {/* Set Picker */}
-                 <div className="flex flex-col gap-2">
-                   <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Set</span>
-                   <div className="flex items-center gap-2 px-2 sm:px-3 bg-white/4 border border-white/5 rounded-lg">
-                     <select 
-                       value={selectedSetId || ''} 
-                       onChange={(e) => handleSetChange(parseInt(e.target.value))}
-                       disabled={isEditMode}
-                       className="flex-1 bg-transparent text-[9px] sm:text-[10px] font-black text-orange-400 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 py-1.5"
-                     >
-                       {activeSets.map((set: any) => (
-                         <option key={set.id} value={set.id} className="bg-zinc-900">
-                           S{set.set_number} - {set.name}
-                         </option>
-                       ))}
-                     </select>
-                   </div>
-                 </div>
-
+                <div className="flex flex-col gap-2">
+                  <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Set</span>
+                  <div className="relative">
+                    <select 
+                      value={selectedSetId || ''} 
+                      onChange={(e) => handleSetChange(parseInt(e.target.value))}
+                      disabled={isEditMode}
+                      className={`
+                        w-full appearance-none px-4 py-2 pr-10 rounded-xl text-[9px] sm:text-[10px] font-black transition-all
+                        ${isEditMode
+                          ? 'bg-zinc-900/40 text-zinc-500 cursor-not-allowed opacity-50'
+                          : 'bg-zinc-900/60 text-orange-400 hover:bg-zinc-900/80 cursor-pointer ring-1 ring-white/5'
+                        }
+                      `}
+                    >
+                      {activeSets.map((set: any) => (
+                        <option 
+                          key={set.id} 
+                          value={set.id}
+                          className="bg-[#111112] text-orange-400"
+                        >
+                          S{set.set_number} - {set.name}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400" />
+                  </div>
+                </div>
                  {/* Patch Picker */}
-                 <div className="flex flex-col gap-2">
-                   <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Patch</span>
-                   <div className="flex items-center gap-2 px-2 sm:px-3 bg-white/4 border border-white/5 rounded-lg">
-                     <select 
-                       value={currentTeam.patch} 
-                       onChange={(e) => updateTeam({ patch: e.target.value })}
-                       disabled={!canEdit}
-                       className="flex-1 bg-transparent text-[9px] sm:text-[10px] font-black text-orange-400 focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 py-1.5"
-                     >
-                       {activeSets.find(s => s.id === selectedSetId) && generatePatchesForSet(activeSets.find(s => s.id === selectedSetId)!.set_number).map(p => (
-                         <option key={p} value={p} className="bg-zinc-900">{p}</option>
-                       ))}
-                     </select>
-                   </div>
-                 </div>
+                <div className="flex flex-col gap-2">
+                  <span className="text-[8px] sm:text-[9px] font-black text-orange-500 uppercase tracking-widest">Patch</span>
+                  <div className="relative">
+                    <select 
+                      value={currentTeam.patch} 
+                      onChange={(e) => updateTeam({ patch: e.target.value })}
+                      disabled={!canEdit}
+                      className={`
+                        w-full appearance-none px-4 py-2 pr-10 rounded-xl text-[9px] sm:text-[10px] font-black transition-all
+                        ${!canEdit
+                          ? 'bg-zinc-900/40 text-zinc-500 cursor-not-allowed opacity-50'
+                          : 'bg-zinc-900/60 text-orange-400 hover:bg-zinc-900/80 cursor-pointer ring-1 ring-white/5'
+                        }
+                      `}
+                    >
+                      {activeSets.find(s => s.id === selectedSetId) && generatePatchesForSet(activeSets.find(s => s.id === selectedSetId)!.set_number).map(p => (
+                        <option key={p} value={p} className="bg-[#111112] text-orange-400">
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400" />
+                  </div>
+                </div>
                </div>
              </div>
 

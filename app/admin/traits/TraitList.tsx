@@ -2,7 +2,7 @@
 
 import { Trash2, Edit2, Search, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TFTTrait } from "@/lib/tft/champions";
 
@@ -16,6 +16,14 @@ export default function TraitList({ initialTraits, sets = [] }: TraitListProps) 
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [selectedSetId, setSelectedSetId] = useState<number | 'all' | 'universal'>('all');
+
+  useEffect(() => {
+    const handleTraitsUpdated = () => {
+      router.refresh();
+    };
+    window.addEventListener('traits-updated', handleTraitsUpdated);
+    return () => window.removeEventListener('traits-updated', handleTraitsUpdated);
+  }, [router]);
 
   const filtered = initialTraits.filter(t => {
     const matchesSearch = t.name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -59,7 +67,6 @@ export default function TraitList({ initialTraits, sets = [] }: TraitListProps) 
 
   return (
     <div className="space-y-4">
-      {/* Search + filter */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-zinc-600 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -117,7 +124,6 @@ export default function TraitList({ initialTraits, sets = [] }: TraitListProps) 
                 </h3>
                 <p className="text-xs text-zinc-500">Set {trait.tft_sets?.set_number} • {trait.tft_sets?.name}</p>
                 
-                {/* Trait Tiers */}
                 {trait.tft_trait_tiers && trait.tft_trait_tiers.length > 0 ? (
                   <div className="mt-2 space-y-1">
                     {[...trait.tft_trait_tiers].sort((a, b) => {

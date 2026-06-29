@@ -155,7 +155,7 @@ export const MainCarryTray = ({
                 ) : (
                 <div className="w-full flex flex-col items-center gap-2 opacity-10 group-hover/tray:opacity-40 transition-opacity">
                   <Plus className="w-4 h-4 text-white" />
-                  <span className="text-[8px] text-white uppercase">Assign</span>
+                  <span className="text-[8px] text-white uppercase">Drag and drop unit here</span>
                 </div>
               )}
             </div>

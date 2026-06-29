@@ -6,7 +6,7 @@ export async function GET() {
   
   const { data: activeSets, error } = await supabase
     .from("tft_sets")
-    .select("id, set_number, name, patch_start, patch_end, description")
+    .select("id, set_number, name, patch_start, patch_end, description, image_path")
     .eq("is_active", true)
     .order("set_number", { ascending: false });
 

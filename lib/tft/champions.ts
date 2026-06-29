@@ -6,6 +6,7 @@ export interface TFTSet {
   description?: string;
   set_number: number;
   is_active: boolean;
+  image_path?: string;
   patch_start?: string;
   patch_end?: string;
   created_at?: string;

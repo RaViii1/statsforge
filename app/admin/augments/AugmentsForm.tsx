@@ -13,6 +13,7 @@ interface AugmentFormData {
   tier: number;
   icon_path: string;
   gamemode: string[];
+  apiname: string;
 }
 
 const TIERS = [
@@ -29,7 +30,7 @@ const GAMEMODES = [
 ];
 
 const EMPTY: AugmentFormData = {
-  name: "", description: "", tier: 1, icon_path: "", gamemode: []
+  name: "", description: "", tier: 1, icon_path: "", gamemode: [], apiname: ""
 };
 
 const generateId = (): number => {
@@ -54,6 +55,7 @@ export default function AugmentsForm() {
         tier: typeof a.tier === 'number' ? a.tier : Number(a.tier) || 1,
         icon_path: a.icon_path ?? "",
         gamemode: Array.isArray(a.gamemode) ? a.gamemode : (a.gamemode ? [a.gamemode] : []),
+        apiname: a.apiname ?? "",
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -272,6 +274,19 @@ export default function AugmentsForm() {
             rows={3}
             className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none resize-none placeholder:text-zinc-600 transition-colors leading-relaxed"
             placeholder="What does this augment do?"
+          />
+        </div>
+
+        {/* API Name */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">
+            API Name
+          </label>
+          <input
+            value={formData.apiname}
+            onChange={e => setFormData(prev => ({ ...prev, apiname: e.target.value }))}
+            className="w-full bg-zinc-950 border border-white/5 rounded-xl px-3.5 py-2.5 text-white text-sm focus:ring-1 focus:ring-orange-500/50 focus:border-orange-500/30 outline-none placeholder:text-zinc-600 transition-colors"
+            placeholder="e.g. modes_arena_augments_risk"
           />
         </div>
 

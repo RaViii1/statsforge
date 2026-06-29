@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Shield } from "lucide-react";
 import TraitForm from "./TraitForm";
 import TraitList from "./TraitList";
-import { TFTSet } from "@/lib/tft/champions";
+import TraitImport from "./TraitImport";
 import Link from "next/link";
+import { TFTSet } from "@/lib/tft/champions";
 
 export default async function AdminTraitsPage() {
   const supabase = await createClient();
@@ -53,6 +54,8 @@ export default async function AdminTraitsPage() {
               </p>
             </div>
           </div>
+
+          <TraitImport sets={(sets as (TFTSet & { id: number })[]) || []} />
         </div>
 
         {/* Main layout */}

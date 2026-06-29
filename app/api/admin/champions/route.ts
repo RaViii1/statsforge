@@ -18,94 +18,61 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const body = await request.json() as TFTChampion;
+  const body = await request.json() as TFTChampion | TFTChampion[];
 
-  // Destructure everything that IS NOT a column in 'tft_champions'
-  // to avoid PGRST204 "column not found" errors.
-  const { 
-    traits, 
-    tft_champion_best_items, 
-    id,
-    name,
-    cost,
-    set_id,
-    image_path,
-    ability,
-    stats,
-    // Capture any other fields that might be sent but aren't in the table
-    ...rest
-  } = body;
+  const isArray = Array.isArray(body);
+  const champions = isArray ? body : [body];
 
-  const dbData = {
-    id,
-    name,
-    cost,
-    set_id,
-    image_path,
-    ability,
-    stats,
-  };
-
-  // 1. Upsert the champion to 'tft_champions'
-  const { error: champError } = await supabase
-    .from("tft_champions")
-    .upsert([dbData]);
-
-  if (champError) {
-    console.error("Supabase champion upsert error:", champError);
-    return NextResponse.json({ error: champError.message, detail: champError }, { status: 500 });
+  if (champions.length === 0) {
+    return NextResponse.json({ error: "No champions provided" }, { status: 400 });
   }
 
-  // 2. Handle Traits if provided (separate table tft_champion_traits)
-  if (traits && Array.isArray(traits)) {
-    await supabase
-      .from("tft_champion_traits")
-      .delete()
-      .eq("champion_id", id);
+  const results = [];
 
-     if (traits.length > 0) {
-       // Remove duplicates before inserting
-       const uniqueTraits = [...new Set(traits)];
-       const traitInserts = uniqueTraits.map(traitId => ({
-         champion_id: id,
-         trait_id: traitId
-       }));
+  for (const champ of champions) {
+    const { 
+      traits, 
+      tft_champion_best_items, 
+      id,
+      name,
+      cost,
+      set_id,
+      image_path,
+      ability,
+      stats,
+      ...rest
+    } = champ;
 
-      const { error: traitError } = await supabase
-        .from("tft_champion_traits")
-        .insert(traitInserts);
-
-      if (traitError) {
-        console.error("Supabase traits insert error:", traitError);
-      }
+    if (!id || !name) {
+      results.push({ success: false, id: id || null, error: "ID and name are required" });
+      continue;
     }
-  }
 
-  // 3. Handle Best Items if provided (separate table tft_champion_best_items)
-  if (tft_champion_best_items && Array.isArray(tft_champion_best_items)) {
-    await supabase
-      .from("tft_champion_best_items")
-      .delete()
-      .eq("champion_id", id);
+    const dbData = {
+      id,
+      name,
+      cost,
+      set_id,
+      image_path,
+      ability,
+      stats,
+    };
 
-    if (tft_champion_best_items.length > 0) {
-      const itemInserts = tft_champion_best_items.map((item, index) => ({
-        champion_id: id,
-        item_id: item.id,
-        priority: index + 1
-      }));
+    // 1. Upsert the champion to 'tft_champions'
+    const { error: champError } = await supabase
+      .from("tft_champions")
+      .upsert([dbData]);
 
-      const { error: itemError } = await supabase
-        .from("tft_champion_best_items")
-        .insert(itemInserts);
-
-      if (itemError) {
-        console.error("Supabase best items insert error:", itemError);
-      }
+    if (champError) {
+      results.push({ success: false, id, error: champError.message });
+      continue;
     }
+
+    results.push({ success: true, id });
   }
 
-  return NextResponse.json({ success: true });
+  const successCount = results.filter(r => r.success).length;
+  return NextResponse.json({ success: true, count: successCount, results });
 }
 
 export async function DELETE(request: Request) {

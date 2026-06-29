@@ -17,40 +17,68 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(request: Request): Promise<NextResponse> {
   const supabase = await createClient();
   const body = await request.json();
-  const { id, name, description, tier, icon_path, gamemode } = body;
+  
+  const isArray = Array.isArray(body);
+  const items = isArray ? body : [body];
 
-  if (!name) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (items.length === 0) {
+    return NextResponse.json({ error: "No augments provided" }, { status: 400 });
   }
 
-  // Convert tier to number if present
-  const numericTier = tier !== undefined && tier !== null ? Number(tier) : null;
+  const stripTags = (text?: string) => {
+    if (!text) return '';
+    return text
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
 
-  let processedIconPath = icon_path;
-  if (icon_path) {
-    try {
-      const url = new URL(icon_path);
-      processedIconPath = url.pathname.split("/").pop() || icon_path;
-    } catch {
-      processedIconPath = icon_path;
+  const results = [];
+
+  for (const item of items) {
+    const { id, name, description, tier, icon_path, gamemode, apiname } = item;
+
+    if (!name) {
+      results.push({ success: false, id: id || null, error: "Name is required" });
+      continue;
+    }
+
+    let processedIconPath = icon_path;
+    if (icon_path) {
+      try {
+        const url = new URL(icon_path);
+        processedIconPath = url.pathname.split("/").pop() || icon_path;
+      } catch {
+        processedIconPath = icon_path;
+      }
+    }
+
+    const insertData: any = {
+      name,
+      description: stripTags(description) || '',
+      tier: tier !== undefined && tier !== null ? Number(tier) : null,
+      icon_path: processedIconPath,
+      gamemode: gamemode || [],
+      apiname: apiname || ''
+    };
+    
+    if (id && id > 0) {
+      insertData.id = id;
+    }
+
+    const { error } = await supabase
+      .from("augments")
+      .insert([insertData]);
+
+    if (error) {
+      results.push({ success: false, id: id || null, error: error.message });
+    } else {
+      results.push({ success: true, id: id || null });
     }
   }
 
-  const insertData: any = { name, description, tier: numericTier, icon_path: processedIconPath, gamemode };
-  if (id && id > 0) {
-    insertData.id = id;
-  }
-
-  const { error } = await supabase
-    .from("augments")
-    .insert([insertData]);
-
-  if (error) {
-    console.error("Error saving augment:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
+  const successCount = results.filter(r => r.success).length;
+  return NextResponse.json({ success: true, count: successCount, results });
 }
 
 export async function DELETE(request: Request): Promise<NextResponse> {
@@ -77,7 +105,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
 export async function PUT(request: Request): Promise<NextResponse> {
   const supabase = await createClient();
   const body = await request.json();
-  const { id, name, description, tier, icon_path, gamemode } = body;
+  const { id, name, description, tier, icon_path, gamemode, apiname } = body;
 
   if (!id || !name) {
     return NextResponse.json(
@@ -100,7 +128,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
 
   const { error } = await supabase
     .from("augments")
-    .update({ name, description, tier: numericTier, icon_path: processedIconPath, gamemode })
+    .update({ name, description, tier: numericTier, icon_path: processedIconPath, gamemode, apiname })
     .eq("id", Number(id));
 
   if (error) {

@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
   ChevronDown, Plus, Star, Eye, Pencil, Search,
-  Crown, Swords, Coins, ChevronsUp, ArrowRight,
-  Sparkles, ChevronLeft, Trash2, X
+  Coins, ChevronsUp, ArrowRight,
+  ChevronLeft, Trash2, X
 } from 'lucide-react';
 import { TeamComp, DifficultyLevel, UnitPosition, TooltipState, META_TIER_CONFIG, MetaTier, META_TIERS } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
 import Footer from '@/components/Footer';
-import { getCostBorderColor, getChampionImageUrl } from '@/lib/tft/champions';
+import { getCostBorderColor, getChampionImageUrl, CurrentSetNumber } from '@/lib/tft/champions';
 import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { HexGrid } from '@/components/tft/planner';
 import { CustomTooltip } from '@/components/tft/planner';
@@ -276,17 +276,18 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
           </div>
         </div>
 
-        {expanded && (
+{expanded && (
           <div className="px-5 pb-5 border-t border-zinc-800 pt-4">
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <h4 className="text-sm font-bold text-orange-500 mb-4 uppercase tracking-wider flex items-center gap-2">
-                  <Swords className="w-4 h-4" />
-                  Final Board
-                </h4>
                 {comp.description && comp.description !== 'Click to add operational notes...' && (
                   <div className='mb-8'>
-                    <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Notes</h4>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-4 w-1 bg-orange-500 rounded-full" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 ">
+                      General info
+                    </h3>
+                  </div>
                     <p className="text-zinc-400 text-sm leading-relaxed">{comp.description}</p>
                   </div>
                 )}
@@ -307,10 +308,12 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
 
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-orange-400" />
-                    Main Carries
-                  </h4>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-4 w-1 bg-orange-500 rounded-full" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 ">
+                    Main carries
+                  </h3>
+                </div>
                   <div className="space-y-3">
                     {carries.map(({ unit, cost }, i) => {
                       const champ = champions.find(c => c.id === unit.characterId);
@@ -342,11 +345,13 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                 </div>
 
                 {priorityItems.length > 0 && (
-                  <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
-                    <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
-                      <Sparkles className="w-4 h-4" />
+                  <div className="">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-4 w-1 bg-orange-500 rounded-full" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
                       Itemization Priority
                     </h3>
+                  </div>
                     <div className="flex items-center gap-4 flex-wrap">
                       {priorityItems.map((item, idx) => {
                         const itemObj = items.find(it => it.name === item);
@@ -371,9 +376,12 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
             </div>
 
             <div className="border-t border-zinc-800/50 pt-5 mt-8">
-              <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">
-                Levelling Guide
-              </h4>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-4 w-1 bg-orange-500 rounded-full" />
+                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-1">
+                  Leveling Guide
+                </h3>
+              </div>
               <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
                 {comp.levelingSteps.map((step, i) => (
                   <div key={i} className="flex items-center">
@@ -533,52 +541,73 @@ export default function SetTeamCompsPage() {
 
       <div className="min-h-screen bg-zinc-950 text-zinc-100 selection:bg-orange-500/30">
 
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 right-0 w-[700px] h-[500px] bg-orange-500/[0.03] rounded-full blur-[180px]" />
-          <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-purple-600/[0.03] rounded-full blur-[160px]" />
-        </div>
-
         <NavbarTft />
 
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="relative pt-10 pb-8">
+            <div className="absolute inset-0 -mx-4 sm:-mx-6 rounded-2xl overflow-hidden opacity-90">
+              {currentSetData?.image_path ? (
+                <>
+                  <img
+                    src={currentSetData.image_path.startsWith('http')
+                      ? currentSetData.image_path
+                      : currentSetData.image_path.includes('/')
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/${currentSetData.image_path}`
+                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/TftUnitIcons/set-banners/${currentSetData.image_path}`}
+                    alt="TFT Set Banner"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-zinc-900/90 via-purple-900/50 to-blue-900/50" />
+              )}
 
-          <div className="pt-10 pb-8">
-            <Link
-              href="/tft/comps"
-              className="inline-flex items-center gap-1.5 text-zinc-700 hover:text-zinc-300 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
-            >
-              <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
-              All Comps
-            </Link>
+              <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/70 to-zinc-950/50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent" />
+              <div className="absolute inset-0 bg-[url('/images/hex-pattern.svg')] opacity-10 bg-repeat" />
+            </div>
 
-            <div className="flex items-end justify-between gap-6 flex-wrap">
-              <div>
-                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">{currentSetName}</p>
-                <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide">COMPS</h1>
-                <p className="text-zinc-500 text-sm mt-2 max-w-md">
-                  Current meta team compositions — carries, items, and levelling guides.
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-3">
-                <div className="text-right">
-                  <motion.p
-                    key={filteredComps.length}
-                    initial={prefersReduced ? false : { opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="font-bebas text-5xl text-white tabular-nums leading-none"
-                  >
-                    {filteredComps.length}
-                  </motion.p>
-                  <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em]">
-                    {filteredComps.length === totalWithUnits ? 'comps' : `of ${totalWithUnits}`}
+            <div className="relative z-10">
+              <Link
+                href="/tft"
+                className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 mb-6 transition-colors group uppercase text-[10px] font-black tracking-widest"
+              >
+                <ChevronLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
+                TFT Hub
+              </Link>
+
+              <div className="flex items-end justify-between gap-6 flex-wrap">
+                <div>
+                  <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">{currentSetName}</p>
+                  <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide drop-shadow-2xl">COMPS</h1>
+                  <p className="text-zinc-400 text-sm mt-2 max-w-md drop-shadow-lg">
+                    Current meta team compositions — carries, items, and levelling guides.
                   </p>
                 </div>
-                <Link href={`/tft/planner?set_id=${setNumber || currentSetData?.set_number || 14}`}>
-                  <button className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-black uppercase text-xs tracking-widest rounded-lg transition-colors shadow-md shadow-orange-500/20">
-                    <Plus className="w-3.5 h-3.5" />
-                    Create
-                  </button>
-                </Link>
+                <div className="flex flex-col items-end gap-3">
+                  <div className="text-right">
+                    <motion.p
+                      key={filteredComps.length}
+                      initial={prefersReduced ? false : { opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="font-bebas text-5xl text-white tabular-nums leading-none drop-shadow-lg"
+                    >
+                      {filteredComps.length}
+                    </motion.p>
+                    <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em] drop-shadow-lg">
+                      {filteredComps.length === totalWithUnits ? 'comps' : `of ${totalWithUnits}`}
+                    </p>
+                  </div>
+                  <Link href={`/tft/planner?set_id=${currentSetData?.set_number || CurrentSetNumber}`}>
+                    <button className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-zinc-950 font-black uppercase text-xs tracking-widest rounded-lg transition-colors shadow-lg shadow-orange-500/30">
+                      <Plus className="w-3.5 h-3.5" />
+                      Create
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
