@@ -1,17 +1,28 @@
 'use client';
 
-import { Search, Trash2, Crown, Star, Plus, Backpack, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Trash2, Crown, Star, Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { UnitPosition, TooltipState } from '@/lib/tft/teamplanner-types';
 import { TFTChampion, getCostColor, getChampionImageUrl } from '@/lib/tft/champions';
 import { getItemImageUrl } from '@/lib/tft/itemstft';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import SvgIcon from '@/components/SvgIcon';
+
+interface TFTItem {
+  id: string;
+  name: string;
+  description: string;
+  image_path: string;
+  is_component?: boolean;
+  is_artifact?: boolean;
+  is_radiant?: boolean;
+  [key: string]: any;
+}
 
 interface UnitDetailsProps {
   unit: UnitPosition;
   champions: TFTChampion[];
-  items: any[];
+  items: TFTItem[];
   mainCarryIds: string[];
   onToggleCarry: (characterId: string) => void;
   onRemoveUnit: () => void;
@@ -25,7 +36,9 @@ interface UnitDetailsProps {
   canEdit?: boolean;
 }
 
-const ITEMS_PER_PAGE = 48;
+const ITEMS_PER_PAGE = 42;
+
+type ItemTab = 'all' | 'artifact' | 'radiant';
 
 export const UnitDetails = ({
   unit,
@@ -44,40 +57,64 @@ export const UnitDetails = ({
   canEdit = true,
 }: UnitDetailsProps) => {
   const [itemPage, setItemPage] = useState(0);
+  const [activeTab, setActiveTab] = useState<ItemTab>('all');
 
   const champ = champions.find((c) => c.id === unit.characterId);
   const isCarry = mainCarryIds.includes(unit.characterId);
   const cost = champ?.cost || 1;
   const costColor = getCostColor(cost);
 
-  const filteredItems = items.filter((it) =>
-    it.name.toLowerCase().includes(itemSearch.toLowerCase())
-  );
-  const totalItemPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const pagedItems = filteredItems.slice(itemPage * ITEMS_PER_PAGE, (itemPage + 1) * ITEMS_PER_PAGE);
+  const filteredItems = useMemo(() => {
+    let filtered = items;
 
-  // Reset to page 0 when search changes
+    if (activeTab === 'artifact') {
+      filtered = filtered.filter((it) => it.is_artifact === true);
+    } else if (activeTab === 'radiant') {
+      filtered = filtered.filter((it) => it.is_radiant === true);
+    }
+
+    if (itemSearch.trim()) {
+      filtered = filtered.filter((it) =>
+        it.name.toLowerCase().includes(itemSearch.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [items, activeTab, itemSearch]);
+
+  const totalItemPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const pagedItems = filteredItems.slice(
+    itemPage * ITEMS_PER_PAGE,
+    (itemPage + 1) * ITEMS_PER_PAGE
+  );
+
   const handleItemSearch = (val: string) => {
     setItemSearch(val);
     setItemPage(0);
   };
 
+  const handleTabChange = (tab: ItemTab) => {
+    setActiveTab(tab);
+    setItemPage(0);
+  };
+
+  const tabs: { key: ItemTab; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'artifact', label: 'Artifact' },
+    { key: 'radiant', label: 'Radiant' },
+  ];
+
   return (
     <div className="flex flex-col h-full text-white overflow-hidden animate-in slide-in-from-right-4 duration-300">
 
-      {/* ── Banner header ── */}
       <div className="relative overflow-hidden h-32 shrink-0">
-        {/* Blurred portrait bg */}
         <div
           className="absolute inset-0 scale-110 blur-md opacity-20 bg-cover bg-top pointer-events-none"
           style={{ backgroundImage: `url(${getChampionImageUrl(champ?.image_path)})` }}
         />
-        {/* Dark gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
 
-        {/* Content */}
         <div className="relative flex items-end gap-4 px-4 pb-3 h-full">
-          {/* Avatar */}
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-xl overflow-hidden border-2 shadow-lg" style={{ borderColor: costColor }}>
               <img
@@ -93,7 +130,6 @@ export const UnitDetails = ({
             </div>
           </div>
 
-          {/* Name + traits */}
           <div className="flex-1 min-w-0 pb-0.5">
             <h3 className="text-xl font-black uppercase tracking-tight leading-none text-white truncate">
               {champ?.name || 'Unknown'}
@@ -107,7 +143,6 @@ export const UnitDetails = ({
             </div>
           </div>
 
-          {/* Remove */}
           <button
             onClick={onRemoveUnit}
             disabled={!canEdit}
@@ -118,7 +153,6 @@ export const UnitDetails = ({
         </div>
       </div>
 
-      {/* ── Stars + Carry ── */}
       <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b border-white/5">
         <button
           onClick={() => onToggleCarry(unit.characterId)}
@@ -149,7 +183,6 @@ export const UnitDetails = ({
         ))}
       </div>
 
-      {/* ── Loadout ── */}
       <div className="px-4 py-3 border-b border-white/5">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
@@ -158,33 +191,49 @@ export const UnitDetails = ({
               Loadout
             </span>
           </div>
-          <span className="text-[9px] font-bold text-white/40">{unit.items.length} / 3</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] font-bold text-white/40">{unit.items.length} / 3</span>
+            {unit.items.length > 0 && canEdit && (
+              <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest">
+                Click to remove
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2.5">
           {[0, 1, 2].map((i) => {
             const itemName = unit.items[i];
             const itemObj = items.find((it) => it.name === itemName);
+            const isEmpty = !itemName;
+            
             return (
               <div
                 key={i}
                 onClick={() => { if (itemName && canEdit) onRemoveItem(i); }}
-                className={`group relative w-11 h-11 rounded-xl border-2 border-dashed flex items-center justify-center transition-all overflow-hidden
-                  ${itemName ? 'border-orange-500/40 cursor-pointer' : 'border-white/10 hover:border-white/20'}
-                  ${!canEdit ? 'cursor-not-allowed' : ''}`}
+                className={`group relative w-14 h-14 rounded-xl border-2 flex items-center justify-center transition-all overflow-hidden
+                  ${!isEmpty 
+                    ? 'border-orange-500/40 cursor-pointer hover:border-red-500/60 hover:bg-red-500/10' 
+                    : 'border-dashed border-white/10 hover:border-white/20'
+                  }
+                  ${!canEdit ? 'cursor-not-allowed' : ''}
+                `}
               >
-                {itemName ? (
+                {!isEmpty ? (
                   <>
                     <img
                       src={getItemImageUrl(itemObj?.image_path)}
                       alt={itemName}
-                      className="w-full h-full object-cover opacity-85 group-hover:opacity-30 transition-opacity rounded-lg"
+                      className="w-full h-full object-cover transition-opacity group-hover:opacity-30 rounded-lg"
                       onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
                     />
                     {canEdit && (
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-4 h-4 text-red-400" />
-                      </div>
+                      <>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X className="w-5 h-5 text-red-400" />
+                        </div>
+
+                      </>
                     )}
                   </>
                 ) : (
@@ -196,15 +245,15 @@ export const UnitDetails = ({
         </div>
       </div>
 
-      {/* ── Item picker ── */}
       <div className="flex flex-col flex-1 min-h-0 px-4 py-3 gap-2.5">
 
-        {/* Header + pagination */}
         <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-0.5 h-3.5 bg-orange-500 rounded-full" />
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-white">Items</span>
+            <span className="text-[9px] font-bold text-white/30">({filteredItems.length})</span>
           </div>
+          
           <div className="flex items-center gap-1">
             <button
               onClick={() => setItemPage((p) => Math.max(0, p - 1))}
@@ -226,7 +275,46 @@ export const UnitDetails = ({
           </div>
         </div>
 
-        {/* Search */}
+        <div className="flex border-b border-white/6 shrink-0">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              onMouseEnter={(e) => {
+                if (activeTab !== tab.key) {
+                  const underline = e.currentTarget.querySelector('.tab-underline') as HTMLElement;
+                  if (underline) underline.style.opacity = '1';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (activeTab !== tab.key) {
+                  const underline = e.currentTarget.querySelector('.tab-underline') as HTMLElement;
+                  if (underline) underline.style.opacity = '0';
+                }
+              }}
+              className={`relative px-4 py-2.5 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${
+                activeTab === tab.key ? 'text-orange-400' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {tab.label}
+              <span className={`text-[9px] font-bold px-1.5 rounded ${
+                activeTab === tab.key 
+                  ? 'bg-orange-500/15 text-orange-400' 
+                  : 'bg-white/5 text-white/30'
+              }`}>
+                {tab.key === 'all'
+                  ? items.length
+                  : items.filter((it) => tab.key === 'artifact' ? it.is_artifact : it.is_radiant).length
+                }
+              </span>
+              <div
+                className="tab-underline absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent transition-opacity duration-200"
+                style={{ opacity: activeTab === tab.key ? 1 : 0 }}
+              />
+            </button>
+          ))}
+        </div>
+
         <div className="relative shrink-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/25 pointer-events-none" />
           <input
@@ -245,7 +333,6 @@ export const UnitDetails = ({
           )}
         </div>
 
-        {/* Grid */}
         <div className="grid grid-cols-6 gap-1.5 flex-1 content-start">
           {pagedItems.map((it) => (
             <button
@@ -253,10 +340,15 @@ export const UnitDetails = ({
               draggable={canEdit}
               onDragStart={() => canEdit && setDraggedItemId(it.name)}
               onClick={() => {
-                if (canEdit && unit.items.length < 3) {
-                  onAddItem(it.name);
-                  toast.success(`Equipped ${it.name}`);
+                if (!canEdit) return;
+                
+                if (unit.items.length >= 3) {
+                  toast.warning('Loadout is full (max 3 items)');
+                  return;
                 }
+                
+                onAddItem(it.name);
+                toast.success(`Equipped ${it.name}`);
               }}
               onMouseEnter={(e) =>
                 setTooltip({
@@ -270,13 +362,17 @@ export const UnitDetails = ({
                 })
               }
               onMouseLeave={() => setTooltip((p) => ({ ...p, visible: false }))}
-              className={`aspect-square rounded-lg overflow-hidden border border-white/8 hover:border-orange-500/40 transition-all group cursor-grab active:cursor-grabbing active:scale-90
-                ${!canEdit ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group
+                ${canEdit && unit.items.length < 3
+                  ? 'border-white/8 hover:border-orange-500/40 cursor-grab active:cursor-grabbing active:scale-90'
+                  : 'border-white/8 cursor-not-allowed opacity-40'
+                }
+              `}
             >
               <img
                 src={getItemImageUrl(it.image_path)}
                 alt={it.name}
-                className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                className="w-full h-full object-cover transition-all opacity-60 group-hover:opacity-100"
                 onError={(e) => { (e.target as HTMLImageElement).src = '/images/noitem.png'; }}
               />
             </button>

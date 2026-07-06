@@ -236,7 +236,7 @@ export default function TFTUnitsPage() {
           visible={tooltip.visible && !!tooltip.champion}
           title={tooltip.title} description={tooltip.description}
           x={tooltip.x} y={tooltip.y}
-          champion={tooltip.champion} setNumber={CurrentSetNumber}
+          champion={tooltip.champion} setNumber={selectedSetId || CurrentSetNumber}
         />
         <TraitTooltip
           visible={tooltip.visible && !!tooltip.trait}
@@ -257,7 +257,7 @@ export default function TFTUnitsPage() {
 
             <div className="flex items-end justify-between gap-6 flex-wrap">
               <div>
-                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">Set {CurrentSetNumber}</p>
+                <p className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">Set {selectedSetId || CurrentSetNumber}</p>
                 <h1 className="font-bebas text-7xl md:text-8xl leading-none text-white tracking-wide">UNITS</h1>
                 <p className="text-zinc-500 text-sm mt-2 max-w-md">
                   Every champion — costs, abilities, synergies, and optimal items.
@@ -473,7 +473,7 @@ export default function TFTUnitsPage() {
                               <ChampionCard
                                 key={champion.id}
                                 champion={champion}
-                                setNumber={CurrentSetNumber}
+                                 setNumber={selectedSetId || CurrentSetNumber}
                                 index={index}
                                 onShowTooltip={showTooltip}
                                 onHideTooltip={hideTooltip}

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ChevronDown, Plus, Star, Eye, Pencil, Search,
   Crown, Swords, Coins, ChevronsUp, ArrowRight,
-  Sparkles, ChevronLeft, Trash2, X
+  Sparkles, ChevronLeft, Trash2, X, Zap
 } from 'lucide-react';
 import { TeamComp, DifficultyLevel, UnitPosition, TooltipState, META_TIER_CONFIG, MetaTier, META_TIERS } from '@/lib/tft/teamplanner-types';
 import { LEVELING_PRESETS } from '@/lib/tft/leveling-presets';
@@ -20,11 +20,13 @@ import NavbarTft from '@/components/NavbarTft';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { StatsForgeAdBanner } from '@/components/AdBaner';
 
 const getPresetStyle = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
   return preset ? preset.tagColor : 'text-zinc-400 bg-zinc-700/50 border-zinc-600';
 };
+
 const getPresetName = (presetId: string | undefined) => {
   const preset = LEVELING_PRESETS.find(p => p.id === presetId);
   return preset?.name || 'Custom';
@@ -34,11 +36,9 @@ const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
   if (!tier) return null;
   const config = META_TIER_CONFIG[tier];
   return (
-    <div className="inline-flex items-center gap-2">
-      <div className={`w-0.5 h-6 bg-linear-to-b ${config.gradient} rounded-full`}></div>
-      <span className={`text-sm font-bold ${config.color}`}>{tier}</span>
-      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">TIER</span>
-      <div className={`w-0.5 h-6 bg-linear-to-b ${config.gradient} rounded-full`}></div>
+    <div className="inline-flex items-center gap-1.5">
+      <div className={`w-1 h-5 rounded-full bg-gradient-to-b ${config.gradient}`} />
+      <span className={`text-xl font-black ${config.color} uppercase tracking-wider`}>{tier}</span>
     </div>
   );
 };
@@ -66,6 +66,10 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
       return unit ? { unit, cost: champ?.cost || 1 } : null;
     })
     .filter(Boolean) as { unit: UnitPosition; cost: number }[];
+
+  // Get first carry's splash art for background
+  const bgChampion = carries.length > 0 ? champions.find(c => c.id === carries[0].unit.characterId) : null;
+  const bgImageUrl = bgChampion ? getChampionImageUrl(bgChampion.image_path) : null;
 
   const presetStyle = getPresetStyle(comp.activePresetId);
   const presetName = getPresetName(comp.activePresetId);
@@ -135,23 +139,42 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
         />
       )}
 
-      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all">
-        <div className="p-5">
-          <div className="flex items-center gap-6">
-            <div className="shrink-0 min-w-[180px]">
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+      <div className="group relative bg-zinc-900/40 backdrop-blur-sm border border-zinc-800/60 rounded-xl overflow-hidden hover:border-orange-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/5">
+        {/* Side accent bar */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-orange-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Background image from main carry */}
+        {bgImageUrl && (
+          <div className="absolute inset-0 pointer-events-none bg-[#181415]">
+            <img
+              src={bgImageUrl}
+              alt=""
+              className="absolute right-0 top-0 h-full w-[45%] object-cover object-top opacity-[0.08] mask-image-gradient"
+              style={{
+                maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%)',
+                WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%)',
+              }}
+            />
+          </div>
+        )}
+
+        <div className="p-4 pl-5 relative z-10">
+          <div className="flex items-center gap-5">
+            {/* Left: Tier + Name + Tags */}
+            <div className="shrink-0 min-w-[200px]">
+              <div className="flex items-center gap-2 mb-2">
                 <MetaTierBadge tier={comp.tier} />
-                <span className='max-w-60 truncate'>{comp.name}</span>
-              </h3>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-xs font-bold rounded">
+                <h3 className="text-base font-bold text-white truncate max-w-[180px]">{comp.name}</h3>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="px-2 py-0.5 bg-orange-950/40 border border-orange-900/20 text-orange-500/80 text-[10px] font-bold rounded">
                   {comp.patch}
                 </span>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded border ${presetStyle}`}>
+                <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${presetStyle}`}>
                   {presetName}
                 </span>
                 <span
-                  className="px-2.5 py-1 text-xs font-bold rounded border"
+                  className="px-2 py-0.5 text-[10px] font-bold rounded border"
                   style={{ backgroundColor: difficulty.bgColor, color: difficulty.color, borderColor: difficulty.borderColor }}
                 >
                   {difficulty.label}
@@ -159,39 +182,40 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               </div>
             </div>
 
+            {/* Carries */}
             {carries.length > 0 && (
-              <div className="shrink-0 flex items-center gap-1 border-r border-r-orange-500/40 pr-4">
+              <div className="shrink-0 flex items-center gap-2 border-r border-zinc-800/50 pr-4">
                 {carries.map(({ unit, cost }, i) => {
                   const champ = champions.find(c => c.id === unit.characterId);
                   return (
                     <div key={i} className="relative">
                       <div
-                        className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} cursor-pointer`}
+                         className={`w-12 h-12 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)} cursor-pointer transition-transform hover:scale-105`}
                         onMouseEnter={(e) => {
                           if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
                         }}
                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                       >
-                        <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                        <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                       </div>
                       {unit.items.length > 0 && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
                           {unit.items.slice(0, 3).map((item, idx) => {
                             const itemObj = items.find(it => it.name === item);
                             return (
-                              <div key={idx} className="w-4 h-4 rounded bg-zinc-800 border border-zinc-600 overflow-hidden"
+                              <div key={idx} className="w-3.5 h-3.5 rounded-[2px] bg-zinc-800 border border-zinc-700/80 overflow-hidden"
                                 onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                                 onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                               >
-                                <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                                <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                               </div>
                             );
                           })}
                         </div>
                       )}
                       {unit.stars === 3 && (
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex">
-                          {[...Array(3)].map((_, i) => <Star key={i} className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />)}
+                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex">
+                          {[...Array(3)].map((_, i) => <Star key={i} className="w-2 h-2 text-yellow-400 fill-yellow-400" />)}
                         </div>
                       )}
                     </div>
@@ -200,7 +224,8 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               </div>
             )}
 
-            <div className="flex-1 flex items-center gap-2 overflow-hidden p-2">
+            {/* All units row */}
+            <div className="flex-1 flex items-center gap-3.5 overflow-x-auto overflow-y-hidden px-1 pt-4 pb-1">
               {finalUnits.map((unit, i) => {
                 const champ = champions.find(c => c.id === unit.characterId);
                 const cost = champ?.cost || 1;
@@ -208,35 +233,35 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                 return (
                   <div key={i} className="relative shrink-0 py-1">
                     <div
-                      className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''} cursor-pointer`}
+                       className={`w-11 h-11 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)} ${isCarry ? 'ring-1 ring-orange-500/40' : ''} cursor-pointer transition-transform hover:scale-110`}
                       onMouseEnter={(e) => {
                         if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
                       }}
                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                     >
-                      <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                      <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                     </div>
                     {unit.items.length > 0 && (
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
                         {unit.items.slice(0, 3).map((item, idx) => {
                           const itemObj = items.find(it => it.name === item);
                           return (
-                            <div key={idx} className="w-3.5 h-3.5 rounded-sm bg-zinc-800 border border-zinc-600 overflow-hidden"
+                            <div key={idx} className="w-3.5 h-3.5 rounded-[1px] bg-zinc-800 border border-zinc-700/60 overflow-hidden"
                               onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                               onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                             >
-                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                             </div>
                           );
                         })}
                       </div>
                     )}
                     {unit.stars >= 3 && (
-                      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 flex">
+                       <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 flex">
                         {[...Array(3)].map((_, i) => <Star key={i} className="w-2 h-2 text-yellow-400 fill-yellow-400" />)}
                       </div>
                     )}
-                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-zinc-400 whitespace-nowrap max-w-[50px] truncate">
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] text-zinc-500 whitespace-nowrap max-w-[45px] truncate">
                       {unit.name}
                     </span>
                   </div>
@@ -244,49 +269,51 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               })}
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
               <Link href={`/tft/comps/${comp.id}`} onClick={(e) => e.stopPropagation()} prefetch={false}>
-                <button data-action="view" className="w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-500 flex items-center justify-center transition-colors">
-                  <Eye className="w-5 h-5 text-white" />
+                <button data-action="view" className="w-9 h-9 rounded-lg bg-orange-600/90 hover:bg-orange-500 flex items-center justify-center transition-colors">
+                  <Eye className="w-4 h-4 text-white" />
                 </button>
               </Link>
               {canEdit && (
                 <>
                   <Link href={`/tft/planner?edit=${comp.id}`} onClick={(e) => e.stopPropagation()} prefetch={false}>
-                    <button data-action="edit" className="w-10 h-10 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center transition-colors">
-                      <Pencil className="w-4 h-4 text-white" />
+                    <button data-action="edit" className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors">
+                      <Pencil className="w-3.5 h-3.5 text-zinc-300" />
                     </button>
                   </Link>
                   <button
                     onClick={(e) => { e.stopPropagation(); if (confirm('Are you sure you want to delete this team composition?')) onDelete(); }}
-                    className="w-10 h-10 rounded-full bg-red-900/50 hover:bg-red-800 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-900/20 flex items-center justify-center transition-colors"
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </>
               )}
               <div
-                className="w-10 h-10 rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 flex items-center justify-center transition-colors cursor-pointer"
                 onClick={onToggle}
               >
-                <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
               </div>
             </div>
           </div>
         </div>
 
+        {/* Expanded content */}
         {expanded && (
-          <div className="px-5 pb-5 border-t border-zinc-800 pt-4">
+          <div className="px-5 pb-5 border-t border-zinc-800/40 pt-4 relative z-10">
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 {comp.description && comp.description !== 'Click to add operational notes...' && (
-                  <div className='mb-8'>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-4 w-1 bg-orange-500 rounded-full" />
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 ">
-                      General info
-                    </h3>
-                  </div>
+                  <div className='mb-6'>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                        General info
+                      </h3>
+                    </div>
                     <p className="text-zinc-400 text-sm leading-relaxed">{comp.description}</p>
                   </div>
                 )}
@@ -305,33 +332,34 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                 />
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
+                {/* Main carries */}
                 <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-4 w-1 bg-orange-500 rounded-full" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 ">
-                    Main carries
-                  </h3>
-                </div>
-                  <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                      Main carries
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
                     {carries.map(({ unit, cost }, i) => {
                       const champ = champions.find(c => c.id === unit.characterId);
                       return (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                          <div className={`w-12 h-12 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)}`}>
-                            <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                        <div key={i} className="flex items-center gap-3 p-2.5 bg-zinc-800/30 rounded-lg border border-zinc-800/50 hover:border-zinc-700/50 transition-colors">
+                           <div className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)}`}>
+                            <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white">{unit.name}</p>
                             <div className="flex items-center gap-1 mt-1">
                               {unit.items.map((item, idx) => {
                                 const itemObj = items.find(it => it.name === item);
                                 return (
-                                  <div key={idx} className="w-6 h-6 rounded bg-zinc-700 border border-zinc-600 overflow-hidden"
+                                  <div key={idx} className="w-5 h-5 rounded bg-zinc-800 border border-zinc-700/60 overflow-hidden"
                                     onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                                     onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                   >
-                                    <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                                    <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                   </div>
                                 );
                               })}
@@ -343,28 +371,29 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
                   </div>
                 </div>
 
+                {/* Item priority */}
                 {priorityItems.length > 0 && (
-                  <div className="">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-4 w-1 bg-orange-500 rounded-full" />
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                      Itemization Priority
-                    </h3>
-                  </div>
-                    <div className="flex items-center gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                        Itemization Priority
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
                       {priorityItems.map((item, idx) => {
                         const itemObj = items.find(it => it.name === item);
                         return (
-                          <div key={idx} className="flex items-center gap-4">
+                          <div key={idx} className="flex items-center gap-3">
                             <div
-                              className="relative w-10 h-10 rounded-2xl bg-zinc-800/50 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all shadow-2xl group"
+                              className="relative w-9 h-9 rounded-xl bg-zinc-800/40 border border-zinc-700/40 overflow-hidden hover:border-orange-500/40 hover:scale-110 transition-all duration-200 group"
                               onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                               onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                             >
-                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            {idx < priorityItems.length - 1 && <ArrowRight className="w-4 h-4 text-white/10" />}
+                            {idx < priorityItems.length - 1 && <ArrowRight className="w-3 h-3 text-zinc-700" />}
                           </div>
                         );
                       })}
@@ -374,38 +403,39 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
               </div>
             </div>
 
-            <div className="border-t border-zinc-800/50 pt-5 mt-8">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-4 w-1 bg-orange-500 rounded-full" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-1">
-                    Leveling Guide
-                  </h3>
-                </div>
-              <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+            {/* Leveling guide */}
+            <div className="border-t border-zinc-800/30 pt-4 mt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">
+                  Leveling Guide
+                </h3>
+              </div>
+              <div className="inline-flex items-center bg-zinc-900/50 rounded-lg px-3 py-2 border border-zinc-800/40">
                 {comp.levelingSteps.map((step, i) => (
                   <div key={i} className="flex items-center">
-                    <div className="flex flex-col items-center min-w-[70px]">
+                    <div className="flex flex-col items-center min-w-[65px]">
                       <div className="flex items-center gap-1">
-                        <ChevronsUp className="w-4 h-4 text-yellow-600" />
-                        <span className="text-2xl font-black text-white border-l border-orange-500/40 pl-2">
+                        <ChevronsUp className="w-3.5 h-3.5 text-yellow-600/80" />
+                        <span className="text-xl font-black text-white border-l border-orange-500/30 pl-1.5">
                           {step.level}
                         </span>
                         <div className="flex flex-col items-start ml-0.5">
-                          <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
+                          <span className="text-[11px] text-zinc-600 leading-none">{step.stage}</span>
                           <div className="flex items-center gap-0.5">
-                            <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>{step.gold}</span>
-                            <Coins className="w-3 h-3 text-yellow-500" />
+                            <span className={`text-xs font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-400'}`}>{step.gold}</span>
+                            <Coins className="w-2.5 h-2.5 text-yellow-600" />
                           </div>
                         </div>
                       </div>
-                      <div className="h-4 flex items-center justify-center">
+                      <div className="h-3.5 flex items-center justify-center">
                         {step.description && (
-                          <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
+                          <span className="text-[10px] text-orange-500/80 text-center leading-tight whitespace-nowrap truncate max-w-[90px]">{step.description}</span>
                         )}
                       </div>
                     </div>
                     {i < comp.levelingSteps.length - 1 && (
-                      <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>
+                      <span className="text-zinc-700 text-base font-light mx-2"> &gt; </span>
                     )}
                   </div>
                 ))}
@@ -417,6 +447,10 @@ const TeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champions, 
     </>
   );
 };
+
+// ─── Infinite Loading Constants ───
+const INITIAL_BATCH = 5;
+const BATCH_SIZE = 5;
 
 export default function TeamCompsPage() {
   const [teamComps, setTeamComps] = useState<TeamComp[]>([]);
@@ -431,15 +465,41 @@ export default function TeamCompsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeSets, setActiveSets] = useState<any[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_BATCH);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const prefersReduced  = useReducedMotion();
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { user, userRole } = useAuth();
 
+  // ─── Refs for infinite scroll (stable across renders) ───
+  const isLoadingMoreRef = useRef(isLoadingMore);
+  const hasMoreRef = useRef(false);
+  const loadMoreCallbackRef = useRef<() => void>(() => {});
+  const observerInstanceRef = useRef<IntersectionObserver | null>(null);
+  const sentinelNodeRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isLoadingMoreRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
   const handleSearch = useCallback((val: string) => {
     setSearchQuery(val);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => setDebouncedSearch(val), 200);
+    searchTimer.current = setTimeout(() => {
+      setDebouncedSearch(val);
+      setVisibleCount(INITIAL_BATCH);
+    }, 200);
   }, []);
+
+  // Reset visible count when filters change
+  const resetPagination = useCallback(() => {
+    setVisibleCount(INITIAL_BATCH);
+  }, []);
+
+  useEffect(() => {
+    resetPagination();
+  }, [filter, tierFilter, selectedSetId, resetPagination]);
 
   useEffect(() => {
     async function load() {
@@ -472,14 +532,6 @@ export default function TeamCompsPage() {
     load();
   }, [selectedSetId]);
 
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/tft/team-comps/${id}`, { method: 'DELETE' });
-      if (res.ok) { setTeamComps(p => p.filter(c => c.id !== id)); toast.success('Team composition deleted successfully'); }
-      else { const d = await res.json(); toast.error(d.error || 'Failed to delete team composition'); }
-    } catch { toast.error('An error occurred while deleting'); }
-  };
-
   const filteredComps = useMemo(() => {
     let comps = teamComps.filter(c => c.phases.final.units.length > 0);
     if (selectedSetId) comps = comps.filter(c => c.set_id === selectedSetId);
@@ -498,8 +550,86 @@ export default function TeamCompsPage() {
     return comps;
   }, [teamComps, filter, tierFilter, debouncedSearch, selectedSetId]);
 
+  const visibleComps = useMemo(() => {
+    return filteredComps.slice(0, visibleCount);
+  }, [filteredComps, visibleCount]);
+
+  const hasMore = visibleCount < filteredComps.length;
+
+  // Keep hasMoreRef in sync
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+
+  // ─── Load More Function ───
+  const loadMore = useCallback(() => {
+    if (isLoadingMoreRef.current || !hasMoreRef.current) return;
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount(prev => {
+        const next = Math.min(prev + BATCH_SIZE, filteredComps.length);
+        return next;
+      });
+      setIsLoadingMore(false);
+    }, 300);
+  }, [filteredComps.length]);
+
+  // Keep loadMore callback ref in sync
+  useEffect(() => {
+    loadMoreCallbackRef.current = loadMore;
+  }, [loadMore]);
+
+  // ─── Intersection Observer with callback ref ───
+  const sentinelCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerInstanceRef.current) {
+      observerInstanceRef.current.disconnect();
+      observerInstanceRef.current = null;
+    }
+
+    sentinelNodeRef.current = node;
+
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMoreRef.current && !isLoadingMoreRef.current) {
+          loadMoreCallbackRef.current();
+        }
+      },
+      { rootMargin: '400px', threshold: 0 }
+    );
+
+    observer.observe(node);
+    observerInstanceRef.current = observer;
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (observerInstanceRef.current) {
+        observerInstanceRef.current.disconnect();
+        observerInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/tft/team-comps/${id}`, { method: 'DELETE' });
+      if (res.ok) { setTeamComps(p => p.filter(c => c.id !== id)); toast.success('Team composition deleted successfully'); }
+      else { const d = await res.json(); toast.error(d.error || 'Failed to delete team composition'); }
+    } catch { toast.error('An error occurred while deleting'); }
+  };
+
   const totalWithUnits    = teamComps.filter(c => c.phases.final.units.length > 0).length;
-  const clearFilters      = () => { setSearchQuery(''); setDebouncedSearch(''); setFilter('all'); setTierFilter('all'); };
+  const clearFilters      = () => { 
+    setSearchQuery(''); 
+    setDebouncedSearch(''); 
+    setFilter('all'); 
+    setTierFilter('all'); 
+    setVisibleCount(INITIAL_BATCH); 
+  };
   const hasActiveFilters  = debouncedSearch || filter !== 'all' || tierFilter !== 'all';
 
   const currentSet = activeSets.find(s => s.id === selectedSetId);
@@ -555,7 +685,6 @@ export default function TeamCompsPage() {
 
               <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-950/70 to-zinc-950/50" />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent" />
-              <div className="absolute inset-0 bg-[url('/images/hex-pattern.svg')] opacity-10 bg-repeat" />
             </div>
 
             <div className="relative z-10">
@@ -611,6 +740,7 @@ export default function TeamCompsPage() {
                       ? 'bg-transparent text-orange-500 border-orange-500 -mb-px pb-3'
                       : 'bg-transparent text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
                   }`}
+                  onClick={() => setVisibleCount(INITIAL_BATCH)}
                 >
                   Set {set.set_number}
                 </Link>
@@ -646,7 +776,7 @@ export default function TeamCompsPage() {
             {/* Tier filter */}
             <div className="flex items-center gap-1">
               <motion.button
-                onClick={() => setTierFilter('all')}
+                onClick={() => { setTierFilter('all'); setVisibleCount(INITIAL_BATCH); }}
                 className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider"
                 animate={tierFilter === 'all' ? { scale: 1.05 } : { scale: 1 }}
                 style={tierFilter === 'all' ? { backgroundColor: '#d4d4d8', color: '#0c0c0e' } : { backgroundColor: '#18181b', color: '#71717a' }}
@@ -662,7 +792,7 @@ export default function TeamCompsPage() {
                 return (
                   <motion.button
                     key={tier}
-                    onClick={() => setTierFilter(tier)}
+                    onClick={() => { setTierFilter(tier); setVisibleCount(INITIAL_BATCH); }}
                     className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider font-bebas text-base"
                     animate={isActive ? { scale: 1.05 } : { scale: 1 }}
                     style={isActive
@@ -681,7 +811,7 @@ export default function TeamCompsPage() {
             {/* Difficulty filter */}
             <div className="flex items-center gap-1">
               <motion.button
-                onClick={() => setFilter('all')}
+                onClick={() => { setFilter('all'); setVisibleCount(INITIAL_BATCH); }}
                 className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider"
                 animate={filter === 'all' ? { scale: 1.05 } : { scale: 1 }}
                 style={filter === 'all' ? { backgroundColor: '#d4d4d8', color: '#0c0c0e' } : { backgroundColor: '#18181b', color: '#71717a' }}
@@ -694,7 +824,7 @@ export default function TeamCompsPage() {
                 return (
                   <motion.button
                     key={cfg.id}
-                    onClick={() => setFilter(cfg.id)}
+                    onClick={() => { setFilter(cfg.id); setVisibleCount(INITIAL_BATCH); }}
                     className="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider"
                     animate={isActive ? { scale: 1.05 } : { scale: 1 }}
                     style={isActive
@@ -726,23 +856,75 @@ export default function TeamCompsPage() {
           <div className="py-10">
             {filteredComps.length > 0 ? (
               <div className="space-y-4">
-                  {filteredComps.map((comp) => {
-                    const isAdmin = userRole === 'admin';
-                    const isOwner = user?.id === comp.user_id;
-                    return (
-                      <TeamCompCard
-                        key={comp.id}
-                        comp={comp}
-                        expanded={expandedId === comp.id}
-                        onToggle={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
-                        canEdit={isAdmin || isOwner}
-                        onDelete={() => handleDelete(comp.id)}
-                        champions={champions}
-                        items={items}
-                        traits={traits}
-                      />
-                    );
-                  })}
+                {/* First batch - first INITIAL_BATCH comps */}
+                {visibleComps.slice(0, INITIAL_BATCH).map((comp) => {
+                  const isAdmin = userRole === 'admin';
+                  const isOwner = user?.id === comp.user_id;
+                  return (
+                    <TeamCompCard
+                      key={comp.id}
+                      comp={comp}
+                      expanded={expandedId === comp.id}
+                      onToggle={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
+                      canEdit={isAdmin || isOwner}
+                      onDelete={() => handleDelete(comp.id)}
+                      champions={champions}
+                      items={items}
+                      traits={traits}
+                    />
+                  );
+                })}
+
+                {/* ─── StatsForge Premium Ad Banner ─── */}
+                {filteredComps.length > INITIAL_BATCH && (
+                  <StatsForgeAdBanner />
+                )}
+
+                {/* Remaining comps after the ad */}
+                {visibleComps.slice(INITIAL_BATCH).map((comp) => {
+                  const isAdmin = userRole === 'admin';
+                  const isOwner = user?.id === comp.user_id;
+                  return (
+                    <TeamCompCard
+                      key={comp.id}
+                      comp={comp}
+                      expanded={expandedId === comp.id}
+                      onToggle={() => setExpandedId(expandedId === comp.id ? null : comp.id)}
+                      canEdit={isAdmin || isOwner}
+                      onDelete={() => handleDelete(comp.id)}
+                      champions={champions}
+                      items={items}
+                      traits={traits}
+                    />
+                  );
+                })}
+
+                {/* ─── Infinite Scroll Sentinel ─── */}
+                <div
+                  ref={sentinelCallbackRef}
+                  className="flex items-center justify-center py-8"
+                >
+                  {isLoadingMore ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full border-2 border-zinc-800 border-t-orange-500 animate-spin" />
+                      <span className="text-xs font-black text-zinc-500 uppercase tracking-widest">Loading more comps...</span>
+                    </div>
+                  ) : hasMore ? (
+                    <div className="h-px w-full bg-zinc-800/50" />
+                  ) : filteredComps.length > INITIAL_BATCH ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex items-center justify-center gap-3 w-full"
+                    >
+                      <div className="h-px flex-1 bg-zinc-800" />
+                      <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em]">
+                        {filteredComps.length} comps loaded
+                      </span>
+                      <div className="h-px flex-1 bg-zinc-800" />
+                    </motion.div>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-24 space-y-4">

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const { id, riot_api_id, name, stats, description, image_path, image, gamemode } = itemData;
     
     // Use image field as fallback for image_path (from JSON imports)
-    let sourceImagePath = image_path || image || '';
+    const sourceImagePath = image_path || image || '';
     
     // Extract just the filename from the image path if it's a full URL
     let processedImagePath = sourceImagePath;

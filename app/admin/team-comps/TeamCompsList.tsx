@@ -37,11 +37,9 @@ const MetaTierBadge = ({ tier }: { tier?: MetaTier }) => {
   if (!tier) return null;
   const config = META_TIER_CONFIG[tier];
   return (
-    <div className="inline-flex items-center gap-2">
-      <div className={`w-0.5 h-6 bg-linear-to-b ${config.color} rounded-full`}></div>
-      <span className={`text-sm font-bold ${config.color}`}>{tier}</span>
-      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">TIER</span>
-      <div className={`w-0.5 h-6 bg-linear-to-b ${config.color} rounded-full`}></div>
+    <div className="inline-flex items-center gap-1.5">
+      <div className={`w-1 h-5 bg-linear-to-b ${config.color} rounded-full`} />
+      <span className={`text-xs font-black ${config.color} uppercase tracking-wider`}>{tier}</span>
     </div>
   );
 };
@@ -64,6 +62,10 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
   const presetName = getPresetName(comp.activePresetId);
   const carryItems = carries.flatMap(c => c.unit.items);
   const priorityItems = [...new Set(carryItems)];
+
+  // Get first carry's splash art for background
+  const bgChampion = carries.length > 0 ? champions.find(c => c.id === carries[0].unit.characterId) : null;
+  const bgImageUrl = bgChampion ? getChampionImageUrl(bgChampion.image_path) : null;
 
   const finalTraits = useMemo(() => {
     const traitCounts: Record<string, number> = {};
@@ -123,54 +125,74 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
         <CustomTooltip visible={tooltip.visible} title={tooltip.title} description={tooltip.description} x={tooltip.x} y={tooltip.y} item={items.find(it => it.name === tooltip.title)} allItems={items} />
       )}
 
-      <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-xl overflow-hidden hover:border-orange-900/50 transition-all">
-        <div className="p-5">
-          <div className="flex items-center gap-6">
-            <div className="shrink-0 min-w-[180px]">
+      <div className="group relative bg-zinc-900/40 backdrop-blur-sm border border-zinc-800/60 rounded-xl overflow-hidden hover:border-orange-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/5">
+        {/* Side accent bar */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-orange-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+        {/* Background image from main carry */}
+        {bgImageUrl && (
+          <div className="absolute inset-0 pointer-events-none bg-[#181415]">
+            <img
+              src={bgImageUrl}
+              alt=""
+              className="absolute right-0 top-0 h-full w-[45%] object-cover object-top opacity-[0.08] mask-image-gradient"
+              style={{
+                maskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%)',
+                WebkitMaskImage: 'linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0) 100%)',
+              }}
+            />
+          </div>
+        )}
+
+        <div className="p-4 pl-5 relative z-10">
+          <div className="flex items-center gap-5">
+            {/* Left: Tier + Name + Tags */}
+            <div className="shrink-0 min-w-[200px]">
               <div className="flex items-center gap-2 mb-2">
                 <MetaTierBadge tier={comp.tier} />
-                <h3 className="text-lg font-bold text-white truncate">{comp.name}</h3>
+                <h3 className="text-base font-bold text-white truncate max-w-[180px]">{comp.name}</h3>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-1 bg-orange-950/50 border border-orange-900/30 text-orange-500 text-xs font-bold rounded">{comp.patch}</span>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded border ${presetStyle}`}>{presetName}</span>
-                <span className="px-2.5 py-1 text-xs font-bold rounded border" style={{ backgroundColor: difficulty.bgColor, color: difficulty.color, borderColor: difficulty.borderColor }}>{difficulty.label}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="px-2 py-0.5 bg-orange-950/40 border border-orange-900/20 text-orange-500/80 text-[10px] font-bold rounded">{comp.patch}</span>
+                <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${presetStyle}`}>{presetName}</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold rounded border" style={{ backgroundColor: difficulty.bgColor, color: difficulty.color, borderColor: difficulty.borderColor }}>{difficulty.label}</span>
               </div>
             </div>
 
+            {/* Carries */}
             {carries.length > 0 && (
-              <div className="shrink-0 flex items-center gap-1 border-r border-r-orange-500/40 pr-4">
+              <div className="shrink-0 flex items-center gap-2 border-r border-zinc-800/50 pr-4">
                 {carries.map(({ unit, cost }, i) => {
                   const champ = champions.find(c => c.id === unit.characterId);
                   return (
                     <div key={i} className="relative">
                       <div
-                        className={`w-14 h-14 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} cursor-pointer`}
+                        className={`w-12 h-12 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)} cursor-pointer transition-transform hover:scale-105`}
                         onMouseEnter={(e) => {
                           if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
                         }}
                         onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                       >
-                        <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                        <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                       </div>
                       {unit.items.length > 0 && (
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
                           {unit.items.slice(0, 3).map((item: string, idx: number) => {
                             const itemObj = items.find(it => it.name === item);
                             return (
-                              <div key={idx} className="w-4 h-4 rounded bg-zinc-800 border border-zinc-600 overflow-hidden"
+                              <div key={idx} className="w-3.5 h-3.5 rounded-[2px] bg-zinc-800 border border-zinc-700/80 overflow-hidden"
                                 onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                                 onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                               >
-                                <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                                <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                               </div>
                             );
                           })}
                         </div>
                       )}
                       {unit.stars === 3 && (
-                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex">
-                          {[...Array(3)].map((_, i) => <Star key={i} className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />)}
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex">
+                          {[...Array(3)].map((_, i) => <Star key={i} className="w-2 h-2 text-yellow-400 fill-yellow-400" />)}
                         </div>
                       )}
                     </div>
@@ -179,7 +201,8 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
               </div>
             )}
 
-            <div className="flex-1 flex items-center gap-2 overflow-hidden p-2">
+            {/* All units row */}
+            <div className="flex-1 flex items-center gap-3.5 overflow-x-auto overflow-y-hidden px-1 pt-4 pb-1">
               {finalUnits.map((unit: any, i: number) => {
                 const champ = champions.find(c => c.id === unit.characterId);
                 const cost = champ?.cost || 1;
@@ -187,87 +210,87 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
                 return (
                   <div key={i} className="relative shrink-0 py-1">
                     <div
-                      className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)} ${isCarry ? 'ring-2 ring-orange-500/50' : ''} cursor-pointer`}
+                      className={`w-11 h-11 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)} ${isCarry ? 'ring-1 ring-orange-500/40' : ''} cursor-pointer transition-transform hover:scale-110`}
                       onMouseEnter={(e) => {
                         if (champ) setTooltip({ visible: true, title: champ.name, description: champ.ability?.description?.active || champ.ability?.description?.passive || "", x: e.clientX, y: e.clientY, champion: champ, setNumber: CurrentSetNumber });
                       }}
                       onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                     >
-                      <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                      <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                     </div>
                     {unit.items.length > 0 && (
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
                         {unit.items.slice(0, 3).map((item: string, idx: number) => {
                           const itemObj = items.find(it => it.name === item);
                           return (
-                            <div key={idx} className="w-3.5 h-3.5 rounded-sm bg-zinc-800 border border-zinc-600 overflow-hidden"
+                            <div key={idx} className="w-3.5 h-3.5 rounded-[1px] bg-zinc-800 border border-zinc-700/60 overflow-hidden"
                               onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                               onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                             >
-                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                             </div>
                           );
                         })}
                       </div>
                     )}
                     {unit.stars >= 3 && (
-                      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 flex">
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 flex">
                         {[...Array(3)].map((_, i) => <Star key={i} className="w-2 h-2 text-yellow-400 fill-yellow-400" />)}
                       </div>
                     )}
-                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-zinc-400 whitespace-nowrap max-w-[50px] truncate">{unit.name}</span>
+                    <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] text-zinc-500 whitespace-nowrap max-w-[45px] truncate">{unit.name}</span>
                   </div>
                 );
               })}
             </div>
 
+            {/* Actions */}
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={(e) => { e.stopPropagation(); window.open(`/tft/comps/${comp.id}`, '_blank'); }}
-                className="w-9 h-9 rounded-full bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
                 title="View comp"
               >
-                <Search className="w-4 h-4 text-white" />
+                <Search className="w-4 h-4 text-zinc-300" />
               </button>
               {canEdit && (
                 <>
                   <button
                     onClick={(e) => { e.stopPropagation(); window.location.href = `/tft/planner?edit=${comp.id}`; }}
-                    className="w-9 h-9 rounded-full bg-orange-600 hover:bg-orange-500 flex items-center justify-center transition-colors"
+                    className="w-9 h-9 rounded-lg bg-orange-600/90 hover:bg-orange-500 flex items-center justify-center transition-colors"
                     title="Edit in planner"
                   >
-                    <Pencil className="w-4 h-4 text-white" />
+                    <Pencil className="w-3.5 h-3.5 text-white" />
                   </button>
                   <button
                     onClick={handleDelete}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${showDeleteConfirm ? 'bg-red-600 hover:bg-red-500' : 'bg-zinc-700 hover:bg-red-900/50'}`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${showDeleteConfirm ? 'bg-red-600 hover:bg-red-500' : 'bg-red-950/40 hover:bg-red-900/60 border border-red-900/20'}`}
                     title={showDeleteConfirm ? 'Click again to confirm' : 'Delete comp'}
                   >
-                    <Trash2 className={`w-4 h-4 ${showDeleteConfirm ? 'text-white' : 'text-red-500'}`} />
+                    <Trash2 className={`w-3.5 h-3.5 ${showDeleteConfirm ? 'text-white' : 'text-red-400'}`} />
                   </button>
                 </>
               )}
               <button
                 onClick={(e) => { e.stopPropagation(); onToggle(); }}
-                className="w-9 h-9 rounded-full bg-zinc-800/50 hover:bg-zinc-700/50 flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 flex items-center justify-center transition-colors"
               >
-                <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
               </button>
             </div>
           </div>
         </div>
 
         {expanded && (
-          <div className="px-5 pb-5 border-t border-zinc-800 pt-4">
+          <div className="px-5 pb-5 border-t border-zinc-800/40 pt-4 relative z-10">
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <h4 className="text-sm font-bold text-orange-500 mb-4 uppercase tracking-wider flex items-center gap-2">
-                  <Swords className="w-4 h-4" />
-                  Final Board
-                </h4>
                 {comp.description && comp.description !== 'Click to add operational notes...' && (
-                  <div className='mb-8'>
-                    <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider">Notes</h4>
+                  <div className='mb-6'>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-3 w-0.5 bg-orange-500 rounded-full" />
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest">Notes</h3>
+                    </div>
                     <p className="text-zinc-400 text-sm leading-relaxed">{comp.description}</p>
                   </div>
                 )}
@@ -286,31 +309,31 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
                 />
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
-                  <h4 className="text-sm font-bold text-zinc-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-orange-400" />
-                    Main Carries
-                  </h4>
-                  <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Main Carries</h3>
+                  </div>
+                  <div className="space-y-2">
                     {carries.map(({ unit, cost }, i) => {
                       const champ = champions.find(c => c.id === unit.characterId);
                       return (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50">
-                          <div className={`w-12 h-12 rounded-full border-2 overflow-hidden bg-zinc-900 ${getCostBorderColor(cost)}`}>
-                            <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" />
+                        <div key={i} className="flex items-center gap-3 p-2.5 bg-zinc-800/30 rounded-lg border border-zinc-800/50">
+                          <div className={`w-10 h-10 rounded-full border-2 overflow-hidden bg-zinc-900/80 ${getCostBorderColor(cost)}`}>
+                            <img src={getChampionImageUrl(champ?.image_path)} alt={unit.name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white">{unit.name}</p>
                             <div className="flex items-center gap-1 mt-1">
                               {unit.items.map((item: string, idx: number) => {
                                 const itemObj = items.find(it => it.name === item);
                                 return (
-                                  <div key={idx} className="w-6 h-6 rounded bg-zinc-700 border border-zinc-600 overflow-hidden"
+                                  <div key={idx} className="w-5 h-5 rounded bg-zinc-800 border border-zinc-700/60 overflow-hidden"
                                     onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || 'No description', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                                     onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                                   >
-                                    <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
+                                    <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
                                   </div>
                                 );
                               })}
@@ -323,25 +346,25 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
                 </div>
 
                 {priorityItems.length > 0 && (
-                  <div className="bg-zinc-900/30 border border-white/5 rounded-[2rem] p-8 shadow-xl">
-                    <h3 className="text-[10px] font-black text-amber-500 mb-6 uppercase tracking-[0.3em] flex items-center gap-3">
-                      <Sparkles className="w-4 h-4" />
-                      Itemization Priority
-                    </h3>
-                    <div className="flex items-center gap-4 flex-wrap">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest">Itemization Priority</h3>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
                       {priorityItems.map((item: string, idx: number) => {
                         const itemObj = items.find(it => it.name === item);
                         return (
-                          <div key={idx} className="flex items-center gap-4">
+                          <div key={idx} className="flex items-center gap-3">
                             <div
-                              className="relative w-10 h-10 rounded-2xl bg-zinc-800/50 border border-white/10 overflow-hidden hover:border-orange-500/50 hover:scale-110 transition-all shadow-2xl group"
+                              className="relative w-9 h-9 rounded-xl bg-zinc-800/40 border border-zinc-700/40 overflow-hidden hover:border-orange-500/40 hover:scale-110 transition-all duration-200 group"
                               onMouseEnter={(e) => setTooltip({ visible: true, title: item, description: itemObj?.description || '', x: e.clientX, y: e.clientY, item: itemObj, allItems: items })}
                               onMouseLeave={() => setTooltip(p => ({ ...p, visible: false }))}
                             >
-                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <img src={getItemImageUrl(itemObj?.image_path)} alt={item} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            {idx < priorityItems.length - 1 && <ArrowRight className="w-4 h-4 text-white/10" />}
+                            {idx < priorityItems.length - 1 && <ArrowRight className="w-3 h-3 text-zinc-700" />}
                           </div>
                         );
                       })}
@@ -351,30 +374,33 @@ const AdminTeamCompCard = ({ comp, expanded, onToggle, canEdit, onDelete, champi
               </div>
             </div>
 
-            <div className="border-t border-zinc-800/50 pt-5 mt-8">
-              <h4 className="text-xs font-bold text-amber-500/80 mb-4 uppercase tracking-widest">Levelling Guide</h4>
-              <div className="inline-flex items-center bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+            <div className="border-t border-zinc-800/30 pt-4 mt-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-4 w-0.5 bg-orange-500 rounded-full" />
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Levelling Guide</h3>
+              </div>
+              <div className="inline-flex items-center bg-zinc-900/50 rounded-lg px-3 py-2 border border-zinc-800/40">
                 {comp.levelingSteps.map((step: any, i: number) => (
                   <div key={i} className="flex items-center">
-                    <div className="flex flex-col items-center min-w-[70px]">
+                    <div className="flex flex-col items-center min-w-[65px]">
                       <div className="flex items-center gap-1">
-                        <ChevronsUp className="w-4 h-4 text-yellow-600" />
-                        <span className="text-2xl font-black text-white border-l border-orange-500/40 pl-2">{step.level}</span>
+                        <ChevronsUp className="w-3.5 h-3.5 text-yellow-600/80" />
+                        <span className="text-xl font-black text-white border-l border-orange-500/30 pl-1.5">{step.level}</span>
                         <div className="flex flex-col items-start ml-0.5">
-                          <span className="text-[12px] text-zinc-500 leading-none">{step.stage}</span>
+                          <span className="text-[11px] text-zinc-600 leading-none">{step.stage}</span>
                           <div className="flex items-center gap-0.5">
-                            <span className={`text-sm font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-300'}`}>{step.gold}</span>
-                            <Coins className="w-3 h-3 text-yellow-500" />
+                            <span className={`text-xs font-semibold ${step.isCurrent ? 'text-yellow-400' : 'text-zinc-400'}`}>{step.gold}</span>
+                            <Coins className="w-2.5 h-2.5 text-yellow-600" />
                           </div>
                         </div>
                       </div>
-                      <div className="h-4 flex items-center justify-center">
+                      <div className="h-3.5 flex items-center justify-center">
                         {step.description && (
-                          <span className="text-[11px] text-orange-500 text-center leading-tight whitespace-nowrap truncate max-w-[100px]">{step.description}</span>
+                          <span className="text-[10px] text-orange-500/80 text-center leading-tight whitespace-nowrap truncate max-w-[90px]">{step.description}</span>
                         )}
                       </div>
                     </div>
-                    {i < comp.levelingSteps.length - 1 && <span className="text-zinc-600 text-lg font-light mx-3"> &gt; </span>}
+                    {i < comp.levelingSteps.length - 1 && <span className="text-zinc-700 text-base font-light mx-2"> &gt; </span>}
                   </div>
                 ))}
               </div>

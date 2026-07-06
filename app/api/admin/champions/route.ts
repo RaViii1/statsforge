@@ -68,6 +68,32 @@ export async function POST(request: Request) {
       continue;
     }
 
+    // 2. Update champion traits
+    if (traits) {
+      await supabase.from("tft_champion_traits").delete().eq("champion_id", id);
+      const traitInserts = traits.map((traitId: string) => ({ champion_id: id, trait_id: traitId }));
+      const { error: traitError } = await supabase.from("tft_champion_traits").insert(traitInserts);
+      if (traitError) {
+        results.push({ success: false, id, error: traitError.message });
+        continue;
+      }
+    }
+
+    // 3. Update champion best items
+    if (tft_champion_best_items) {
+      await supabase.from("tft_champion_best_items").delete().eq("champion_id", id);
+      const itemInserts = tft_champion_best_items.map((item: any, index: number) => ({
+        champion_id: id,
+        item_id: item.id,
+        priority: index + 1
+      }));
+      const { error: itemError } = await supabase.from("tft_champion_best_items").insert(itemInserts);
+      if (itemError) {
+        results.push({ success: false, id, error: itemError.message });
+        continue;
+      }
+    }
+
     results.push({ success: true, id });
   }
 

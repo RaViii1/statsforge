@@ -5,13 +5,24 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const setIdParam = searchParams.get("set_id");
+    const setNumberParam = searchParams.get("set_number");
 
     const supabase = await createClient();
 
     let targetSetId: number;
 
-    if (setIdParam) {
-      // Frontend specified set_id - use it directly
+    if (setNumberParam) {
+      const { data: setData, error: setError } = await supabase
+        .from("tft_sets")
+        .select("id")
+        .eq("set_number", parseInt(setNumberParam))
+        .limit(1);
+
+      if (setError || !setData?.length) {
+        return NextResponse.json({ error: "Set not found" }, { status: 404 });
+      }
+      targetSetId = setData[0].id;
+    } else if (setIdParam) {
       targetSetId = parseInt(setIdParam);
     } else {
       // No set_id - use first active set

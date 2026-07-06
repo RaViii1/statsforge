@@ -539,7 +539,7 @@ export const TftTeamPlanner = ({ editId, initialSetId }: TftTeamPlannerProps) =>
     if (!unit) return;
 
     const targetUnit = currentPhaseData.units.find(u => u.row === toRow && u.col === toCol);
-    let updatedUnits = currentPhaseData.units.filter(u => 
+    const updatedUnits = currentPhaseData.units.filter(u => 
       !(u.row === fromRow && u.col === fromCol) && 
       !(u.row === toRow && u.col === toCol)
     );

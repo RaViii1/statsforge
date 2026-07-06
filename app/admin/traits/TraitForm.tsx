@@ -193,7 +193,7 @@ export default function TraitForm({ sets }: TraitFormProps) {
             <label className="text-[10px] uppercase tracking-widest font-semibold text-zinc-500 block mb-1.5">Icon</label>
             <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-zinc-900 border border-white/5 group cursor-pointer">
               {previewUrl ? (
-                <img src={previewUrl} alt="icon" className="w-full h-full object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).src = '/images/notrait.png'; }} />
+                <img src={previewUrl} alt="icon" className="w-full h-full object-contain p-1" onError={(e) => { (e.target as HTMLImageElement).src = '/images/nochampionimage.jpg'; }} />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                   <ImageIcon className="w-4 h-4 text-zinc-600" />

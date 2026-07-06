@@ -129,10 +129,10 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
     async function fetchData() {
       try {
         const [champRes, allChampsRes, itemsRes, traitsRes] = await Promise.all([
-          fetch(`/api/tft/champions?name=${unitName}&set=${setNumber}`),
-          fetch(`/api/tft/champions?set=${setNumber}`),
+          fetch(`/api/tft/champions?name=${unitName}&set_number=${setNumber}`),
+          fetch(`/api/tft/champions?set_number=${setNumber}`),
           fetch(`/api/tft/items`),
-          fetch(`/api/tft/traits`)
+          fetch(`/api/tft/traits?set_number=${setNumber}`)
         ]);
         if (champRes.ok) setChampion(await champRes.json());
         if (allChampsRes.ok) setAllChampions(await allChampsRes.json());
@@ -149,7 +149,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
 
   const traitChampions = useMemo(() => {
     const result: Record<string, TFTChampion[]> = {};
-    if (champion) {
+    if (champion && !Array.isArray(champion) && champion.traits) {
       champion.traits.forEach(trait => {
         result[trait] = allChampions.filter(c => c.traits.includes(trait));
       });
@@ -165,7 +165,7 @@ export default function UnitDetailPage({ params }: { params: Promise<{ set: stri
     );
   }
 
-  if (!champion) {
+  if (!champion || Array.isArray(champion) || !champion.traits) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center space-y-4">

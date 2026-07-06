@@ -347,7 +347,7 @@ export const getVisionMultiplier = (position: string, visionPercent: number): nu
   const isSupport = position === "UTILITY" || position === "SUPPORT";
   
   if (isSupport) {
-    let multiplier = visionMultipliers.SUPPORT.multiplier;
+    const multiplier = visionMultipliers.SUPPORT.multiplier;
     let penalty = 1.1;
     
     if (visionPercent < visionMultipliers.SUPPORT.penalties.low.threshold) {

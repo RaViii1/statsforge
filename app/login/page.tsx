@@ -94,6 +94,9 @@ function LoginContent() {
                   <label htmlFor="password" className="text-sm font-semibold text-zinc-300">
                     Password
                   </label>
+                  <Link href="/forgot-password" className="text-xs text-orange-500 hover:text-orange-400 font-semibold transition-colors">
+                    Forgot password?
+                  </Link>
                 </div>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
