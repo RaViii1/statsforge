@@ -6,12 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Anvil, Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import Navbar from '@/components/Navbar'
 
 export default function LoginPage() {
   return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
+    <div className="min-h-screen bg-zinc-950 text-zinc-300">
+      <Navbar />
+      <Suspense>
+        <LoginContent />
+      </Suspense>
+    </div>
   )
 }
 
@@ -46,8 +50,7 @@ function LoginContent() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-[25%] -left-[10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px]"></div>
         <div className="absolute -bottom-[25%] -right-[10%] w-[50%] h-[50%] bg-amber-600/10 rounded-full blur-[120px]"></div>
@@ -55,14 +58,8 @@ function LoginContent() {
 
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="flex flex-col items-center">
-          <Link href="/" className="flex items-center gap-3 group mb-8">
-            <div className="w-14 h-14 bg-linear-to-br from-orange-500 to-orange-700 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-900/40 group-hover:scale-105 transition-transform duration-300">
-              <Anvil className="w-8 h-8 text-white" />
-            </div>
-            <span className="font-black text-white text-4xl tracking-tighter">StatsForge</span>
-          </Link>
-          <h2 className="text-3xl font-bold text-white tracking-tight text-center">Welcome back</h2>
-          <p className="text-zinc-400 mt-2 text-center max-w-[280px]">Enter your credentials to access your dashboard</p>
+          <h2 className="text-3xl font-bold text-white tracking-tight text-center">Welcome back!</h2>
+          <p className="text-zinc-400 mt-2 text-center max-w-[280px]">Enter your credentials to access your account</p>
         </div>
 
         <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-3xl shadow-2xl">
