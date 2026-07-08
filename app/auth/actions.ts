@@ -40,7 +40,7 @@ export async function signup(formData: FormData) {
         username: formData.get('username') as string,
         display_name: formData.get('username') as string,
       },
-      emailRedirectTo: `${protocol}://${host}/auth/callback`,
+      emailRedirectTo: `${protocol}://${host}`,
     },
   })
 
